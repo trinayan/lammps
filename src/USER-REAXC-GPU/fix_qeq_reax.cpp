@@ -22,7 +22,7 @@
 #include <mpi.h>
 #include <cmath>
 #include <cstring>
-#include "pair_reaxc.h"
+#include "pair_reaxc_gpu.h"
 #include "atom.h"
 #include "comm.h"
 #include "neighbor.h"
@@ -123,7 +123,7 @@ FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
   // register with Atom class
 
   reaxc = NULL;
-  reaxc = (PairReaxC *) force->pair_match("^reax/c",0);
+  reaxc = (PairReaxCGPU *) force->pair_match("^reax/c/gpu",0);
 
   s_hist = t_hist = NULL;
   grow_arrays(atom->nmax);
@@ -184,10 +184,10 @@ int FixQEqReax::setmask()
 
 void FixQEqReax::pertype_parameters(char *arg)
 {
-  if (strcmp(arg,"reax/c") == 0) {
+  if (strcmp(arg,"reax/c/gpu") == 0) {
     reaxflag = 1;
-    Pair *pair = force->pair_match("reax/c",0);
-    if (pair == NULL) error->all(FLERR,"No pair reax/c for fix qeq/reax");
+    Pair *pair = force->pair_match("reax/c/gpu",0);
+    if (pair == NULL) error->all(FLERR,"No pair reax/c/gpu for fix qeq/reax");
 
     int tmp;
     chi = (double *) pair->extract("chi",tmp);
@@ -195,7 +195,7 @@ void FixQEqReax::pertype_parameters(char *arg)
     gamma = (double *) pair->extract("gamma",tmp);
     if (chi == NULL || eta == NULL || gamma == NULL)
       error->all(FLERR,
-                 "Fix qeq/reax could not extract params from pair reax/c");
+                 "Fix qeq/reax could not extract params from pair reax/c/gpu");
     return;
   }
 

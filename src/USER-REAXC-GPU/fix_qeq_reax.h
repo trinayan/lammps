@@ -62,7 +62,7 @@ class FixQEqReax : public Fix {
   int pack_flag;
   int nlevels_respa;
   class NeighList *list;
-  class PairReaxC *reaxc;
+  class PairReaxCGPU *reaxc;
 
   double swa, swb;      // lower/upper Taper cutoff radius
   double Tap[8];        // Taper function

@@ -51,7 +51,7 @@ class FixReaxCBonds : public Fix {
 
   bigint nvalid, nextvalid();
   struct _reax_list *lists;
-  class PairReaxC *reaxc;
+  class PairReaxCGPU *reaxc;
   class NeighList *list;
 };
 }

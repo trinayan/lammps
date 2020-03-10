@@ -35,6 +35,13 @@
 #include "error.h"
 #include "utils.h"
 
+#include <iostream>
+#include <map>
+#include <string>
+using namespace std;
+
+
+
 using namespace LAMMPS_NS;
 
 #define MAXLINE 1024
@@ -274,6 +281,19 @@ Pair *Force::new_pair(const char *style, int trysuffix, int &sflag)
       }
     }
   }
+
+
+  typedef map<string,PairCreator> StringFloatMap;
+
+
+  StringFloatMap::iterator pos;
+  for (pos = pair_map->begin(); pos != pair_map->end(); ++pos) {
+        cout << "key: \"" << pos->first << "\" "
+             << "value: " << pos->second << endl;
+  }
+ 
+
+
 
   sflag = 0;
   if (strcmp(style,"none") == 0) return NULL;

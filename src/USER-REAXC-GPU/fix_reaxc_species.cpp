@@ -31,7 +31,7 @@
 #include "force.h"
 #include "memory.h"
 #include "error.h"
-#include "pair_reaxc.h"
+#include "pair_reaxc_gpu.h"
 #include "reaxc_defs.h"
 
 using namespace LAMMPS_NS;
@@ -291,7 +291,7 @@ void FixReaxCSpecies::init()
   if (atom->tag_enable == 0)
     error->all(FLERR,"Cannot use fix reax/c/species unless atoms have IDs");
 
-  reaxc = (PairReaxC *) force->pair_match("reax/c",0);
+  reaxc = (PairReaxCGPU *) force->pair_match("reax/c",0);
   if (reaxc == NULL) error->all(FLERR,"Cannot use fix reax/c/species without "
                                 "pair_style reax/c, reax/c/kk, or reax/c/omp");
 

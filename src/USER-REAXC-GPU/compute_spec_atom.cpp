@@ -18,7 +18,7 @@
 #include "force.h"
 #include "memory.h"
 #include "error.h"
-#include "pair_reaxc.h"
+#include "pair_reaxc_gpu.h"
 
 using namespace LAMMPS_NS;
 
@@ -37,7 +37,7 @@ ComputeSpecAtom::ComputeSpecAtom(LAMMPS *lmp, int narg, char **arg) :
   else size_peratom_cols = nvalues;
 
   // Initiate reaxc
-  reaxc = (PairReaxC *) force->pair_match("reax/c",0);
+  reaxc = (PairReaxCGPU *) force->pair_match("reax/c",0);
 
   pack_choice = new FnPtrPack[nvalues];
 

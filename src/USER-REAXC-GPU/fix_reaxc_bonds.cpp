@@ -20,7 +20,7 @@
 #include <cstring>
 #include "atom.h"
 #include "update.h"
-#include "pair_reaxc.h"
+#include "pair_reaxc_gpu.h"
 #include "neigh_list.h"
 #include "force.h"
 #include "memory.h"
@@ -113,8 +113,8 @@ void FixReaxCBonds::setup(int /*vflag*/)
 
 void FixReaxCBonds::init()
 {
-  reaxc = (PairReaxC *) force->pair_match("reax/c",0);
-  if (reaxc == NULL) error->all(FLERR,"Cannot use fix reax/c/bonds without "
+  reaxc = (PairReaxCGPU *) force->pair_match("reax/c/gpu",0);
+  if (reaxc == NULL) error->all(FLERR,"Cannot use fix reax/c/gpu/bonds without "
                                 "pair_style reax/c, reax/c/kk, or reax/c/omp");
 
 }

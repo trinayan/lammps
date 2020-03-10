@@ -1,117 +1,52 @@
-LMP_INC = -DLAMMPS_SMALLBIG
+#  Makefile template for Static library. 
+# 1. Compile every *.cpp in the folder 
+# 2. All obj files under obj folder
+# 3. static library .a at lib folder
+# 4. run 'make dirmake' before calling 'make'
 
-HIP_PRECISION = -D_SINGLE_DOUBLE
 
-HIP_LIBS = -lz -m64 -lm  -lrocblas -lrocsparse
-HIP_OPTS = -O3
-HIP_HOST_OPTS = -Wno-deprecated-declarations
-HIP_HOST_INCLUDE =
-HIP_HOST_OPTS += -DUSE_HIP_DEVICE_SORT
 HIPCC = /opt/rocm/bin/hipcc
 
 
-HIPCCFLAGS  =   -w -DHAVE_CONFIG_H  -O3  -fpermissive -D__HIP_PLATFORM_HCC__=   -I/opt/rocm/include -I/opt/rocm/hcc/include -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include -I/usr/lib/x86_64-linux-gnu/openmpi/include -pthread
-CFLAGS  = -I.
+HIPCCFLAGS  =  -w -D_SINGLE_DOUBLE -DHAVE_CONFIG_H -DUSE_HIP_DEVICE_SORT  -O3  -fpermissive -D__HIP_PLATFORM_HCC__  -pthread
 
-DEFS    = $(CFLAGS)
-HIPCCDEFS = $(HIPCCFLAGS)
+HIPCCINCS = -I/opt/rocm/include -I/opt/rocm/hcc/include -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include -I/usr/lib/x86_64-linux-gnu/openmpi/include
 
-FLAG    = $(DEFS) $(INCS) $(LIBS)
-HIPCCFLAG = $(HIPCCDEFS) $(LIBS)
+HIPCCDEFS = $(HIPCCFLAGS) $(HIPCCINCS)
 
 
+OUT_FILE_NAME = libreaxcgpu.a
 
-OBJS =     cuda_allocate.o cuda_bond_orders.o cuda_bonds.o cuda_box.o cuda_charges.o\
-	   cuda_copy.o     cuda_environment.o cuda_forces.o cuda_hydrogen_bonds.o\
-	   cuda_init_md.o  cuda_integrate.o   cuda_lin_alg.o cuda_list.o\
-	   cuda_lookup.o   cuda_multi_body.o  cuda_neighbors.o cuda_nonbonded.o\
-	   cuda_post_evolve.o cuda_random.o   cuda_reduction.o cuda_reset_tools.o\
-	   cuda_system_props.o cuda_torsion_angles.o cuda_utils.o cuda_valence_angles.o
+OBJ_DIR=./obj
+
+OUT_DIR=./
+
+# Enumerating of every *.cpp as *.o and using that as dependency.	
+# filter list of .c files in a directory.
+# FILES =dump_l.c \
+#	kter.c \
 #
-# Code converted to cuda
-#
+# $(OUT_FILE_NAME): $(patsubst %.c,$(OBJ_DIR)/%.o,$(wildcard $(FILES))) 
 
-cuda_allocate.o: cuda_allocate.h cuda_allocate.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_allocate.cu
 
-cuda_bond_orders.o: cuda_bond_orders.h cuda_bond_orders.cu 
-	$(HIPCC) $(HIPCCDEFS) -c cuda_bond_orders.cu
+# Enumerating of every *.cpp as *.o and using that as dependency
+$(OUT_FILE_NAME): $(patsubst %.cu,$(OBJ_DIR)/%.o,$(wildcard *.cu))
+	ar -rcs -o $(OUT_DIR)/$@ $^
 
-cuda_bonds.o: cuda_bonds.h cuda_bonds.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_bonds.cu
 
-cuda_box.o: cuda_box.h cuda_box.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_box.cu
 
-cuda_charges.o: cuda_charges.h cuda_charges.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_charges.cu
-
-cuda_copy.o: cuda_copy.h cuda_copy.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_copy.cu
-
-cuda_environment.o: cuda_environment.h cuda_environment.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_utils.cu
-
-cuda_forces.o: cuda_forces.h cuda_forces.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_forces.cu
-
-cuda_hydrogen_bonds.o: cuda_hydrogen_bonds.h cuda_hydrogen_bonds.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_hydrogen_bonds.cu
-
-cuda_init_md.o: cuda_init_md.h cuda_init_md.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_init_md.cu
-
-cuda_integrate.o: cuda_integrate.h cuda_integrate.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_integrate.cu
-
-cuda_lin_alg.o: cuda_lin_alg.h cuda_lin_alg.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_lin_alg.cu
-
-cuda_list.o: cuda_list.h cuda_list.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_list.cu
-
-cuda_lookup.o: cuda_lookup.h cuda_lookup.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_lookup.cu
-
-cuda_multi_body.o: cuda_multi_body.h cuda_multi_body.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_multi_body.cu
-
-cuda_neighbors.o: cuda_neighbors.h cuda_neighbors.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_neighbors.cu
-
-cuda_nonbonded.o: cuda_nonbonded.h cuda_nonbonded.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_nonbonded.cu
-
-cuda_post_evolve.o: cuda_post_evolve.h cuda_post_evolve.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_init_md.cu
-
-cuda_random.o: cuda_random.h cuda_random.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_random.cu
-
-cuda_reduction.o: cuda_reduction.h cuda_reduction.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_reduction.cu
-
-cuda_reset_tools.o: cuda_reset_tools.h cuda_reset_tools.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_reset_tools.cu
-
-cuda_system_props.o: cuda_system_props.h cuda_system_props.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_system_props.cu
-
-cuda_torsion_angles.o: cuda_torsion_angles.h cuda_torsion_angles.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_torsion_angles.cu
-
-cuda_utils.o: cuda_utils.h cuda_utils.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_utils.cu
-
-cuda_valence_angles.o: cuda_valence_angles.h cuda_valence_angles.cu
-	$(HIPCC) $(HIPCCDEFS) -c cuda_valence_angles.cu
-#
-# Clean up here
-#
-
-libreaxgpu.a: $(OBJS)  #let's link library files into a static library
-	ar rcs libreaxgpu.a $(OBJS)
-
+#Compiling every *.cpp to *.o
+$(OBJ_DIR)/%.o: %.cu dirmake
+	$(HIPCC) -c $(HIPCCDEFS) -o $@  $<
+	
+dirmake:
+	@mkdir -p $(OUT_DIR)
+	@mkdir -p $(OBJ_DIR)
+	
 clean:
-	rm -f *.o *~ core 
+	rm -f $(OBJ_DIR)/*.o $(OUT_DIR)/$(OUT_FILE_NAME) Makefile.bak
 
+rebuild: clean build
+
+
+ 

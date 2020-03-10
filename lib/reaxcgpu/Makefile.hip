@@ -7,6 +7,7 @@
 
 HIPCC = /opt/rocm/bin/hipcc
 
+CC = g++
 
 HIPCCFLAGS  =  -w -D_SINGLE_DOUBLE -DHAVE_CONFIG_H -DUSE_HIP_DEVICE_SORT  -O3  -fpermissive -D__HIP_PLATFORM_HCC__  -pthread
 
@@ -14,6 +15,9 @@ HIPCCINCS = -I/opt/rocm/include -I/opt/rocm/hcc/include -I/usr/lib/x86_64-linux-
 
 HIPCCDEFS = $(HIPCCFLAGS) $(HIPCCINCS)
 
+CCINCS = -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include -I/usr/lib/x86_64-linux-gnu/openmpi/include -pthread
+CCFLAGS = -fpermissive 
+CCDEFS =  $(CCFLAGS) $(CCINCS)
 
 OUT_FILE_NAME = libreaxcgpu.a
 
@@ -33,12 +37,16 @@ OUT_DIR=./
 $(OUT_FILE_NAME): $(patsubst %.cu,$(OBJ_DIR)/%.o,$(wildcard *.cu))
 	ar -rcs -o $(OUT_DIR)/$@ $^
 
+$(OUT_FILE_NAME): $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(wildcard *.cpp))
+	ar -rcs -o $(OUT_DIR)/$@ $^
 
 
 #Compiling every *.cpp to *.o
 $(OBJ_DIR)/%.o: %.cu dirmake
 	$(HIPCC) -c $(HIPCCDEFS) -o $@  $<
-	
+
+$(OBJ_DIR)/%.o: %.cpp dirmake
+	$(CC) -c $(CCDEFS) -o $@  $<
 dirmake:
 	@mkdir -p $(OUT_DIR)
 	@mkdir -p $(OBJ_DIR)

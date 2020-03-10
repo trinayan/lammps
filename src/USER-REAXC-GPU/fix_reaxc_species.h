@@ -13,7 +13,7 @@
 
 #ifdef FIX_CLASS
 
-FixStyle(reax/c/species,FixReaxCSpecies)
+FixStyle(reax/c/gpu/species,FixReaxCSpecies)
 
 #else
 
@@ -79,7 +79,7 @@ class FixReaxCSpecies : public Fix {
 
   class NeighList *list;
   class FixAveAtom *f_SPECBOND;
-  class PairReaxC *reaxc;
+  class PairReaxCGPU *reaxc;
 
 };
 }
