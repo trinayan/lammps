@@ -54,6 +54,12 @@
 #include "reaxc_reset_tools.h"
 #include "reaxc_vector.h"
 
+
+//extern "C" void Cuda_Init_Block_Sizes( reax_system *system, control_params *control );
+
+extern "C" void Setup_Cuda_Environment( int, int, int );
+
+
 using namespace LAMMPS_NS;
 
 static const char cite_pair_reax_c[] =
@@ -103,6 +109,7 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 
   control->me = system->my_rank = comm->me;
 
+ 
   system->my_coords[0] = 0;
   system->my_coords[1] = 0;
   system->my_coords[2] = 0;
@@ -135,6 +142,7 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
   fixspecies_flag = 0;
 
   nmax = 0;
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -290,6 +298,9 @@ void PairReaxCGPU::settings(int narg, char **arg)
   // LAMMPS is responsible for generating nbrs
 
   control->reneighbor = 1;
+
+   Setup_Cuda_Environment(system->my_rank,
+            control->nprocs, control->gpus_per_node );
 }
 
 /* ---------------------------------------------------------------------- */

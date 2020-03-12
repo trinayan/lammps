@@ -488,7 +488,8 @@ typedef struct
   int enobondsflag;
   class LAMMPS_NS::Error *error_ptr;
   int me;
-
+  
+  int gpus_per_node;
 } control_params;
 
 

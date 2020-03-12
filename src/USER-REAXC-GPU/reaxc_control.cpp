@@ -40,11 +40,13 @@ char Read_Control_File( char *control_file, control_params* control,
   int   i,ival;
   double  val;
 
+  
   /* open control file */
   if ( (fp = fopen( control_file, "r" ) ) == NULL ) {
     control->error_ptr->all(FLERR, "The control file cannot be opened");
   }
 
+  printf("Control file \n");
   /* assign default values */
   strcpy( control->sim_name, "simulate" );
   control->ensemble        = NVE;
@@ -56,6 +58,8 @@ char Read_Control_File( char *control_file, control_params* control,
   control->procs_by_dim[1] = 1;
   control->procs_by_dim[2] = 1;
   control->geo_format = 1;
+  control->gpus_per_node = 1;
+
 
   control->restart          = 0;
   out_control->restart_format = WRITE_BINARY;
@@ -116,6 +120,7 @@ char Read_Control_File( char *control_file, control_params* control,
   for (i=0; i < MAX_TOKENS; i++)
     tmp[i] = (char*) malloc(sizeof(char)*MAX_LINE);
 
+  printf("Reading control \n");
   /* read control parameters file */
   while (!feof(fp)) {
     fgets( s, MAX_LINE, fp );
@@ -138,6 +143,11 @@ char Read_Control_File( char *control_file, control_params* control,
       val = atof(tmp[1]);
       control->dt = val * 1.e-3;  // convert dt from fs to ps!
     }
+     else if ( strcmp(tmp[0], "gpus_per_node") == 0 )
+     {
+	     ival = atoi(tmp[1]);
+	     control->gpus_per_node = ival;
+     }
     else if (strcmp(tmp[0], "proc_by_dim") == 0) {
       ival = atoi(tmp[1]);
       control->procs_by_dim[0] = ival;
