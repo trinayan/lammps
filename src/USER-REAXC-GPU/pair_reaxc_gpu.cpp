@@ -55,8 +55,7 @@
 #include "reaxc_vector.h"
 
 
-//extern "C" void Cuda_Init_Block_Sizes( reax_system *system, control_params *control );
-
+extern "C" void Cuda_Init_Block_Sizes( reax_system *system, control_params *control );
 extern "C" void Setup_Cuda_Environment( int, int, int );
 
 
@@ -299,8 +298,11 @@ void PairReaxCGPU::settings(int narg, char **arg)
 
   control->reneighbor = 1;
 
-   Setup_Cuda_Environment(system->my_rank,
+  Setup_Cuda_Environment(system->my_rank,
             control->nprocs, control->gpus_per_node );
+
+
+  Cuda_Init_Block_Sizes(system, control);
 }
 
 /* ---------------------------------------------------------------------- */
