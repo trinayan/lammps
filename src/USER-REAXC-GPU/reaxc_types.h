@@ -691,6 +691,11 @@ typedef struct {
 } reallocate_data;
 
 
+typedef struct {
+  int allocated;
+} gpu_storage;
+
+
 typedef struct
 {
   int allocated;

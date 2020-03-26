@@ -57,6 +57,9 @@
 
 extern "C" void Cuda_Init_Block_Sizes( reax_system *system, control_params *control );
 extern "C" void Setup_Cuda_Environment( int, int, int );
+extern "C" void Cuda_Initialize( reax_system*, control_params*, simulation_data*,
+        storage*,gpu_storage*, reax_list**, output_controls*, mpi_datatypes* );
+
 
 
 using namespace LAMMPS_NS;
@@ -97,6 +100,10 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
     memory->smalloc(sizeof(simulation_data),"reax:data");
   workspace = (storage *)
     memory->smalloc(sizeof(storage),"reax:storage");
+   d_workspace = (gpu_storage *)
+    memory->smalloc(sizeof(storage),"reax:storage");
+
+ 
   lists = (reax_list *)
     memory->smalloc(LIST_N * sizeof(reax_list),"reax:lists");
   memset(lists,0,LIST_N * sizeof(reax_list));
@@ -105,7 +112,6 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
   memset(out_control,0,sizeof(output_controls));
   mpi_data = (mpi_datatypes *)
     memory->smalloc(sizeof(mpi_datatypes),"reax:mpi");
-
   control->me = system->my_rank = comm->me;
 
  
@@ -480,12 +486,14 @@ void PairReaxCGPU::setup( )
     (lists+FAR_NBRS)->error_ptr=error;
 
     write_reax_lists();
-    Initialize( system, control, data, workspace, &lists, out_control,
-                mpi_data, world );
+    Cuda_Initialize(system, control, data, workspace,d_workspace, &lists, out_control,
+                mpi_data);
     for( int k = 0; k < system->N; ++k ) {
       num_bonds[k] = system->my_atoms[k].num_bonds;
       num_hbonds[k] = system->my_atoms[k].num_hbonds;
     }
+
+ 
 
   } else {
 

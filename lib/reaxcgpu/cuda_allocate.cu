@@ -342,7 +342,7 @@ void Cuda_Allocate_Simulation_Data( simulation_data *data )
 
 
 void Cuda_Allocate_Workspace( reax_system *system, control_params *control, 
-        storage *workspace, int local_cap, int total_cap )
+        gpu_storage *workspace, int local_cap, int total_cap )
 {
     int total_real, total_rvec, local_rvec;
 
@@ -683,8 +683,9 @@ void Cuda_ReAllocate( reax_system *system, control_params *control,
 
         /* workspace */
         Cuda_Deallocate_Workspace( control, workspace );
-        Cuda_Allocate_Workspace( system, control, workspace, system->local_cap,
-                system->total_cap );
+        //TB::Commented out for now
+	//Cuda_Allocate_Workspace( system, control, workspace, system->local_cap,
+                //system->total_cap );
     }
 
     /* far neighbors */

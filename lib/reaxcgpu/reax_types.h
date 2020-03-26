@@ -545,6 +545,7 @@ typedef struct sparse_matrix_entry sparse_matrix_entry;
 typedef struct sparse_matrix sparse_matrix;
 typedef struct reallocate_data reallocate_data;
 typedef struct storage storage;
+typedef struct gpu_storage gpu_storage;
 typedef struct reax_list reax_list;
 typedef struct output_controls output_controls;
 typedef struct molecule molecule;
@@ -1998,6 +1999,216 @@ struct reallocate_data
     int gcell_atoms;
 };
 
+struct gpu_storage {
+   /* 0 if struct members are NOT allocated, 1 otherwise */
+    int allocated;
+
+    /* communication storage */
+    /**/
+    real *tmp_dbl[MAX_NBRS];
+    /**/
+    rvec *tmp_rvec[MAX_NBRS];
+    /**/
+    rvec2 *tmp_rvec2[MAX_NBRS];
+    /**/
+    int *within_bond_box;
+
+    /* bond order related storage */
+    /**/
+    real *total_bond_order;
+    /**/
+    real *Deltap;
+    /**/
+    real *Deltap_boc;
+    /**/
+    real *Delta;
+    /**/
+    real *Delta_lp;
+    /**/
+    real *Delta_lp_temp;
+    /**/
+    real *Delta_e;
+    /**/
+    real *Delta_boc;
+    /**/
+    real *dDelta_lp;
+    /**/
+    real *dDelta_lp_temp;
+    /**/
+    real *nlp;
+    /**/
+    real *nlp_temp;
+    /**/
+    real *Clp;
+    /**/
+    real *vlpex;
+    /**/
+    rvec *dDeltap_self;
+    /**/
+    int *bond_mark;
+
+    /* charge method storage */
+    /* charge matrix */
+    sparse_matrix H;
+    /* charge matrix (full) */
+    sparse_matrix H_full;
+    /* sparser charge matrix */
+    sparse_matrix H_sp;
+    /* permuted charge matrix (graph coloring) */
+    sparse_matrix H_p;
+    /* sparsity pattern of charge matrix, used in
+     * computing a sparse approximate inverse preconditioner */
+    sparse_matrix H_spar_patt;
+    /* sparsity pattern of charge matrix (full), used in
+     * computing a sparse approximate inverse preconditioner */
+    sparse_matrix H_spar_patt_full;
+    /* sparse approximate inverse preconditioner */
+    sparse_matrix H_app_inv;
+    /* incomplete Cholesky or LU preconditioner */
+    sparse_matrix L;
+    /* incomplete Cholesky or LU preconditioner */
+    sparse_matrix U;
+    /* Jacobi preconditioner */
+    real *Hdia_inv;
+    /* row drop tolerences for incomplete Cholesky preconditioner */
+    real *droptol;
+    /**/
+    real *b_s;
+    /**/
+    real *b_t;
+    /**/
+    real *b_prc;
+    /**/
+    real *b_prm;
+    /**/
+    real *s;
+    /**/
+    real *t;
+    /**/
+    rvec2 *b;
+    /**/
+    rvec2 *x;
+
+    /* GMRES storage */
+    real *hc;
+    real *hs;
+    real **h;
+    real **v;
+
+    /* GMRES, BiCGStab storage */
+    real *g;
+    real *y;
+
+    /* GMRES, BiCGStab, PIPECG, PIPECR storage */
+    real *z;
+
+    /* CG, BiCGStab, PIPECG, PIPECR storage */
+    real *r;
+    real *d;
+    real *q;
+    real *p;
+
+    /* BiCGStab storage */
+    real *r_hat;
+    real *q_hat;
+
+    /* PIPECG, PIPECR storage */
+    real *m;
+    real *n;
+    real *u;
+    real *w;
+
+    /* dual-CG storage */
+    rvec2 *d2;
+    rvec2 *p2;
+    rvec2 *q2;
+    rvec2 *r2;
+
+    /* dual-PIPECG storage */
+    rvec2 *m2;
+    rvec2 *n2;
+    rvec2 *u2;
+    rvec2 *w2;
+    rvec2 *z2;
+
+    /* Taper */
+    real Tap[8];
+
+    /* storage for analysis */
+    /**/
+    int *mark;
+    /**/
+    int *old_mark;
+    /**/
+    rvec *x_old;
+
+    /* storage space for bond restrictions */
+    /**/
+    int *restricted;
+    /**/
+    int *restricted_list;
+
+    /* integrator */
+    /**/
+    rvec *v_const;
+
+    /* force calculations */
+    /**/
+    real *CdDelta;  // coefficient of dDelta
+    /**/
+    rvec *f;
+#if defined(TEST_FORCES)
+    /**/
+    rvec *f_ele;
+    /**/
+    rvec *f_vdw;
+    /**/
+    rvec *f_bo;
+    /**/
+    rvec *f_be;
+    /**/
+    rvec *f_lp;
+    /**/
+    rvec *f_ov;
+    /**/
+    rvec *f_un;
+    /**/
+    rvec *f_ang;
+    /**/
+    rvec *f_coa;
+    /**/
+    rvec *f_pen;
+    /**/
+    rvec *f_hb;
+    /**/
+    rvec *f_tor;
+    /**/
+    rvec *f_con;
+    /**/
+    rvec *f_tot;
+    /**/
+    rvec *dDelta;   // calculated on the fly in bond_orders.c together with bo'
+
+    /**/
+    int  *rcounts;
+    /**/
+    int  *displs;
+    /**/
+    int  *id_all;
+    /**/
+    rvec *f_all;
+#endif
+    /**/
+    reallocate_data realloc;
+    /* lookup table for force tabulation */
+    
+    /* temporary workspace */
+    void *host_scratch;
+    /* temporary workspace (GPU) */
+    void *scratch;
+    /* lookup table for force tabulation (GPU) */
+
+};
 
 struct storage
 {

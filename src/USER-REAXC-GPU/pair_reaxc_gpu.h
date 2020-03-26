@@ -54,6 +54,7 @@ class PairReaxCGPU : public Pair {
   output_controls *out_control;
   simulation_data *data;
   storage *workspace;
+  gpu_storage *d_workspace;
   reax_list *lists;
   mpi_datatypes *mpi_data;
 
