@@ -196,9 +196,9 @@ void Cuda_Init_Workspace( reax_system *system, control_params *control,
 
     memset( &workspace->realloc, 0, sizeof(reallocate_data) );
     //TB::Commented out for now
-    /*Cuda_Reset_Workspace( system, workspace );
+    Cuda_Reset_Workspace( system, workspace );
 
-    Init_Taper( control, workspace );*/
+    /*Init_Taper( control, workspace );*/
 }
 
 

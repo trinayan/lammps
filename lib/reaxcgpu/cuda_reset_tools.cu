@@ -11,15 +11,15 @@
 extern "C"
 {
 
-void Cuda_Reset_Workspace( reax_system *system, storage *workspace )
+void Cuda_Reset_Workspace( reax_system *system, gpu_storage *workspace)
 {
-    cuda_memset( workspace->d_workspace->total_bond_order, 0,
+    cuda_memset( workspace->total_bond_order, 0,
             system->total_cap * sizeof(real), "total_bond_order" );
-    cuda_memset( workspace->d_workspace->dDeltap_self, 0,
+    cuda_memset( workspace->dDeltap_self, 0,
             system->total_cap * sizeof(rvec), "dDeltap_self" );
-    cuda_memset( workspace->d_workspace->CdDelta, 0,
+    cuda_memset( workspace->CdDelta, 0,
             system->total_cap * sizeof(real), "CdDelta" );
-    cuda_memset( workspace->d_workspace->f, 0,
+    cuda_memset(workspace->f, 0,
             system->total_cap * sizeof(rvec), "f" );
 }
 
@@ -52,7 +52,7 @@ CUDA_GLOBAL void k_reset_hindex( reax_atom *my_atoms, single_body_parameters *sb
 
 
 void Cuda_Reset_Atoms( reax_system* system, control_params *control,
-        storage *workspace )
+        gpu_storage *workspace )
 {
     int blocks;
     int *hindex;
@@ -76,7 +76,7 @@ void Cuda_Reset_Atoms( reax_system* system, control_params *control,
 
 
 void Cuda_Reset( reax_system *system, control_params *control,
-        simulation_data *data, storage *workspace, reax_list **lists )
+        simulation_data *data, gpu_storage *workspace, reax_list **lists )
 {
     Cuda_Reset_Atoms( system, control, workspace );
 
@@ -87,6 +87,7 @@ void Cuda_Reset( reax_system *system, control_params *control,
         Reset_Pressures( data );
     }
 
+    //TB:: Commented here
     Cuda_Reset_Workspace( system, workspace );
 
 #if defined(DEBUG_FOCUS)
