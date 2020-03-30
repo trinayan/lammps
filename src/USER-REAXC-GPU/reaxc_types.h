@@ -388,7 +388,7 @@ typedef struct
 } boundary_cutoff;
 
 
-struct _LR_lookup_table;  // forward declaration
+struct LR_lookup_table;  // forward declaration
 struct _reax_system
 {
   reax_interaction reax_param;
@@ -412,7 +412,7 @@ struct _reax_system
   int mincap;
   double safezone, saferzone;
 
-  _LR_lookup_table **LR;
+  LR_lookup_table **LR;
 
   int omp_active;
 };
@@ -885,7 +885,7 @@ struct cubic_spline_coef
 
 
 
-typedef struct _LR_lookup_table
+typedef struct LR_lookup_table
 {
   double xmin, xmax;
   int n;
