@@ -394,27 +394,154 @@ struct _reax_system
   reax_interaction reax_param;
 
   rc_bigint        bigN;
-  int              n, N, numH;
-  int              local_cap, total_cap, gcell_cap, Hcap;
-  int              est_recv, est_trans, max_recved;
-  int              wsize, my_rank, num_nbrs;
-  ivec             my_coords;
-  neighbor_proc    my_nbrs[REAX_MAX_NBRS];
-  int             *global_offset;
-  simulation_box   big_box, my_box, my_ext_box;
-  grid             my_grid;
+  
+   /* num. atoms (locally owned) within spatial domain of MPI process */
+  int n;
+    /* num. atoms (locally owned AND ghost region) within spatial domain of MPI process */
+  int N;
+  
+  /* dimension of locally owned part of sparse charge matrix */
+  int n_cm;
+    /* num. hydrogen atoms */
+  int numH;
+    /* num. hydrogen atoms (GPU) */
+  int *d_numH;
+
+  
+  int local_cap;
+    /**/
+  int total_cap;
+    /**/
+  int gcell_cap;
+    /**/
+  int Hcap;
+    /**/
+  int est_recv;
+    /**/
+  int est_trans;
+    /**/
+  int max_recved;
+    /**/
+
+  int my_rank;
+    /**/
+  int num_nbrs; 
+  
+  int wsize;
+
+  /* coordinates of processor (according to rank) in MPI cartesian topology */
+  ivec my_coords;
+  /* list of neighbor processors */
+  neighbor_proc my_nbrs[REAX_MAX_NBRS];
+
+  int *global_offset;
+
+   /* global simulation box */
+  simulation_box big_box;
+  /* local simulation box of owned atoms per processor */
+  simulation_box my_box;
+  /* local simulation box of owned AND ghost atoms per processor */
+  simulation_box my_ext_box;
+  /* global simulation box (GPU) */
+  simulation_box *d_big_box;
+  /* local simulation box of owned atoms per processor (GPU) */
+  simulation_box *d_my_box;
+  /* local simulation box of owned AND ghost atoms per processor (GPU) */
+  simulation_box *d_my_ext_box;
+
+  /* grid
+     * * of atoms within simulation box */
+  grid my_grid;
+    /* grid specifying domain (i.e., spatial) decompisition
+     * of atoms within simulation box (GPU) */
+  grid d_my_grid;
+
+  
   boundary_cutoff  bndry_cuts;
   reax_atom       *my_atoms;
 
-  class LAMMPS_NS::Error *error_ptr;
-  class LAMMPS_NS::Pair *pair_ptr;
-  int my_bonds;
-  int mincap;
-  double safezone, saferzone;
+   /* collection of atomic info. (GPU) */
+  reax_atom *d_my_atoms;
 
-  LR_lookup_table **LR;
 
-  int omp_active;
+  /* current num. of far neighbors per atom */
+    int *far_nbrs;
+    /* max num. of far neighbors per atom */
+    int *max_far_nbrs;
+    /* total num. of (max) far neighbors across all atoms */
+    int total_far_nbrs;
+    /* current num. of far neighbors per atom (GPU) */
+    int *d_far_nbrs;
+    /* max num. of far neighbors per atom (GPU) */
+    int *d_max_far_nbrs;
+    /* total num. of (max) far neighbors across all atoms (GPU) */
+    int *d_total_far_nbrs;
+    /* TRUE if far neighbors list requires reallocation,
+     * FALSE otherwise (GPU) */
+    int *d_realloc_far_nbrs;
+
+    /* num. bonds per atom */
+    int *bonds;
+    /* max. num. bonds per atom */
+    int *max_bonds;
+    /* total num. bonds (sum over max) */
+    int total_bonds;
+    /* num. bonds per atom (GPU) */
+    int *d_bonds;
+    /* max. num. bonds per atom (GPU) */
+    int *d_max_bonds;
+    /* total num. bonds (sum over max) (GPU) */
+    int *d_total_bonds;
+    /* TRUE if bonds list requires reallocation, FALSE otherwise (GPU) */
+    int *d_realloc_bonds;
+
+    /* num. hydrogen bonds per atom */
+    int *hbonds;
+    /* max. num. hydrogen bonds per atom */
+    int *max_hbonds;
+    /* total num. hydrogen bonds (sum over max) */
+    int total_hbonds;
+    /* num. hydrogen bonds per atom (GPU) */
+    int *d_hbonds;
+    /* max. num. hydrogen bonds per atom (GPU) */
+    int *d_max_hbonds;
+    /* total num. hydrogen bonds (sum over max) (GPU) */
+    int *d_total_hbonds;
+    /* TRUE if hydrogen bonds list requires reallocation, FALSE otherwise (GPU) */
+    int *d_realloc_hbonds;
+
+
+
+      /* num. matrix entries per row */
+    int *cm_entries;
+    /* max. num. matrix entries per row */
+    int *max_cm_entries;
+    /* total num. matrix entries (sum over max) */
+    int total_cm_entries;
+    /* num. matrix entries per row (GPU) */
+    int *d_cm_entries;
+    /* max. num. matrix entries per row (GPU) */
+    int *d_max_cm_entries;
+    /* total num. matrix entries (sum over max) (GPU) */
+    int *d_total_cm_entries;
+    /* TRUE if charge matrix requires reallocation, FALSE otherwise (GPU) */
+    int *d_realloc_cm_entries;
+
+    /* total num. three body list indices */
+    int total_thbodies_indices;
+    /* total num. three body interactions */
+    int total_thbodies;
+    /* total num. three body interactions (GPU) */
+    int *d_total_thbodies;
+    
+    class LAMMPS_NS::Error *error_ptr;
+    class LAMMPS_NS::Pair *pair_ptr;
+    int my_bonds;
+    int mincap;
+    double safezone, saferzone;
+    LR_lookup_table **LR;
+    
+    int omp_active;
 };
 typedef _reax_system reax_system;
 

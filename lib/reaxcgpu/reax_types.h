@@ -60,6 +60,8 @@
   #include <hip/hip_runtime.h>
 #endif
 
+typedef LAMMPS_NS::bigint rc_bigint;
+
 /* IBMC */
 #if defined(__IBMC__)
   #define inline __inline__
@@ -222,6 +224,7 @@
 #define MAX_NBRS (6) // (27)
 /* encoding of relative coordinate (0,0,0) */
 #define MYSELF (13)
+#define REAX_MAX_NBRS           6
 
 /* ??? */
 #define MAX_ITR (10)
@@ -1249,73 +1252,80 @@ struct boundary_cutoff
 /**/
 struct reax_system
 {
-    /* atomic interaction parameters */
-    reax_interaction reax_param;
+	reax_interaction reax_param;
 
-    /* num. atoms (locally owned) within spatial domain of MPI process */
-    int n;
+  rc_bigint        bigN;
+
+   /* num. atoms (locally owned) within spatial domain of MPI process */
+  int n;
     /* num. atoms (locally owned AND ghost region) within spatial domain of MPI process */
-    int N;
-    /* num. atoms within simulation */
-    int bigN;
-    /* dimension of locally owned part of sparse charge matrix */
-    int n_cm;
+  int N;
+
+  /* dimension of locally owned part of sparse charge matrix */
+  int n_cm;
     /* num. hydrogen atoms */
-    int numH;
+  int numH;
     /* num. hydrogen atoms (GPU) */
-    int *d_numH;
-    /**/
-    int local_cap;
-    /**/
-    int total_cap;
-    /**/
-    int gcell_cap;
-    /**/
-    int Hcap;
-    /**/
-    int est_recv;
-    /**/
-    int est_trans;
-    /**/
-    int max_recved;
-    /**/
-    int my_rank;
-    /**/
-    int num_nbrs;
-    /* coordinates of processor (according to rank) in MPI cartesian topology */
-    ivec my_coords;
-    /* list of neighbor processors */
-    neighbor_proc my_nbrs[MAX_NBRS];
+  int *d_numH;
 
-    /* global simulation box */
-    simulation_box big_box;
-    /* local simulation box of owned atoms per processor */
-    simulation_box my_box;
-    /* local simulation box of owned AND ghost atoms per processor */
-    simulation_box my_ext_box;
-    /* global simulation box (GPU) */
-    simulation_box *d_big_box;
-    /* local simulation box of owned atoms per processor (GPU) */
-    simulation_box *d_my_box;
-    /* local simulation box of owned AND ghost atoms per processor (GPU) */
-    simulation_box *d_my_ext_box;
 
-    /* grid specifying domain (i.e., spatial) decompisition
-     * of atoms within simulation box */
-    grid my_grid;
+  int local_cap;
+    /**/
+  int total_cap;
+    /**/
+  int gcell_cap;
+    /**/
+  int Hcap;
+    /**/
+  int est_recv;
+    /**/
+  int est_trans;
+    /**/
+  int max_recved;
+    /**/
+
+  int my_rank;
+    /**/
+  int num_nbrs;
+
+  int wsize;
+  
+   /* coordinates of processor (according to rank) in MPI cartesian topology */
+  ivec my_coords;
+  /* list of neighbor processors */
+  neighbor_proc my_nbrs[REAX_MAX_NBRS];
+
+  int *global_offset;
+
+   /* global simulation box */
+  simulation_box big_box;
+  /* local simulation box of owned atoms per processor */
+  simulation_box my_box;
+  /* local simulation box of owned AND ghost atoms per processor */
+  simulation_box my_ext_box;
+  /* global simulation box (GPU) */
+  simulation_box *d_big_box;
+  /* local simulation box of owned atoms per processor (GPU) */
+  simulation_box *d_my_box;
+  /* local simulation box of owned AND ghost atoms per processor (GPU) */
+  simulation_box *d_my_ext_box;
+
+  /* grid
+     * * of atoms within simulation box */
+  grid my_grid;
     /* grid specifying domain (i.e., spatial) decompisition
      * of atoms within simulation box (GPU) */
-    grid d_my_grid;
+  grid d_my_grid;
 
-    /* boundary cutoffs, in ??? */
-    boundary_cutoff bndry_cuts;
 
-    /* collection of atomic info. */
-    reax_atom *my_atoms;
-    /* collection of atomic info. (GPU) */
-    reax_atom *d_my_atoms;
+  boundary_cutoff  bndry_cuts;
+  reax_atom       *my_atoms;
 
-    /* current num. of far neighbors per atom */
+   /* collection of atomic info. (GPU) */
+  reax_atom *d_my_atoms;
+
+
+  /* current num. of far neighbors per atom */
     int *far_nbrs;
     /* max num. of far neighbors per atom */
     int *max_far_nbrs;
@@ -1327,9 +1337,10 @@ struct reax_system
     int *d_max_far_nbrs;
     /* total num. of (max) far neighbors across all atoms (GPU) */
     int *d_total_far_nbrs;
-    /* TRUE if far neighbors list requires reallocation,
-     * FALSE otherwise (GPU) */
+    /* TRUE if far neighbors list requires reallocation,*/
+
     int *d_realloc_far_nbrs;
+
 
     /* num. bonds per atom */
     int *bonds;
@@ -1346,6 +1357,7 @@ struct reax_system
     /* TRUE if bonds list requires reallocation, FALSE otherwise (GPU) */
     int *d_realloc_bonds;
 
+
     /* num. hydrogen bonds per atom */
     int *hbonds;
     /* max. num. hydrogen bonds per atom */
@@ -1361,7 +1373,9 @@ struct reax_system
     /* TRUE if hydrogen bonds list requires reallocation, FALSE otherwise (GPU) */
     int *d_realloc_hbonds;
 
-    /* num. matrix entries per row */
+ 
+
+      /* num. matrix entries per row */
     int *cm_entries;
     /* max. num. matrix entries per row */
     int *max_cm_entries;
@@ -1383,17 +1397,15 @@ struct reax_system
     /* total num. three body interactions (GPU) */
     int *d_total_thbodies;
 
+    
+    class LAMMPS_NS::Error *error_ptr;
+    class LAMMPS_NS::Pair *pair_ptr;
+    int my_bonds;
+    int mincap;
+    double safezone, saferzone;
+    LR_lookup_table **LR;
 
-
-  class LAMMPS_NS::Error *error_ptr;
-  class LAMMPS_NS::Pair *pair_ptr;
-  int my_bonds;
-  int mincap;
-  double safezone, saferzone;
-
-  LR_lookup_table **LR;
-
-  int omp_active;
+    int omp_active;
 
 };
 
