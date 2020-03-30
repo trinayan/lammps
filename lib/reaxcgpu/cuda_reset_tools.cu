@@ -11,7 +11,7 @@
 extern "C"
 {
 
-void Cuda_Reset_Workspace( reax_system *system, gpu_storage *workspace)
+void Cuda_Reset_Workspace( reax_system *system , storage *workspace)
 {
     cuda_memset( workspace->total_bond_order, 0,
             system->total_cap * sizeof(real), "total_bond_order" );
@@ -52,7 +52,7 @@ CUDA_GLOBAL void k_reset_hindex( reax_atom *my_atoms, single_body_parameters *sb
 
 
 void Cuda_Reset_Atoms( reax_system* system, control_params *control,
-        gpu_storage *workspace )
+        storage *workspace )
 {
     int blocks;
     int *hindex;
@@ -76,7 +76,7 @@ void Cuda_Reset_Atoms( reax_system* system, control_params *control,
 
 
 void Cuda_Reset( reax_system *system, control_params *control,
-        simulation_data *data, gpu_storage *workspace, reax_list **lists )
+        simulation_data *data, storage *workspace, reax_list **lists )
 {
     Cuda_Reset_Atoms( system, control, workspace );
 

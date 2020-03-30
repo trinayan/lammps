@@ -57,34 +57,65 @@ int Cuda_Init_System( reax_system *system, control_params *control,
         simulation_data *data, storage *workspace,
         mpi_datatypes *mpi_data, char *msg )
 {
-    //TB:: Modified entire function with code from cpu version	
-    int i;
-    reax_atom *atom;
+    
+  int i;
+  reax_atom *atom;
 
-    /* determine the local and total capacity */
-    system->local_cap = MAX( (int)(system->n * SAFE_ZONE), MIN_CAP );
-    system->total_cap = MAX( (int)(system->N * SAFE_ZONE), MIN_CAP );
+  int mincap = system->mincap;
+  double safezone = system->safezone;
+  double saferzone = system->saferzone;
+
+  // determine the local and total capacity
+
+  system->local_cap = MAX( (int)(system->n * safezone), mincap);
+  system->total_cap = MAX( (int)(system->N * safezone), mincap);
+
+  /* estimate numH and Hcap */
+  system->numH = 0;
+  if (control->hbond_cut > 0)
+    for( i = 0; i < system->n; ++i ) {
+      atom = &(system->my_atoms[i]);
+      if (system->reax_param.sbp[ atom->type ].p_hbond == 1 && atom->type >= 0)
+        atom->Hindex = system->numH++;
+      else atom->Hindex = -1;
+    }
+  system->Hcap = (int)(MAX( system->numH * saferzone, mincap ));	
+	
+    /* Sync atoms here to continue the computation */
+    Cuda_Allocate_System( system );
+    Sync_System( system );
 
     /* estimate numH and Hcap */
-    system->numH = 0;
-    if ( control->hbond_cut > 0 )
-        for ( i = 0; i < system->n; ++i )
-        {
-            atom = &(system->my_atoms[i]);
-            if ( system->reax_param.sbp[ atom->type ].p_hbond == 1 )
-                atom->Hindex = system->numH++;
-            else atom->Hindex = -1;
-        }
-    system->Hcap = (int)(MAX( system->numH * SAFER_ZONE, MIN_CAP ));
+    Cuda_Reset_Atoms( system, control, workspace );
 
 #if defined(DEBUG_FOCUS)
     fprintf( stderr, "p%d: n=%d local_cap=%d\n",
-            system->my_rank, system->n, system->local_cap );
+             system->my_rank, system->n, system->local_cap );
     fprintf( stderr, "p%d: N=%d total_cap=%d\n",
-            system->my_rank, system->N, system->total_cap );
+             system->my_rank, system->N, system->total_cap );
     fprintf( stderr, "p%d: numH=%d H_cap=%d\n",
-            system->my_rank, system->numH, system->Hcap );
+             system->my_rank, system->numH, system->Hcap );
 #endif
+
+    Cuda_Compute_Total_Mass( system, control, workspace,
+            data, mpi_data->comm_mesh3D );
+
+    Cuda_Compute_Center_of_Mass( system, control, workspace,
+            data, mpi_data, mpi_data->comm_mesh3D );
+
+//    if( Reposition_Atoms( system, control, data, mpi_data, msg ) == FAILURE )
+//    {
+//        return FAILURE;
+//    }
+
+    /* initialize velocities so that desired init T can be attained */
+    if ( !control->restart || (control->restart && control->random_vel) )
+    {
+        Cuda_Generate_Initial_Velocities( system, control->T_init );
+    }
+
+    Cuda_Compute_Kinetic_Energy( system, control, workspace,
+            data, mpi_data->comm_mesh3D );
 
     return SUCCESS;
 
@@ -196,7 +227,7 @@ void Cuda_Init_Workspace( reax_system *system, control_params *control,
 
     memset( &workspace->realloc, 0, sizeof(reallocate_data) );
     //TB::Commented out for now
-    Cuda_Reset_Workspace( system, workspace );
+    //Cuda_Reset_Workspace( system, workspace );
 
     /*Init_Taper( control, workspace );*/
 }

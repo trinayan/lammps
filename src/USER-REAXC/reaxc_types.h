@@ -392,8 +392,7 @@ struct _LR_lookup_table;  // forward declaration
 struct _reax_system
 {
   reax_interaction reax_param;
-
-  rc_bigint        bigN;
+  rc_bigint        bigN;  
   int              n, N, numH;
   int              local_cap, total_cap, gcell_cap, Hcap;
   int              est_recv, est_trans, max_recved;
@@ -404,16 +403,13 @@ struct _reax_system
   simulation_box   big_box, my_box, my_ext_box;
   grid             my_grid;
   boundary_cutoff  bndry_cuts;
-  reax_atom       *my_atoms;
-
+  reax_atom       *my_atoms; 
   class LAMMPS_NS::Error *error_ptr;
   class LAMMPS_NS::Pair *pair_ptr;
   int my_bonds;
   int mincap;
   double safezone, saferzone;
-
   _LR_lookup_table **LR;
-
   int omp_active;
 };
 typedef _reax_system reax_system;

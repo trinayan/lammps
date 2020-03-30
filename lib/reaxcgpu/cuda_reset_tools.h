@@ -9,15 +9,15 @@
 extern "C"  {
 #endif
 
-void Cuda_Reset_Workspace( reax_system *, gpu_storage * );
+void Cuda_Reset_Workspace( reax_system *, storage * );
 
-void Cuda_Reset_Atoms( reax_system *, control_params *, gpu_storage *);
+void Cuda_Reset_Atoms( reax_system *, control_params *, storage *);
 
 int  Cuda_Reset_Neighbor_Lists( reax_system *, control_params *,
         gpu_storage *, reax_list ** );
 
 void Cuda_Reset( reax_system*, control_params*, simulation_data*,
-        gpu_storage*, reax_list** );
+        storage*, reax_list** );
 
 #ifdef __cplusplus
 }

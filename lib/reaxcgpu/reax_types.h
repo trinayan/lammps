@@ -53,6 +53,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <zlib.h>
+#include "lammps_interface.h"
 
 #ifdef HAVE_HIP
   //#include <cuda.h>
@@ -553,6 +554,8 @@ typedef struct LR_data LR_data;
 typedef struct cubic_spline_coef cubic_spline_coef;
 typedef struct LR_lookup_table LR_lookup_table;
 typedef struct puremd_handle puremd_handle;
+
+
 
 
 /* function pointer definitions */
@@ -1379,6 +1382,19 @@ struct reax_system
     int total_thbodies;
     /* total num. three body interactions (GPU) */
     int *d_total_thbodies;
+
+
+
+  class LAMMPS_NS::Error *error_ptr;
+  class LAMMPS_NS::Pair *pair_ptr;
+  int my_bonds;
+  int mincap;
+  double safezone, saferzone;
+
+  LR_lookup_table **LR;
+
+  int omp_active;
+
 };
 
 
