@@ -342,7 +342,7 @@ void Cuda_Allocate_Simulation_Data( simulation_data *data )
 
 
 void Cuda_Allocate_Workspace( reax_system *system, control_params *control, 
-        gpu_storage *workspace, int local_cap, int total_cap )
+        storage *workspace, int local_cap, int total_cap )
 {
     int total_real, total_rvec, local_rvec;
 

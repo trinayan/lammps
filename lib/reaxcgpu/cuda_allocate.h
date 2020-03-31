@@ -14,7 +14,7 @@ void Cuda_Allocate_Grid( reax_system * );
 
 void Cuda_Allocate_Simulation_Data( simulation_data * );
 
-void Cuda_Allocate_Workspace( reax_system *, control_params *, gpu_storage *, int, int );
+void Cuda_Allocate_Workspace( reax_system *, control_params *,storage *, int, int );
 
 void Cuda_Allocate_Matrix( sparse_matrix *, int, int );
 

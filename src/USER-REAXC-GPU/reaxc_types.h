@@ -101,6 +101,8 @@ typedef double rvec4[4];
 typedef LAMMPS_NS::tagint rc_tagint;
 typedef LAMMPS_NS::bigint rc_bigint;
 
+typedef struct storage storage;
+
 typedef struct
 {
   int  cnt;
@@ -818,15 +820,10 @@ typedef struct {
 } reallocate_data;
 
 
-typedef struct {
-  int allocated;
-} gpu_storage;
-
-
-typedef struct
+struct storage
 {
+ /* 0 if struct members are NOT allocated, 1 otherwise */
   int allocated;
-
   /* communication storage */
   double *tmp_dbl[REAX_MAX_NBRS];
   rvec *tmp_rvec[REAX_MAX_NBRS];
@@ -843,28 +840,32 @@ typedef struct
   int *bond_mark, *done_after;
 
   /* QEq storage */
-  sparse_matrix *H, *L, *U;
+  sparse_matrix H, H_full,H_sp,H_p,H_spar_patt,H_spar_patt_full,H_app_inv,L, U;
   double *Hdia_inv, *b_s, *b_t, *b_prc, *b_prm, *s, *t;
   double *droptol;
   rvec2 *b, *x;
 
-  /* GMRES storage */
+
+   /* GMRES storage */
   double *y, *z, *g;
   double *hc, *hs;
-  double **h, **v;
+  double *h, *v;
+
   /* CG storage */
   double *r, *d, *q, *p;
   rvec2 *r2, *d2, *q2, *p2;
   /* Taper */
   double Tap[8]; //Tap7, Tap6, Tap5, Tap4, Tap3, Tap2, Tap1, Tap0;
 
-  /* storage for analysis */
+   /* storage for analysis */
   int  *mark, *old_mark;
   rvec *x_old;
 
-  /* storage space for bond restrictions */
+
+   /* storage space for bond restrictions */
   int  *restricted;
   int **restricted_list;
+
 
   /* integrator */
   rvec *v_const;
@@ -879,8 +880,65 @@ typedef struct
   double *CdDeltaReduction;
   int *valence_angle_atom_myoffset;
 
+
   reallocate_data realloc;
-} storage;
+  /* lookup table for force tabulation */
+  LR_lookup_table *LR;
+    /* temporary workspace */
+  void *host_scratch;
+    /* temporary workspace (GPU) */
+  void *scratch;
+    /* lookup table for force tabulation (GPU) */
+  LR_lookup_table *d_LR;
+    /* storage (GPU) */
+  storage *d_workspace;
+
+
+
+  #ifdef TEST_FORCES
+    /**/
+    rvec *f_ele;
+    /**/
+    rvec *f_vdw;
+    /**/
+    rvec *f_bo;
+    /**/
+    rvec *f_be;
+    /**/
+    rvec *f_lp;
+    /**/
+    rvec *f_ov;
+    /**/
+    rvec *f_un;
+    /**/
+    rvec *f_ang;
+    /**/
+    rvec *f_coa;
+    /**/
+    rvec *f_pen;
+    /**/
+    rvec *f_hb;
+    /**/
+    rvec *f_tor;
+    /**/
+    rvec *f_con;
+    /**/
+    rvec *f_tot;
+    /**/
+    rvec *dDelta;   // calculated on the fly in bond_orders.c together with bo'
+
+    /**/
+    int  *rcounts;
+    /**/
+    int  *displs;
+    /**/
+    int  *id_all;
+    /**/
+    rvec *f_all;
+#endif
+
+
+} ;
 
 
 typedef union

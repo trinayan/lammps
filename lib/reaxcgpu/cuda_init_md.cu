@@ -219,7 +219,7 @@ void Cuda_Init_Simulation_Data( reax_system *system, control_params *control,
 
 
 void Cuda_Init_Workspace( reax_system *system, control_params *control,
-        gpu_storage *workspace )
+        storage *workspace )
 {
 
     Cuda_Allocate_Workspace( system, control, workspace,
@@ -296,7 +296,6 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
 
 void Cuda_Initialize( reax_system *system, control_params *control,
         simulation_data *data, storage *workspace,
-	gpu_storage *d_workspace,
         reax_list **lists, output_controls *out_control,
         mpi_datatypes *mpi_data )
 {
@@ -325,7 +324,7 @@ void Cuda_Initialize( reax_system *system, control_params *control,
 
     Cuda_Init_Simulation_Data( system, control, data );
 
-    Cuda_Init_Workspace( system, control, d_workspace);
+    Cuda_Init_Workspace( system, control, workspace);
 
     Cuda_Allocate_Control( control );
 
