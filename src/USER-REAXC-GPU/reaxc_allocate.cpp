@@ -83,7 +83,7 @@ int Allocate_System( reax_system *system, int /*local_cap*/, int total_cap,
 
 void DeAllocate_System( reax_system *system )
 {
-  int i, j, k;
+ /* int i, j, k;
   int ntypes;
   reax_interaction *ff_params;
 
@@ -115,7 +115,10 @@ void DeAllocate_System( reax_system *system )
   sfree(system->error_ptr,  ff_params->hbp, "ff:hbp" );
   sfree(system->error_ptr,  ff_params->tbp, "ff:tbp" );
   sfree(system->error_ptr,  ff_params->sbp, "ff:sbp" );
-}
+*/
+  printf("Fix fbp incompat first\n");
+  exit(0);
+  }
 
 
 /*************       workspace        *************/

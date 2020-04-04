@@ -191,7 +191,7 @@ void FixReaxCBonds::FindBond(struct _reax_list * /*lists*/, int &numbonds)
 
   tagint *tag = atom->tag;
 
-  for (ii = 0; ii < inum; ii++) {
+ /* for (ii = 0; ii < inum; ii++) {
     i = ilist[ii];
     nj = 0;
 
@@ -209,7 +209,10 @@ void FixReaxCBonds::FindBond(struct _reax_list * /*lists*/, int &numbonds)
     }
     numneigh[i] = nj;
     if (nj > numbonds) numbonds = nj;
-  }
+  }*/
+
+  printf("Findbond is in lib\n");
+  exit(0);
 
 }
 /* ---------------------------------------------------------------------- */

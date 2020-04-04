@@ -101,6 +101,8 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
   workspace = (storage *)
     memory->smalloc(sizeof(storage),"reax:storage");
   
+  workspace->d_workspace = (storage *)memory->smalloc(sizeof(storage),"reax:gpu_storage");
+
   lists = (reax_list *)
     memory->smalloc(LIST_N * sizeof(reax_list),"reax:lists");
   memset(lists,0,LIST_N * sizeof(reax_list));

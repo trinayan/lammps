@@ -47,7 +47,7 @@ using namespace FixConst;
 //#define LOOSE_ZONE      0.7
 #define SQR(x) ((x)*(x))
 #define CUBE(x) ((x)*(x)*(x))
-#define MIN_NBRS 100
+//#define MIN_NBRS 100
 
 static const char cite_fix_qeq_reax[] =
   "fix qeq/reax command:\n\n"
