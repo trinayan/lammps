@@ -22,7 +22,7 @@
 #ifndef __CUDA_RANDOM_H_
 #define __CUDA_RANDOM_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 /* System random number generator used linear congruance method with

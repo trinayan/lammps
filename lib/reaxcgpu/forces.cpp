@@ -19,41 +19,23 @@
   <http://www.gnu.org/licenses/>.
   ----------------------------------------------------------------------*/
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
-#if defined(PURE_REAX)
-  #include "forces.h"
-  #include "bond_orders.h"
-  #include "bonds.h"
-  #include "basic_comm.h"
-  #include "hydrogen_bonds.h"
-  #include "io_tools.h"
-  #include "list.h"
-  #include "lookup.h"
-  #include "multi_body.h"
-  #include "nonbonded.h"
-  #include "charges.h"
-  #include "tool_box.h"
-  #include "torsion_angles.h"
-  #include "valence_angles.h"
-  #include "vector.h"
-#elif defined(LAMMPS_REAX)
-  #include "reax_forces.h"
-  #include "reax_bond_orders.h"
-  #include "reax_bonds.h"
-  #include "reax_basic_comm.h"
-  #include "reax_hydrogen_bonds.h"
-  #include "reax_io_tools.h"
-  #include "reax_list.h"
-  #include "reax_lookup.h"
-  #include "reax_multi_body.h"
-  #include "reax_nonbonded.h"
-  #include "reax_tool_box.h"
-  #include "reax_torsion_angles.h"
-  #include "reax_valence_angles.h"
-  #include "reax_vector.h"
-#endif
-
+#include "forces.h"
+#include "bond_orders.h"
+#include "bonds.h"
+#include "basic_comm.h"
+#include "hydrogen_bonds.h"
+#include "io_tools.h"
+#include "list.h"
+#include "lookup.h"
+#include "multi_body.h"
+#include "nonbonded.h"
+#include "charges.h"
+#include "tool_box.h"
+#include "torsion_angles.h"
+#include "valence_angles.h"
+#include "vector.h"
 #include "index_utils.h"
 
 

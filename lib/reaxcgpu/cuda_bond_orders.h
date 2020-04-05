@@ -2,7 +2,7 @@
 #ifndef __CUDA_BOND_ORDERS_H__
 #define __CUDA_BOND_ORDERS_H__
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 #include "vector.h"
 

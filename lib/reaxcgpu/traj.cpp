@@ -19,19 +19,12 @@
   <http://www.gnu.org/licenses/>.
   ----------------------------------------------------------------------*/
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
-#if defined(PURE_REAX)
-  #include "traj.h"
-  #include "comm_tools.h"
-  #include "list.h"
-  #include "tool_box.h"
-#elif defined(LAMMPS_REAX)
-  #include "reax_traj.h"
-  #include "reax_comm_tools.h"
-  #include "reax_list.h"
-  #include "reax_tool_box.h"
-#endif
+#include "traj.h"
+#include "comm_tools.h"
+#include "list.h"
+#include "tool_box.h"
 
 #if defined(HAVE_HIP)
   #include "cuda/cuda_copy.h"

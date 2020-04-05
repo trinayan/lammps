@@ -19,28 +19,16 @@
   <http://www.gnu.org/licenses/>.
   ----------------------------------------------------------------------*/
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
-#if defined(PURE_REAX)
-  #include "io_tools.h"
-  #include "basic_comm.h"
-  #include "list.h"
-  #include "reset_tools.h"
-  #include "system_props.h"
-  #include "tool_box.h"
-  #include "traj.h"
-  #include "vector.h"
-#elif defined(LAMMPS_REAX)
-  #include "reax_io_tools.h"
-  #include "reax_basic_comm.h"
-  #include "reax_list.h"
-  #include "reax_reset_tools.h"
-  #include "reax_system_props.h"
-  #include "reax_tool_box.h"
-  #include "reax_traj.h"
-  #include "reax_vector.h"
-#endif
-
+#include "io_tools.h"
+#include "basic_comm.h"
+#include "list.h"
+#include "reset_tools.h"
+#include "system_props.h"
+#include "tool_box.h"
+#include "traj.h"
+#include "vector.h"
 #include "index_utils.h"
 
 

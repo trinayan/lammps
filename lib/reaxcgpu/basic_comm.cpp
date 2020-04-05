@@ -19,16 +19,10 @@
   <http://www.gnu.org/licenses/>.
   ----------------------------------------------------------------------*/
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
-#if defined(PURE_REAX)
-  #include "basic_comm.h"
-  #include "vector.h"
-#elif defined(LAMMPS_REAX)
-  #include "reax_basic_comm.h"
-  #include "reax_vector.h"
-#endif
-
+#include "basic_comm.h"
+#include "vector.h"
 
 typedef void (*dist_packer)( void*, mpi_out_data* );
 typedef void (*coll_unpacker)( void*, void*, mpi_out_data* );

@@ -22,7 +22,7 @@
 #ifndef __RESTART_H_
 #define __RESTART_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #define RESTART_HEADER "%8d%12d%8.3f%8.3f%8.3f%8.3f%8.3f\n%15.5f%15.5f%15.5f\n%15.5f%15.5f%15.5f\n%15.5f%15.5f%15.5f\n"

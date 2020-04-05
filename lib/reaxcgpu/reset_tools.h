@@ -22,7 +22,7 @@
 #ifndef __RESET_TOOLS_H_
 #define __RESET_TOOLS_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #ifdef __cplusplus

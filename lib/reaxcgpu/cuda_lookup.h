@@ -2,7 +2,7 @@
 #ifndef __CUDA_LOOKUP_H__
 #define __CUDA_LOOKUP_H__
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #ifdef __cplusplus

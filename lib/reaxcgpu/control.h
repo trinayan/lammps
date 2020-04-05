@@ -22,7 +22,7 @@
 #ifndef __CONTROL_H_
 #define __CONTROL_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #ifdef __cplusplus

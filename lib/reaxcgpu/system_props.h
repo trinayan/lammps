@@ -22,7 +22,7 @@
 #ifndef __SYSTEM_PROP_H_
 #define __SYSTEM_PROP_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #ifdef __cplusplus

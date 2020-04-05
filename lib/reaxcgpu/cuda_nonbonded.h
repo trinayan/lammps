@@ -22,7 +22,7 @@
 #ifndef __CUDA_NONBONDED_H_
 #define __CUDA_NONBONDED_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 void Cuda_NonBonded_Energy( reax_system *, control_params *,

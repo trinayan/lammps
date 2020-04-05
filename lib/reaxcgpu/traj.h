@@ -22,7 +22,7 @@
 #ifndef __TRAJ_H__
 #define __TRAJ_H__
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 #define MAX_TRJ_LINE_LEN     120
 #define MAX_TRJ_BUFFER_SIZE  (MAX_TRJ_LINE_LEN * 100)

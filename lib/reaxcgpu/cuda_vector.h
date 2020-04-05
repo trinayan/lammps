@@ -22,7 +22,7 @@
 #ifndef __CUDA_VECTOR_H_
 #define __CUDA_VECTOR_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 #include "cuda_random.h"
 

@@ -22,7 +22,7 @@
 #ifndef __IO_TOOLS_H_
 #define __IO_TOOLS_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #ifdef __cplusplus

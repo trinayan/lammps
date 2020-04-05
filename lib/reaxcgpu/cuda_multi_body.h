@@ -22,7 +22,7 @@
 #ifndef __CUDA_MULTI_BODY_H_
 #define __CUDA_MULTI_BODY_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 CUDA_GLOBAL void Cuda_Atom_Energy( reax_atom *, global_parameters,

@@ -22,7 +22,7 @@
 #ifndef __FFIELD_H_
 #define __FFIELD_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #ifdef __cplusplus

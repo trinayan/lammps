@@ -22,7 +22,7 @@
 #ifndef __CUDA_VALENCE_ANGLES_H_
 #define __CUDA_VALENCE_ANGLES_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 #include "vector.h"
 

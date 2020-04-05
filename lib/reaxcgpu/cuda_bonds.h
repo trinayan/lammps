@@ -22,7 +22,7 @@
 #ifndef __CUDA_BONDS_H_
 #define __CUDA_BONDS_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 CUDA_GLOBAL void Cuda_Bonds( reax_atom *, global_parameters,

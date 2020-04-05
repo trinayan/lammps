@@ -22,7 +22,7 @@
 #ifndef __GEO_TOOLS_H_
 #define __GEO_TOOLS_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 // CUSTOM_BOXGEO: BOXGEO box_x box_y box_z  angle1 angle2 angle3
 #define CUSTOM_BOXGEO_FORMAT " %s %lf %lf %lf %lf %lf %lf"

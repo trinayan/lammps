@@ -19,40 +19,26 @@
   <http://www.gnu.org/licenses/>.
   ----------------------------------------------------------------------*/
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 #include <stddef.h>
 
-#if defined(PURE_REAX)
-  #include "init_md.h"
-  #include "allocate.h"
-  #include "box.h"
-  #include "comm_tools.h"
-  #include "forces.h"
-  #include "grid.h"
-  #include "integrate.h"
-  #include "io_tools.h"
-  #include "list.h"
-  #include "lookup.h"
-  #include "neighbors.h"
-  #include "random.h"
-  #include "reset_tools.h"
-  #include "system_props.h"
-  #include "tool_box.h"
-  #include "vector.h"
-#elif defined(LAMMPS_REAX)
-  #include "reax_init_md.h"
-  #include "reax_allocate.h"
-  #include "reax_forces.h"
-  #include "reax_io_tools.h"
-  #include "reax_list.h"
-  #include "reax_lookup.h"
-  #include "reax_reset_tools.h"
-  #include "reax_system_props.h"
-  #include "reax_tool_box.h"
-  #include "reax_vector.h"
-#endif
-
+#include "init_md.h"
+#include "allocate.h"
+#include "box.h"
+#include "comm_tools.h"
+#include "forces.h"
+#include "grid.h"
+#include "integrate.h"
+#include "io_tools.h"
+#include "list.h"
+#include "lookup.h"
+#include "neighbors.h"
+#include "random.h"
+#include "reset_tools.h"
+#include "system_props.h"
+#include "tool_box.h"
+#include "vector.h"
 
 #if defined(PURE_REAX)
 /************************ initialize system ************************/

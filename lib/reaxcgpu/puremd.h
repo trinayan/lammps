@@ -22,7 +22,7 @@
 #ifndef __PUREMD_H_
 #define __PUREMD_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #define PUREMD_SUCCESS (0)

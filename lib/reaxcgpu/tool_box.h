@@ -22,7 +22,7 @@
 #ifndef __TOOL_BOX_H_
 #define __TOOL_BOX_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #ifdef __cplusplus

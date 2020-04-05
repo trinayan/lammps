@@ -22,7 +22,7 @@
 #ifndef __MULTI_BODY_H_
 #define __MULTI_BODY_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #ifdef _cplusplus

@@ -1,7 +1,7 @@
 #ifndef __CUDA_UTILS_H_
 #define __CUDA_UTILS_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #ifdef __cplusplus

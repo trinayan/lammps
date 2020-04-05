@@ -19,14 +19,9 @@
   <http://www.gnu.org/licenses/>.
   ----------------------------------------------------------------------*/
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
-#if defined(PURE_REAX)
-  #include "tool_box.h"
-#elif defined(LAMMPS_REAX)
-  #include "reax_tool_box.h"
-#endif
-
+#include "tool_box.h"
 
 /************** taken from comm_tools.c **************/
 int SumScan( int n, int me, int root, MPI_Comm comm )

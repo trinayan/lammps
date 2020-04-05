@@ -2,7 +2,7 @@
 #ifndef __CUDA_NEIGHBORS_H__
 #define __CUDA_NEIGHBORS_H__
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #ifdef __cplusplus

@@ -22,7 +22,7 @@
 #ifndef __BASIC_COMM_H_
 #define __BASIC_COMM_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 enum pointer_type

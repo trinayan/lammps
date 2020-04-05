@@ -1,7 +1,7 @@
 #ifndef __CUDA_ALLOCATE_H_
 #define __CUDA_ALLOCATE_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 #ifdef __cplusplus
 extern "C"  {

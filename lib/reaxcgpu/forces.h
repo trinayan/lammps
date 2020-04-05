@@ -22,7 +22,7 @@
 #ifndef __FORCES_H_
 #define __FORCES_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #ifdef __cplusplus

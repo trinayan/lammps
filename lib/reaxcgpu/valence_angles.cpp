@@ -19,21 +19,12 @@
   <http://www.gnu.org/licenses/>.
   ----------------------------------------------------------------------*/
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
-#if defined(PURE_REAX)
-  #include "valence_angles.h"
-  #include "bond_orders.h"
-  #include "list.h"
-  #include "vector.h"
-#elif defined(LAMMPS_REAX)
-  #include "reax_valence_angles.h"
-  #include "reax_bond_orders.h"
-  #include "reax_list.h"
-  #include "reax_vector.h"
-#endif
-
-
+#include "valence_angles.h"
+#include "bond_orders.h"
+#include "list.h"
+#include "vector.h"
 /* calculates the theta angle between i-j-k */
 void Calculate_Theta( const rvec dvec_ji, real d_ji, rvec dvec_jk, real d_jk,
         real * const theta, real * const cos_theta )
@@ -146,8 +137,10 @@ void Valence_Angles( reax_system * const system, control_params * const control,
 
         for ( t = start_j; t < end_j; ++t )
         {
-            bo_jt = &bond_list->bond_list[t].bo_data;
-            SBOp += bo_jt->BO_pi + bo_jt->BO_pi2;
+           // bo_jt = &bond_list->bond_list[t].bo_data;
+             bo_jt = &(bond_list->select.bond_list[t].bo_data);
+
+	    SBOp += bo_jt->BO_pi + bo_jt->BO_pi2;
             temp = SQR( bo_jt->BO );
             temp *= temp;
             temp *= temp;

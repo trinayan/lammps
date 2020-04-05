@@ -19,16 +19,10 @@
   <http://www.gnu.org/licenses/>.
   ----------------------------------------------------------------------*/
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
-#if defined(PURE_REAX)
-  #include "ffield.h"
-  #include "tool_box.h"
-#elif defined(LAMMPS_REAX)
-  #include "reax_ffield.h"
-  #include "reax_tool_box.h"
-#endif
-
+#include "ffield.h"
+#include "tool_box.h"
 
 void Read_Force_Field_File( const char * const ffield_file, reax_interaction * const reax,
         reax_system * const system, control_params * const control )

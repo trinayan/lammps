@@ -22,7 +22,7 @@
 #ifndef __LIST_H_
 #define __LIST_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #ifdef __cplusplus

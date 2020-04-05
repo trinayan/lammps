@@ -65,6 +65,8 @@ int Cuda_Init_System( reax_system *system, control_params *control,
   double safezone = system->safezone;
   double saferzone = system->saferzone;
 
+   int nrecv[MAX_NBRS];
+
   // determine the local and total capacity
 
   system->local_cap = MAX( (int)(system->n * safezone), mincap);
@@ -80,7 +82,26 @@ int Cuda_Init_System( reax_system *system, control_params *control,
       else atom->Hindex = -1;
     }
   system->Hcap = (int)(MAX( system->numH * saferzone, mincap ));	
-	
+
+
+    Setup_New_Grid( system, control, MPI_COMM_WORLD );
+ 
+
+     Bin_My_Atoms( system, workspace );
+    Reorder_My_Atoms( system, workspace );
+
+    /* estimate N and total capacity */
+    for ( i = 0; i < MAX_NBRS; ++i )
+    {
+        nrecv[i] = 0;
+    }
+
+    MPI_Barrier( MPI_COMM_WORLD );
+    system->max_recved = 0;
+    system->N = SendRecv( system, mpi_data, mpi_data->boundary_atom_type, nrecv,
+            Estimate_Boundary_Atoms, Unpack_Estimate_Message, TRUE );
+    system->total_cap = MAX( (int)(system->N * SAFE_ZONE), MIN_CAP );
+    Bin_Boundary_Atoms( system ); 
     /* Sync atoms here to continue the computation */
     Cuda_Allocate_System( system );
     Sync_System( system );

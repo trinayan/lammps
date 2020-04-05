@@ -19,17 +19,11 @@
   <http://www.gnu.org/licenses/>.
   ----------------------------------------------------------------------*/
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
-#if defined(PURE_REAX)
-  #include "system_props.h"
-  #include "tool_box.h"
-  #include "vector.h"
-#elif defined(LAMMPS_REAX)
-  #include "reax_system_props.h"
-  #include "reax_tool_box.h"
-  #include "reax_vector.h"
-#endif
+#include "system_props.h"
+#include "tool_box.h"
+#include "vector.h"
 
 #if defined(HAVE_HIP)
   #include "cuda/cuda_system_props.h"

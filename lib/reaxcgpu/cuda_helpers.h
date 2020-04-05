@@ -1,7 +1,7 @@
 #ifndef __CUDA_HELPERS__
 #define __CUDA_HELPERS__
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 CUDA_DEVICE static inline int cuda_strcmp( const char * a,

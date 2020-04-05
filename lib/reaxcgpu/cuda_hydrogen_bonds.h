@@ -22,7 +22,7 @@
 #ifndef __CUDA_HBONDS_H_
 #define __CUDA_HBONDS_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 CUDA_GLOBAL void Cuda_Hydrogen_Bonds( reax_atom *,

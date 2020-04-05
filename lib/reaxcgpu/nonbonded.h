@@ -22,7 +22,7 @@
 #ifndef __NONBONDED_H_
 #define __NONBONDED_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #ifdef _cplusplus

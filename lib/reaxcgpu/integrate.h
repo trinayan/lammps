@@ -22,7 +22,7 @@
 #ifndef __INTEGRATE_H_
 #define __INTEGRATE_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #ifdef __cplusplus

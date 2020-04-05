@@ -22,7 +22,7 @@
 #ifndef __HBONDS_H_
 #define __HBONDS_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #ifdef __cplusplus

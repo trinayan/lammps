@@ -1,7 +1,7 @@
 #ifndef __INDEX_UTILS_H_
 #define __INDEX_UTILS_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 /* Indexing routine for grid cells */

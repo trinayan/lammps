@@ -22,7 +22,7 @@
 #ifndef __TORSION_ANGLES_H_
 #define __TORSION_ANGLES_H_
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
 
 #ifdef __cplusplus

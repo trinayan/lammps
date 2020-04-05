@@ -19,22 +19,13 @@
   <http://www.gnu.org/licenses/>.
   ----------------------------------------------------------------------*/
 
-#include "reax_types.h"
+#include "reaxc_types.h"
 
-#if defined(PURE_REAX)
-  #include "allocate.h"
-  #include "list.h"
-  #include "reset_tools.h"
-  #include "tool_box.h"
-  #include "vector.h"
-#elif defined(LAMMPS_REAX)
-  #include "reax_allocate.h"
-  #include "reax_list.h"
-  #include "reax_reset_tools.h"
-  #include "reax_tool_box.h"
-  #include "reax_vector.h"
-#endif
-
+#include "allocate.h"
+#include "list.h"
+#include "reset_tools.h"
+#include "tool_box.h"
+#include "vector.h"
 #include "index_utils.h"
 
 
@@ -516,6 +507,12 @@ int Estimate_GCell_Population( reax_system * const system, MPI_Comm comm )
     {
         for ( d = 0; d < 3; ++d )
         {
+	    printf("c %d \n", c[d]);
+	    printf("atoms %d \n", atoms[l].x[d]);
+            printf("ext box %d \n", my_ext_box->min[d]);
+	    printf("inv len %d \n", g->inv_len[d]);
+
+
             c[d] = (int)((atoms[l].x[d] - my_ext_box->min[d]) * g->inv_len[d]);
 
             if ( c[d] >= g->native_end[d] )
