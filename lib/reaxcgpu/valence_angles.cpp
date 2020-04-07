@@ -188,7 +188,7 @@ void Valence_Angles( reax_system * const system, control_params * const control,
         for ( pi = start_j; pi < end_j; ++pi )
         {
             Set_Start_Index( pi, num_thb_intrs, thb_list );
-            pbond_ij = &bond_list->bond_list[pi];
+            pbond_ij = &bond_list->select.bond_list[pi];
             bo_ij = &pbond_ij->bo_data;
             BOA_ij = bo_ij->BO - control->thb_cut;
 
@@ -208,12 +208,12 @@ void Valence_Angles( reax_system * const system, control_params * const control,
 
                     for ( t = start_pk; t < end_pk; ++t )
                     {
-                        if ( thb_list->three_body_list[t].thb == i )
+                        if ( thb_list->select.three_body_list[t].thb == i )
                         {
-                            p_ijk = &thb_list->three_body_list[num_thb_intrs];
-                            p_kji = &thb_list->three_body_list[t];
+                            p_ijk = &thb_list->select.three_body_list[num_thb_intrs];
+                            p_kji = &thb_list->select.three_body_list[t];
 
-                            p_ijk->thb = bond_list->bond_list[pk].nbr;
+                            p_ijk->thb = bond_list->select.bond_list[pk].nbr;
                             p_ijk->pthb = pk;
                             p_ijk->theta = p_kji->theta;
                             rvec_Copy( p_ijk->dcos_di, p_kji->dcos_dk );
@@ -229,12 +229,12 @@ void Valence_Angles( reax_system * const system, control_params * const control,
                 /* and this is the second for loop mentioned above */
                 for ( pk = pi + 1; pk < end_j; ++pk )
                 {
-                    pbond_jk = &bond_list->bond_list[pk];
+                    pbond_jk = &bond_list->select.bond_list[pk];
                     bo_jk = &pbond_jk->bo_data;
                     BOA_jk = bo_jk->BO - control->thb_cut;
                     k = pbond_jk->nbr;
                     type_k = system->my_atoms[k].type;
-                    p_ijk = &thb_list->three_body_list[num_thb_intrs];
+                    p_ijk = &thb_list->select.three_body_list[num_thb_intrs];
 
                     Calculate_Theta( pbond_ij->dvec, pbond_ij->d,
                             pbond_jk->dvec, pbond_jk->d, &theta, &cos_theta );
@@ -374,7 +374,7 @@ void Valence_Angles( reax_system * const system, control_params * const control,
 
                                 for ( t = start_j; t < end_j; ++t )
                                 {
-                                    pbond_jt = &bond_list->bond_list[t];
+                                    pbond_jt = &bond_list->select.bond_list[t];
                                     bo_jt = &pbond_jt->bo_data;
                                     temp_bo_jt = bo_jt->BO;
                                     temp = CUBE( temp_bo_jt );

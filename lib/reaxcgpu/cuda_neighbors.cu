@@ -134,7 +134,7 @@ CUDA_GLOBAL void k_generate_neighbor_lists( reax_atom *my_atoms,
                     if ( d <= cutoff )
                     { 
                         /* commit far neighbor to list */
-                        nbr_data = &far_nbrs_list.far_nbr_list[num_far];
+                        nbr_data = &far_nbrs_list.select.far_nbr_list[num_far];
                         nbr_data->nbr = m;
                         nbr_data->d = SQRT( d );
                         rvec_Copy( nbr_data->dvec, dvec );
@@ -178,7 +178,7 @@ CUDA_GLOBAL void k_generate_neighbor_lists( reax_atom *my_atoms,
                     if ( d <= cutoff )
                     {
                         /* commit far neighbor to list */
-                        nbr_data = &far_nbrs_list.far_nbr_list[num_far];
+                        nbr_data = &far_nbrs_list.select.far_nbr_list[num_far];
                         nbr_data->nbr = m;
                         nbr_data->d = SQRT( d );
                         rvec_Copy( nbr_data->dvec, dvec );
@@ -238,7 +238,7 @@ CUDA_GLOBAL void k_mt_generate_neighbor_lists( reax_atom *my_atoms,
     l = group_id;
     atom1 = &my_atoms[l];
     num_far = Cuda_Start_Index( l, &far_nbrs );
-    my_start = &far_nbrs.far_nbr_list[num_far];
+    my_start = &far_nbrs.select.far_nbr_list[num_far];
 
     //get the coordinates of the atom and 
     //compute the grid cell

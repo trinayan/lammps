@@ -40,7 +40,7 @@
 #include "tool_box.h"
 #include "vector.h"
 
-#if defined(PURE_REAX)
+//#if defined(PURE_REAX)
 /************************ initialize system ************************/
 static int Reposition_Atoms( reax_system * const system, control_params * const control,
         simulation_data * const data, mpi_datatypes * const mpi_data, char * const msg )
@@ -321,37 +321,7 @@ void Init_Simulation_Data( reax_system * const system, control_params * const co
 }
 
 
-#elif defined(LAMMPS_REAX)
-void Init_System( reax_system * const system )
-{
-    system->big_box.V = 0;
-    system->big_box.box_norms[0] = 0;
-    system->big_box.box_norms[1] = 0;
-    system->big_box.box_norms[2] = 0;
-
-    system->local_cap = (int)(system->n * SAFE_ZONE);
-    system->total_cap = (int)(system->N * SAFE_ZONE);
-
-    system->far_nbrs = NULL;
-    printf("setting max to null \n");
-    system->max_far_nbrs = NULL;
-    system->bonds = NULL;
-    system->max_bonds = NULL;
-    system->hbonds = NULL;
-    system->max_hbonds = NULL;
-    system->cm_entries = NULL;
-    system->max_cm_entries = NULL;
-
-#if defined(DEBUG_FOCUS)
-    fprintf( stderr, "p%d: local_cap=%d total_cap=%d\n",
-             system->my_rank, system->local_cap, system->total_cap );
-#endif
-
-    ReAllocate_System( system, system->local_cap, system->total_cap );
-}
-
-
-void Init_Simulation_Data( reax_system * const system, control_params * const control,
+/*void Init_Simulation_Data( reax_system * const system, control_params * const control,
         simulation_data * const data )
 {
     Reset_Simulation_Data( data );
@@ -362,8 +332,8 @@ void Init_Simulation_Data( reax_system * const system, control_params * const co
 
     //if( !control->restart )
     data->step = data->prev_steps = 0;
-}
-#endif
+}*/
+
 
 
 /************************ initialize workspace ************************/
@@ -653,7 +623,6 @@ void Init_Lists( reax_system * const system, control_params * const control,
 }
 
 
-#if defined(PURE_REAX)
 void Initialize( reax_system * const system, control_params * const control,
         simulation_data * const data, storage * const workspace,
         reax_list ** const lists, output_controls * const out_control,
@@ -700,33 +669,6 @@ void Pure_Initialize( reax_system * const system, control_params * const control
     Init_Force_Functions( control );
 }
 
-
-#elif defined(LAMMPS_REAX)
-void Initialize( reax_system * const system, control_params * const control,
-        simulation_data * const data, storage * const workspace,
-        reax_list ** const lists, output_controls * const out_control,
-        mpi_datatypes * const mpi_data )
-{
-    Init_System( system );
-
-    Init_Simulation_Data( system, control, data );
-
-    Init_Workspace( system, control, workspace );
-
-    Init_MPI_Datatypes( system, workspace, mpi_data );
-
-    Init_Lists( system, control, workspace, lists );
-
-    Init_Output_Files( system, control, out_control, mpi_data );
-
-    if ( control->tabulate )
-    {
-        Init_Lookup_Tables( system, control, workspace, mpi_data );
-    }
-
-    Init_Force_Functions( );
-    }
-#endif
 
 
 static void Finalize_System( reax_system * const system, control_params * const control,

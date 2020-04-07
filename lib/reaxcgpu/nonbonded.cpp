@@ -80,7 +80,7 @@ void vdW_Coulomb_Energy( reax_system *system, control_params *control,
 
         for ( pj = start_i; pj < end_i; ++pj )
         {
-            nbr_pj = &far_nbr_list->far_nbr_list[pj];
+            nbr_pj = (&far_nbr_list->select.far_nbr_list[pj]);
             j = nbr_pj->nbr;
             orig_j = system->my_atoms[j].orig_id;
 
@@ -253,7 +253,7 @@ void Tabulated_vdW_Coulomb_Energy( reax_system *system, control_params *control,
 
         for ( pj = start_i; pj < end_i; ++pj )
         {
-            nbr_pj = &far_nbr_list->far_nbr_list[pj];
+            nbr_pj = &(far_nbr_list->select.far_nbr_list[pj]);
             j = nbr_pj->nbr;
             orig_j = system->my_atoms[j].orig_id;
 

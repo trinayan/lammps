@@ -151,7 +151,7 @@ int Generate_Neighbor_Lists( reax_system *system, simulation_data *data,
 
                                     if ( d <= cutoff )
                                     {
-                                        nbr_data = &far_nbr_list->far_nbr_list[num_far];
+                                        nbr_data = (&far_nbr_list->select.far_nbr_list[num_far]);
                                         nbr_data->nbr = m;
                                         nbr_data->d = SQRT( d );
                                         rvec_Copy( nbr_data->dvec, dvec );

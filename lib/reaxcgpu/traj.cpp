@@ -803,9 +803,9 @@ int Write_Bonds( reax_system *system, control_params *control, reax_list *bonds,
     for ( i = 0; i < system->n; ++i )
         for ( pj = Start_Index(i, bonds); pj < End_Index(i, bonds); ++pj )
         {
-            j = bonds->bond_list[pj].nbr;
+            j = bonds->select.bond_list[pj].nbr;
             if ( system->my_atoms[i].orig_id <= system->my_atoms[j].orig_id &&
-                    bonds->bond_list[pj].bo_data.BO >= control->bg_cut )
+                    bonds->select.bond_list[pj].bo_data.BO >= control->bg_cut )
                 ++my_bonds;
         }
     /* allreduce - total number of bonds */
@@ -834,7 +834,7 @@ int Write_Bonds( reax_system *system, control_params *control, reax_list *bonds,
     for ( i = 0; i < system->n; ++i )
         for ( pj = Start_Index(i, bonds); pj < End_Index(i, bonds); ++pj )
         {
-            bo_ij = &bonds->bond_list[pj];
+            bo_ij = &bonds->select.bond_list[pj];
             j = bo_ij->nbr;
 
             if ( system->my_atoms[i].orig_id <= system->my_atoms[j].orig_id &&
@@ -919,7 +919,7 @@ int Write_Angles( reax_system *system, control_params *control,
     {
         for ( pi = Start_Index(j, bonds); pi < End_Index(j, bonds); ++pi )
         {
-            bo_ij = &bonds->bond_list[pi];
+            bo_ij = &bonds->select.bond_list[pi];
             i     = bo_ij->nbr;
 
             if ( bo_ij->bo_data.BO >= control->bg_cut ) // physical j&i bond
@@ -927,9 +927,9 @@ int Write_Angles( reax_system *system, control_params *control,
                 for ( pk = Start_Index( pi, thb_intrs );
                         pk < End_Index( pi, thb_intrs ); ++pk )
                 {
-                    angle_ijk = &thb_intrs->three_body_list[pk];
+                    angle_ijk = &thb_intrs->select.three_body_list[pk];
                     k = angle_ijk->thb;
-                    bo_jk = &bonds->bond_list[ angle_ijk->pthb ];
+                    bo_jk = &bonds->select.bond_list[ angle_ijk->pthb ];
 
                     if ( system->my_atoms[i].orig_id < system->my_atoms[k].orig_id &&
                             bo_jk->bo_data.BO >= control->bg_cut ) // physical j&k bond
@@ -967,7 +967,7 @@ int Write_Angles( reax_system *system, control_params *control,
     {
         for ( pi = Start_Index(j, bonds); pi < End_Index(j, bonds); ++pi )
         {
-            bo_ij = &bonds->bond_list[pi];
+            bo_ij = &bonds->select.bond_list[pi];
             i = bo_ij->nbr;
 
             if ( bo_ij->bo_data.BO >= control->bg_cut ) // physical j&i bond
@@ -975,9 +975,9 @@ int Write_Angles( reax_system *system, control_params *control,
                 for ( pk = Start_Index( pi, thb_intrs );
                         pk < End_Index( pi, thb_intrs ); ++pk )
                 {
-                    angle_ijk = &thb_intrs->three_body_list[pk];
+                    angle_ijk = &thb_intrs->select.three_body_list[pk];
                     k = angle_ijk->thb;
-                    bo_jk = &bonds->bond_list[ angle_ijk->pthb ];
+                    bo_jk = &bonds->select.bond_list[ angle_ijk->pthb ];
 
                     if ( system->my_atoms[i].orig_id < system->my_atoms[k].orig_id &&
                             bo_jk->bo_data.BO >= control->bg_cut )   // physical j&k bond

@@ -87,7 +87,7 @@ void Hydrogen_Bonds( reax_system * const system, control_params * const control,
             /* search bonded atoms i to atom j (hydrogen atom) for potential hydrogen bonding */
             for ( pi = start_j; pi < end_j; ++pi )
             {
-                pbond_ij = &bond_list->bond_list[pi];
+                pbond_ij = (&bond_list->select.bond_list[pi]);
                 i = pbond_ij->nbr;
                 bo_ij = &pbond_ij->bo_data;
                 type_i = system->my_atoms[i].type;
@@ -102,7 +102,7 @@ void Hydrogen_Bonds( reax_system * const system, control_params * const control,
             /* for each hbond of atom j */
             for ( pk = hb_start_j; pk < hb_end_j; ++pk )
             {
-                phbond_jk = &hbond_list->hbond_list[pk];
+                phbond_jk = (&hbond_list->select.hbond_list[pk]);
                 k = phbond_jk->nbr;
                 type_k = system->my_atoms[k].type;
                 nbr_jk = phbond_jk->ptr;
@@ -113,7 +113,7 @@ void Hydrogen_Bonds( reax_system * const system, control_params * const control,
                 for ( itr = 0; itr < top; ++itr )
                 {
                     pi = hblist[itr];
-                    pbond_ij = &bond_list->bond_list[pi];
+                    pbond_ij = (&bond_list->select.bond_list[pi]);
                     i = pbond_ij->nbr;
 
                     if ( system->my_atoms[i].orig_id != system->my_atoms[k].orig_id )

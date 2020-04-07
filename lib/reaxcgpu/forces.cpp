@@ -138,7 +138,7 @@ void Compute_Total_Force( reax_system * const system, control_params * const con
     {
         for ( pj = Start_Index(i, bond_list); pj < End_Index(i, bond_list); ++pj )
         {
-            if ( i < bond_list->bond_list[pj].nbr )
+            if ( i < bond_list->select.bond_list[pj].nbr )
             {
                 if ( control->virial == 0 )
                 {
@@ -362,7 +362,7 @@ int Init_Forces( reax_system * const system, control_params * const control,
         /* update i-j distance - check if j is within cutoff */
         for ( pj = start_i; pj < end_i; ++pj )
         {
-            nbr_pj = &far_nbr_list->far_nbr_list[pj];
+            nbr_pj = &far_nbr_list->select.far_nbr_list[pj];
             j = nbr_pj->nbr;
             atom_j = &system->my_atoms[j];
 
@@ -434,9 +434,9 @@ int Init_Forces( reax_system * const system, control_params * const control,
 
                         if ( ihb == H_ATOM && jhb == H_BONDING_ATOM )
                         {
-                            hbond_list->hbond_list[ihb_top].nbr = j;
-                            hbond_list->hbond_list[ihb_top].scl = 1;
-                            hbond_list->hbond_list[ihb_top].ptr = nbr_pj;
+                            hbond_list->select.hbond_list[ihb_top].nbr = j;
+                            hbond_list->select.hbond_list[ihb_top].scl = 1;
+                            hbond_list->select.hbond_list[ihb_top].ptr = nbr_pj;
                             ++ihb_top;
                         }
 #if defined(HALF_LIST)
@@ -493,15 +493,15 @@ int Init_Forces( reax_system * const system, control_params * const control,
 
         for ( btop_i = start_i; btop_i < end_i; ++btop_i )
         {
-            j = bond_list->bond_list[btop_i].nbr;
+            j = bond_list->select.bond_list[btop_i].nbr;
             start_j = Start_Index( j, bond_list );
             end_j = End_Index( j, bond_list );
             
             for ( btop_j = start_j; btop_j < end_j; ++btop_j )
             {
-                if ( bond_list->bond_list[btop_j].nbr == i )
+                if ( bond_list->select.bond_list[btop_j].nbr == i )
                 {
-                    bond_list->bond_list[btop_i].sym_index = btop_j;
+                    bond_list->select.bond_list[btop_i].sym_index = btop_j;
                     break;
                 }
             }
@@ -625,7 +625,7 @@ int Init_Forces_No_Charges( reax_system * const system, control_params * const c
         /* update i-j distance - check if j is within cutoff */
         for ( pj = start_i; pj < end_i; ++pj )
         {
-            nbr_pj = &far_nbr_list->far_nbr_list[pj];
+            nbr_pj = &far_nbr_list->select.far_nbr_list[pj];
             j = nbr_pj->nbr;
             atom_j = &system->my_atoms[j];
 
@@ -676,9 +676,9 @@ int Init_Forces_No_Charges( reax_system * const system, control_params * const c
 
                         if ( ihb == H_ATOM && jhb == H_BONDING_ATOM )
                         {
-                            hbond_list->hbond_list[ihb_top].nbr = j;
-                            hbond_list->hbond_list[ihb_top].scl = 1;
-                            hbond_list->hbond_list[ihb_top].ptr = nbr_pj;
+                            hbond_list->select.hbond_list[ihb_top].nbr = j;
+                            hbond_list->select.hbond_list[ihb_top].scl = 1;
+                            hbond_list->select.hbond_list[ihb_top].ptr = nbr_pj;
                             ++ihb_top;
                         }
 #if defined(HALF_LIST)
@@ -731,15 +731,15 @@ int Init_Forces_No_Charges( reax_system * const system, control_params * const c
 
         for ( btop_i = start_i; btop_i < end_i; ++btop_i )
         {
-            j = bond_list->bond_list[btop_i].nbr;
+            j = bond_list->select.bond_list[btop_i].nbr;
             start_j = Start_Index( j, bond_list );
             end_j = End_Index( j, bond_list );
             
             for ( btop_j = start_j; btop_j < end_j; ++btop_j )
             {
-                if ( bond_list->bond_list[btop_j].nbr == i )
+                if ( bond_list->select.bond_list[btop_j].nbr == i )
                 {
-                    bond_list->bond_list[btop_i].sym_index = btop_j;
+                    bond_list->select.bond_list[btop_i].sym_index = btop_j;
                     break;
                 }
             }
@@ -824,7 +824,7 @@ void Estimate_Storages( reax_system * const system, control_params * const contr
 
         for ( pj = start_i; pj < end_i; ++pj )
         {
-            nbr_pj = &far_nbr_list->far_nbr_list[pj];
+            nbr_pj = &far_nbr_list->select.far_nbr_list[pj];
             j = nbr_pj->nbr;
 #if defined(HALF_LIST)
             atom_j = &system->my_atoms[j];

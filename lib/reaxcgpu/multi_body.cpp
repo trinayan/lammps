@@ -97,16 +97,16 @@ void Atom_Energy( reax_system * const system, control_params * const control,
             for ( pj = Start_Index(i, bond_list); pj < End_Index(i, bond_list); ++pj )
             {
                 if ( system->my_atoms[i].orig_id <
-                        system->my_atoms[bond_list->bond_list[pj].nbr].orig_id )
+                        system->my_atoms[bond_list->select.bond_list[pj].nbr].orig_id )
                 {
-                    j = bond_list->bond_list[pj].nbr;
+                    j = bond_list->select.bond_list[pj].nbr;
                     type_j = system->my_atoms[j].type;
 
                     if ( strncmp( system->reax_param.sbp[type_j].name, "C", 15 ) != 0 )
                     {
                         twbp = &system->reax_param.tbp[
                             index_tbp(type_i, type_j, system->reax_param.num_atom_types) ];
-                        bo_ij = &bond_list->bond_list[pj].bo_data;
+                        bo_ij = &bond_list->select.bond_list[pj].bo_data;
                         Di = workspace->Delta[i];
                         vov3 = bo_ij->BO - Di - 0.040 * POW( Di, 4.0 );
 
@@ -161,9 +161,9 @@ void Atom_Energy( reax_system * const system, control_params * const control,
 
         for ( pj = Start_Index(i, bond_list); pj < End_Index(i, bond_list); ++pj )
         {
-            j = bond_list->bond_list[pj].nbr;
+            j = bond_list->select.bond_list[pj].nbr;
             type_j = system->my_atoms[j].type;
-            bo_ij = &bond_list->bond_list[pj].bo_data;
+            bo_ij = &bond_list->select.bond_list[pj].bo_data;
             twbp = &system->reax_param.tbp[
                     index_tbp(type_i, type_j, system->reax_param.num_atom_types) ];
 
@@ -225,7 +225,7 @@ void Atom_Energy( reax_system * const system, control_params * const control,
 
         for ( pj = Start_Index(i, bond_list); pj < End_Index(i, bond_list); ++pj )
         {
-            pbond = &bond_list->bond_list[pj];
+            pbond = &bond_list->select.bond_list[pj];
             j = pbond->nbr;
             bo_ij = &pbond->bo_data;
             twbp  = &system->reax_param.tbp[

@@ -76,8 +76,8 @@ void Visit_Bonds( int atom, int *mark, int *type, reax_system *system,
 
     for ( i = start; i < end; ++i )
     {
-        nbr = bonds->bond_list[i].nbr;
-        bo = bonds->bond_list[i].bo_data.BO;
+        nbr = bonds->select.bond_list[i].nbr;
+        bo = bonds->select.bond_list[i].bo_data.BO;
 
         if ( bo >= control->bg_cut && !mark[nbr] )
         {

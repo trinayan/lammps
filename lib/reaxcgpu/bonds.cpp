@@ -56,7 +56,7 @@ void Bonds( reax_system * const system, control_params * const control,
 
         for ( pj = start_i; pj < end_i; ++pj )
         {
-            j = bond_list->bond_list[pj].nbr;
+            j = bond_list->select.bond_list[pj].nbr;
 
             if ( system->my_atoms[i].orig_id <= system->my_atoms[j].orig_id )
             {
@@ -66,7 +66,7 @@ void Bonds( reax_system * const system, control_params * const control,
                 sbp_j = &system->reax_param.sbp[type_j];
                 twbp = &system->reax_param.tbp[
                     index_tbp(type_i, type_j, system->reax_param.num_atom_types) ];
-                bo_ij = &bond_list->bond_list[pj].bo_data;
+                bo_ij = &bond_list->select.bond_list[pj].bo_data;
 
                 /* calculate the constants */
                 pow_BOs_be2 = POW( bo_ij->BO_s, twbp->p_be2 );

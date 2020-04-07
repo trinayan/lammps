@@ -192,7 +192,7 @@ void Torsion_Angles( reax_system * const system, control_params * const control,
 
         for ( pk = start_j; pk < end_j; ++pk )
         {
-            pbond_jk = &bond_list->bond_list[pk];
+            pbond_jk = &bond_list->select.bond_list[pk];
 
             k = pbond_jk->nbr;
             bo_jk = &pbond_jk->bo_data;
@@ -232,10 +232,10 @@ void Torsion_Angles( reax_system * const system, control_params * const control,
                     /* pick i up from j-k interaction where j is the central atom */
                     for ( pi = start_pk; pi < end_pk; ++pi )
                     {
-                        p_ijk = &thb_list->three_body_list[pi];
+                        p_ijk = &thb_list->select.three_body_list[pi];
                         /* pij is pointer to i on j's bond_list */
                         pij = p_ijk->pthb;
-                        pbond_ij = &bond_list->bond_list[pij];
+                        pbond_ij = &bond_list->select.bond_list[pij];
                         bo_ij = &pbond_ij->bo_data;
 
                         if ( bo_ij->BO > control->thb_cut )
@@ -268,11 +268,11 @@ void Torsion_Angles( reax_system * const system, control_params * const control,
                             /* pick l up from j-k interaction where k is the central atom */
                             for ( pl = start_pj; pl < end_pj; ++pl )
                             {
-                                p_jkl = &thb_list->three_body_list[pl];
+                                p_jkl = &thb_list->select.three_body_list[pl];
                                 l = p_jkl->thb;
                                 /* a pointer to l on k's bond_list! */
                                 plk = p_jkl->pthb;
-                                pbond_kl = &bond_list->bond_list[plk];
+                                pbond_kl = &bond_list->select.bond_list[plk];
                                 bo_kl = &pbond_kl->bo_data;
                                 type_l = system->my_atoms[l].type;
 				fbh = &system->reax_param.fbp[

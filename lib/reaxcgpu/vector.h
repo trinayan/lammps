@@ -315,15 +315,12 @@ CUDA_HOST_DEVICE static inline void rvec_MakeZero( rvec v )
 }
 
 
-#if defined(PURE_REAX)
 static inline void rvec_Random( rvec v )
 {
     v[0] = Random( 2.0 ) - 1.0;
     v[1] = Random( 2.0 ) - 1.0;
     v[2] = Random( 2.0 ) - 1.0;
 }
-#endif
-
 
 CUDA_HOST_DEVICE static inline void rtensor_Multiply( rtensor ret,
         const rtensor m1, const rtensor m2 )

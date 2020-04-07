@@ -66,33 +66,33 @@ void Make_List( int n, int max_intrs, int type, reax_list * const l )
     switch ( l->type )
     {
     case TYP_VOID:
-        l->v = smalloc( sizeof(void*) * l->max_intrs, "Make_List::v" );
+        l->select.v = smalloc( sizeof(void*) * l->max_intrs, "Make_List::v" );
         break;
 
     case TYP_BOND:
-        l->bond_list = smalloc( sizeof(bond_data) * l->max_intrs, "Make_List::bonds" );
+        l->select.bond_list = smalloc( sizeof(bond_data) * l->max_intrs, "Make_List::bonds" );
         break;
 
     case TYP_THREE_BODY:
-        l->three_body_list = smalloc( sizeof(three_body_interaction_data) * l->max_intrs,
+        l->select.three_body_list = smalloc( sizeof(three_body_interaction_data) * l->max_intrs,
                 "Make_List::three_bodies" );
         break;
 
     case TYP_HBOND:
-        l->hbond_list = smalloc( sizeof(hbond_data) * l->max_intrs, "Make_List::hbonds" );
+        l->select.hbond_list = smalloc( sizeof(hbond_data) * l->max_intrs, "Make_List::hbonds" );
         break;
 
     case TYP_FAR_NEIGHBOR:
-        l->far_nbr_list = smalloc( sizeof(far_neighbor_data) * l->max_intrs,
+        l->select.far_nbr_list = smalloc( sizeof(far_neighbor_data) * l->max_intrs,
                 "Make_List::far_nbrs" );
         break;
 
     case TYP_DBO:
-        l->dbo_list = smalloc( sizeof(dbond_data) * l->max_intrs, "Make_List::dbonds" );
+        l->select.dbo_list = smalloc( sizeof(dbond_data) * l->max_intrs, "Make_List::dbonds" );
         break;
 
     case TYP_DDELTA:
-        l->dDelta_list = smalloc( sizeof(dDelta_data) * l->max_intrs, "Make_List::dDeltas" );
+        l->select.dDelta_list = smalloc( sizeof(dDelta_data) * l->max_intrs, "Make_List::dDeltas" );
         break;
 
     default:
@@ -122,31 +122,31 @@ void Delete_List( reax_list * const l )
     switch ( l->type )
     {
     case TYP_VOID:
-        sfree( l->v, "Delete_List::v" );
+        sfree( l->select.v, "Delete_List::v" );
         break;
 
     case TYP_BOND:
-        sfree( l->bond_list, "Delete_List::bonds" );
+        sfree( l->select.bond_list, "Delete_List::bonds" );
         break;
 
     case TYP_THREE_BODY:
-        sfree( l->three_body_list, "Delete_List::three_bodies" );
+        sfree( l->select.three_body_list, "Delete_List::three_bodies" );
         break;
 
     case TYP_HBOND:
-        sfree( l->hbond_list, "Delete_List::hbonds" );
+        sfree( l->select.hbond_list, "Delete_List::hbonds" );
         break;
 
     case TYP_FAR_NEIGHBOR:
-        sfree( l->far_nbr_list, "Delete_List::far_nbrs" );
+        sfree( l->select.far_nbr_list, "Delete_List::far_nbrs" );
         break;
 
     case TYP_DBO:
-        sfree( l->dbo_list, "Delete_List::dbos" );
+        sfree( l->select.dbo_list, "Delete_List::dbos" );
         break;
 
     case TYP_DDELTA:
-        sfree( l->dDelta_list, "Delete_List::dDeltas" );
+        sfree( l->select.dDelta_list, "Delete_List::dDeltas" );
         break;
 
     default:

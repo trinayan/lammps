@@ -109,7 +109,7 @@ CUDA_GLOBAL void k_vdW_coulomb_energy( reax_atom *my_atoms,
         while ( pj < end_i )
         {
 
-            nbr_pj = &far_nbrs->far_nbr_list[pj];
+            nbr_pj = &far_nbrs->select.far_nbr_list[pj];
             j = nbr_pj->nbr;
             orig_j  = my_atoms[j].orig_id;
 
@@ -408,7 +408,7 @@ CUDA_GLOBAL void k_tabulated_vdW_coulomb_energy( reax_atom *my_atoms,
 
     for ( pj = start_i; pj < end_i; ++pj )
     {
-        nbr_pj = &far_nbrs->far_nbr_list[pj];
+        nbr_pj = &far_nbrs->select.far_nbr_list[pj];
         j = nbr_pj->nbr;
         orig_j  = my_atoms[j].orig_id;
 

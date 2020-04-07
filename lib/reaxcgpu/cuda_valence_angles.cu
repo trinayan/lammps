@@ -93,7 +93,7 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 
     for( t = start_j; t < end_j; ++t )
     {
-        bo_jt = &bonds->bond_list[t].bo_data;
+        bo_jt = &bonds->select.bond_list[t].bo_data;
         SBOp += (bo_jt->BO_pi + bo_jt->BO_pi2);
         temp = SQR( bo_jt->BO );
         temp *= temp;
@@ -143,7 +143,7 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
     {
         num_thb_intrs = Cuda_Start_Index( pi, thb_intrs );
 
-        pbond_ij = &bonds->bond_list[pi];
+        pbond_ij = &bonds->select.bond_list[pi];
         bo_ij = &pbond_ij->bo_data;
         BOA_ij = bo_ij->BO - control->thb_cut;
 
@@ -193,12 +193,12 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
                     continue;
                 }
 
-                pbond_jk = &bonds->bond_list[pk];
+                pbond_jk = &bonds->select.bond_list[pk];
                 bo_jk = &pbond_jk->bo_data;
                 BOA_jk = bo_jk->BO - control->thb_cut;
                 k = pbond_jk->nbr;
                 type_k = my_atoms[k].type;
-                p_ijk = &thb_intrs->three_body_list[num_thb_intrs];
+                p_ijk = &thb_intrs->select.three_body_list[num_thb_intrs];
 
                 //CHANGE ORIGINAL
                 //if ((BOA_jk <= 0) || ((j >= n) && (k >= n))) continue;
@@ -372,7 +372,7 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 
                                 for ( t = start_j; t < end_j; ++t )
                                 {
-                                    pbond_jt = &bonds->bond_list[t];
+                                    pbond_jt = &bonds->select.bond_list[t];
                                     bo_jt = &pbond_jt->bo_data;
                                     temp_bo_jt = bo_jt->BO;
                                     temp = CUBE( temp_bo_jt );
@@ -544,8 +544,8 @@ CUDA_GLOBAL void Cuda_Valence_Angles_PostProcess( reax_atom *atoms,
 
     for( pj = Cuda_Start_Index(i, bonds); pj < Cuda_End_Index(i, bonds); ++pj )
     {
-        pbond = &bonds->bond_list[pj];
-        sym_index_bond = &bonds->bond_list[ pbond->sym_index ];
+        pbond = &bonds->select.bond_list[pj];
+        sym_index_bond = &bonds->select.bond_list[ pbond->sym_index ];
 
         workspace->CdDelta[i] += sym_index_bond->va_CdDelta;
 
@@ -583,7 +583,7 @@ CUDA_GLOBAL void Estimate_Cuda_Valence_Angles( reax_atom *my_atoms,
         num_thb_intrs = 0;
         count[ pi ] = 0;
 
-        pbond_ij = &bonds->bond_list[pi];
+        pbond_ij = &bonds->select.bond_list[pi];
         bo_ij = &pbond_ij->bo_data;
         BOA_ij = bo_ij->BO - control->thb_cut;
 
@@ -596,7 +596,7 @@ CUDA_GLOBAL void Estimate_Cuda_Valence_Angles( reax_atom *my_atoms,
                     continue;
                 }
 
-                pbond_jk = &bonds->bond_list[pk];
+                pbond_jk = &bonds->select.bond_list[pk];
                 bo_jk = &pbond_jk->bo_data;
                 BOA_jk = bo_jk->BO - control->thb_cut;
 

@@ -39,10 +39,10 @@ void Add_dBond_to_Forces_NPT( int i, int pj, simulation_data * const data,
     ivec rel_box;
     reax_list * const bond_list = lists[BONDS];
 
-    nbr_j = &bond_list->bond_list[pj];
+    nbr_j = (&bond_list->select.bond_list[pj]);
     j = nbr_j->nbr;
     bo_ij = &nbr_j->bo_data;
-    bo_ji = &bond_list->bond_list[ nbr_j->sym_index ].bo_data;
+    bo_ji = (&bond_list->select.bond_list[ nbr_j->sym_index ].bo_data);
 
     coef.C1dbo = bo_ij->C1dbo * (bo_ij->Cdbo + bo_ji->Cdbo);
     coef.C2dbo = bo_ij->C2dbo * (bo_ij->Cdbo + bo_ji->Cdbo);
@@ -65,7 +65,7 @@ void Add_dBond_to_Forces_NPT( int i, int pj, simulation_data * const data,
     /* forces related to atom i, first neighbors of atom i */
     for ( pk = Start_Index(i, bond_list); pk < End_Index(i, bond_list); ++pk )
     {
-        nbr_k = &bond_list->bond_list[pk];
+        nbr_k = (&bond_list->select.bond_list[pk]);
         k = nbr_k->nbr;
 
         rvec_Scale( temp, -1.0 * coef.C2dbo, nbr_k->bo_data.dBOp );       /*2nd, dBO*/
@@ -101,7 +101,7 @@ void Add_dBond_to_Forces_NPT( int i, int pj, simulation_data * const data,
     /* forces and pressure related to atom j, first neighbors of atom j */
     for ( pk = Start_Index(j, bond_list); pk < End_Index(j, bond_list); ++pk )
     {
-        nbr_k = &bond_list->bond_list[pk];
+        nbr_k = &bond_list->select.bond_list[pk];
         k = nbr_k->nbr;
 
         rvec_Scale( temp, -1.0 * coef.C3dbo, nbr_k->bo_data.dBOp );      /*3rd,dBO*/
@@ -152,10 +152,10 @@ void Add_dBond_to_Forces( int i, int pj, storage * const workspace,
     dbond_coefficients coef;
     reax_list * const bond_list = lists[BONDS];
 
-    nbr_j = &bond_list->bond_list[pj];
+    nbr_j = (&bond_list->select.bond_list[pj]);
     j = nbr_j->nbr;
     bo_ij = &nbr_j->bo_data;
-    bo_ji = &bond_list->bond_list[ nbr_j->sym_index ].bo_data;
+    bo_ji = (&bond_list->select.bond_list[ nbr_j->sym_index ].bo_data);
 
     coef.C1dbo = bo_ij->C1dbo * (bo_ij->Cdbo + bo_ji->Cdbo);
     coef.C2dbo = bo_ij->C2dbo * (bo_ij->Cdbo + bo_ji->Cdbo);
@@ -177,7 +177,7 @@ void Add_dBond_to_Forces( int i, int pj, storage * const workspace,
 
     for ( pk = Start_Index(i, bond_list); pk < End_Index(i, bond_list); ++pk )
     {
-        nbr_k = &bond_list->bond_list[pk];
+        nbr_k = (&bond_list->select.bond_list[pk]);
         k = nbr_k->nbr;
 
         /*2nd,dBO*/
@@ -216,7 +216,7 @@ void Add_dBond_to_Forces( int i, int pj, storage * const workspace,
 
     for ( pk = Start_Index(j, bond_list); pk < End_Index(j, bond_list); ++pk )
     {
-        nbr_k = &bond_list->bond_list[pk];
+        nbr_k = (&bond_list->select.bond_list[pk]);
         k = nbr_k->nbr;
 
         /*3rd, dBO*/
@@ -314,7 +314,7 @@ int BOp( storage * const workspace, reax_list * const bond_list,
     if ( BO >= bo_cut )
     {
         /* bonds i-j and j-i */
-        ibond = &bond_list->bond_list[btop_i];
+        ibond = (&bond_list->select.bond_list[btop_i]);
 #if defined(HALF_LIST)
         btop_j = End_Index( j, bond_list );
         jbond = &bond_list->bond_list[btop_j];
@@ -519,9 +519,9 @@ void BO( reax_system * const system, control_params * const control,
 
         for ( pj = start_i; pj < end_i; ++pj )
         {
-            j = bond_list->bond_list[pj].nbr;
+            j = bond_list->select.bond_list[pj].nbr;
             type_j = system->my_atoms[j].type;
-            bo_ij = &bond_list->bond_list[pj].bo_data;
+            bo_ij = &bond_list->select.bond_list[pj].bo_data;
 
             //TODO
             //if( i < j || workspace->bond_mark[j] > 3 ) {
@@ -721,8 +721,8 @@ void BO( reax_system * const system, control_params * const control,
             {
                 /* We only need to update bond orders from bo_ji
                  * everything else is set in uncorrected_bo calculations */
-                sym_index = bond_list->bond_list[pj].sym_index;
-                bo_ji = &bond_list->bond_list[ sym_index ].bo_data;
+                sym_index = bond_list->select.bond_list[pj].sym_index;
+                bo_ji = &bond_list->select.bond_list[ sym_index ].bo_data;
                 bo_ij->BO = bo_ji->BO;
                 bo_ij->BO_s = bo_ji->BO_s;
                 bo_ij->BO_pi = bo_ji->BO_pi;

@@ -11,12 +11,11 @@
 #include "cuda_system_props.h"
 #include "cuda_utils.h"
 
-#if defined(PURE_REAX)
-  #include "box.h"
-  #include "comm_tools.h"
-  #include "grid.h"
-  #include "init_md.h"
-  #include "io_tools.h"
+#include "box.h"
+#include "comm_tools.h"
+#include "grid.h"
+#include "init_md.h"
+#include "io_tools.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -24,24 +23,10 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-  #include "random.h"
-  #include "reset_tools.h"
-  #include "tool_box.h"
-  #include "vector.h"
-#elif defined(LAMMPS_REAX)
-  #include "reax_box.h"
-  #include "reax_comm_tools.h"
-  #include "reax_grid.h"
-  #include "reax_init_md.h"
-  #include "reax_io_tools.h"
-  #include "reax_list.h"
-  #include "reax_lookup.h"
-  #include "reax_random.h"
-  #include "reax_reset_tools.h"
-  #include "reax_tool_box.h"
-  #include "reax_vector.h"
-#endif
-
+#include "random.h"
+#include "reset_tools.h"
+#include "tool_box.h"
+#include "vector.h"
 
 static void Cuda_Init_Scratch_Space( storage *workspace )
 {

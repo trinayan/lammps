@@ -794,20 +794,20 @@ void Print_Far_Neighbors( reax_system *system, reax_list **lists,
 
         for ( j = Start_Index(i, far_nbrs); j < End_Index(i, far_nbrs); ++j )
         {
-            nbr = far_nbrs->far_nbr_list[j].nbr;
+            nbr = far_nbrs->select.far_nbr_list[j].nbr;
             id_j = system->my_atoms[nbr].orig_id;
 
             fprintf( fout, "%6d%6d%24.15e%24.15e%24.15e%24.15e\n",
-                     id_i, id_j, far_nbrs->far_nbr_list[j].d,
-                     far_nbrs->far_nbr_list[j].dvec[0],
-                     far_nbrs->far_nbr_list[j].dvec[1],
-                     far_nbrs->far_nbr_list[j].dvec[2] );
+                     id_i, id_j, far_nbrs->select.far_nbr_list[j].d,
+                     far_nbrs->select.far_nbr_list[j].dvec[0],
+                     far_nbrs->select.far_nbr_list[j].dvec[1],
+                     far_nbrs->select.far_nbr_list[j].dvec[2] );
 
             fprintf( fout, "%6d%6d%24.15e%24.15e%24.15e%24.15e\n",
-                     id_j, id_i, far_nbrs->far_nbr_list[j].d,
-                     -far_nbrs->far_nbr_list[j].dvec[0],
-                     -far_nbrs->far_nbr_list[j].dvec[1],
-                     -far_nbrs->far_nbr_list[j].dvec[2] );
+                     id_j, id_i, far_nbrs->select.far_nbr_list[j].d,
+                     -far_nbrs->select.far_nbr_list[j].dvec[0],
+                     -far_nbrs->select.far_nbr_list[j].dvec[1],
+                     -far_nbrs->select.far_nbr_list[j].dvec[2] );
         }
     }
 
@@ -1000,7 +1000,7 @@ void Print_HBonds( reax_system *system, reax_list **lists,
     {
         for ( pj = Start_Index(i, hbonds); pj < End_Index(i, hbonds); ++pj )
         {
-            phbond = &hbonds->hbond_list[pj];
+            phbond = &hbonds->select.hbond_list[pj];
 
             fprintf( fout, "%8d%8d %24.15e %24.15e %24.15e\n", i, phbond->nbr,
                     phbond->ptr->dvec[0], phbond->ptr->dvec[1], phbond->ptr->dvec[2] );
@@ -1051,7 +1051,7 @@ void Print_Bonds( reax_system *system, reax_list **lists,
     {
         for ( pj = Start_Index(i, bonds); pj < End_Index(i, bonds); ++pj )
         {
-            pbond = &bonds->bond_list[pj];
+            pbond = &bonds->select.bond_list[pj];
             bo_ij = &pbond->bo_data;
 //            fprintf( fout, "%6d%6d%23.15e%23.15e%23.15e%23.15e%23.15e\n",
 //                    system->my_atoms[i].orig_id, system->my_atoms[j].orig_id,
@@ -1082,7 +1082,7 @@ void Print_Three_Bodies( reax_system *system, reax_list **lists,
     {
         for ( pj = Start_Index(i, thb_list); pj < End_Index(i, thb_list); ++pj )
         {
-            thb_data = &thb_list->three_body_list[pj];
+            thb_data = &thb_list->select.three_body_list[pj];
 
             fprintf( fout, "%12d %12d %24.15f %24.15f %24.15f %24.15f %24.15f %24.15f %24.15f %24.15f %24.15f %24.15f %24.15f\n",
                     thb_data->thb, thb_data->pthb, thb_data->theta, thb_data->cos_theta,
@@ -1121,7 +1121,7 @@ void Print_Bond_List2( reax_system *system, reax_list *bonds, char *fname )
 
         for ( pj = Start_Index(i, bonds); pj < End_Index(i, bonds); ++pj )
         {
-            nbr = bonds->bond_list[pj].nbr;
+            nbr = bonds->select.bond_list[pj].nbr;
             id_j = system->my_atoms[nbr].orig_id;
 
             if ( id_i < id_j )
@@ -1192,7 +1192,7 @@ void Print_Far_Neighbors_List_Adj_Format( reax_system *system,
 
         for ( pj = Start_Index(i, list); pj < End_Index(i, list); ++pj )
         {
-            nbr = list->far_nbr_list[pj].nbr;
+            nbr = list->select.far_nbr_list[pj].nbr;
             id_j = system->my_atoms[nbr].orig_id;
             intrs[cnt++] = id_j;
         }

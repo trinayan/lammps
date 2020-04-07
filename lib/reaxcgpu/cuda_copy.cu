@@ -153,26 +153,26 @@ void Output_Sync_Lists( reax_list *host_list, reax_list *device_list, int type )
     switch ( type )
     {   
         case TYP_FAR_NEIGHBOR:
-            copy_host_device( host_list->far_nbr_list, device_list->far_nbr_list,
+            copy_host_device( host_list->select.far_nbr_list, device_list->select.far_nbr_list,
                     sizeof(far_neighbor_data) * device_list->max_intrs,
                     hipMemcpyDeviceToHost, "Output_Sync_Lists::far_neighbor_list" );
             break;
 
         case TYP_BOND:
-            copy_host_device( host_list->bond_list, device_list->bond_list,
+            copy_host_device( host_list->select.bond_list, device_list->select.bond_list,
                     sizeof(bond_data) * device_list->max_intrs,
                     hipMemcpyDeviceToHost, "Output_Sync_Lists::bond_list" );
             break;
 
         case TYP_HBOND:
-            copy_host_device( host_list->hbond_list, device_list->hbond_list,
+            copy_host_device( host_list->select.hbond_list, device_list->select.hbond_list,
                     sizeof(hbond_data) * device_list->max_intrs,
                     hipMemcpyDeviceToHost, "Output_Sync_Lists::hbond_list" );
             break;
 
         case TYP_THREE_BODY:
-            copy_host_device( host_list->three_body_list,
-                    device_list->three_body_list,
+            copy_host_device( host_list->select.three_body_list,
+                    device_list->select.three_body_list,
                     sizeof(three_body_interaction_data ) * device_list->max_intrs,
                     hipMemcpyDeviceToHost, "Output_Sync_Lists::three_body_list" );
             break;
