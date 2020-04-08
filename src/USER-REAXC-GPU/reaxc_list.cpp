@@ -33,9 +33,8 @@
 /************* allocate list space ******************/
 int Make_List(int n, int num_intrs, int type, reax_list *l )
 {
- printf("Make list is implemented in lib\n");
- exit(0); 
-/*  l->allocated = 1;
+ 
+l->allocated = 1;
 
   l->n = n;
   l->num_intrs = num_intrs;
@@ -96,16 +95,15 @@ int Make_List(int n, int num_intrs, int type, reax_list *l )
     l->error_ptr->one(FLERR,errmsg);
   }
 
-  return SUCCESS;*/
+  return SUCCESS;
 }
 
 
 void Delete_List( reax_list *l )
 {
 
- printf("Delete list is implemented in lib\n");
- exit(0);	
-/*  if (l->allocated == 0)
+	
+  if (l->allocated == 0)
     return;
   l->allocated = 0;
 
@@ -148,6 +146,6 @@ void Delete_List( reax_list *l )
     char errmsg[128];
     snprintf(errmsg, 128, "No %d list type defined", l->type);
     l->error_ptr->all(FLERR,errmsg);
-  }*/
+  }
 }
 

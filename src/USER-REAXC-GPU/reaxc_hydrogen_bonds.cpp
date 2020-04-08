@@ -36,6 +36,6 @@ void Hydrogen_Bonds( reax_system *system, control_params *control,
                      simulation_data *data, storage *workspace,
                      reax_list **lists, output_controls * /*out_control*/ )
 {
- printf("Hydrogen bonds not impl because of list \n");
-exit(0); 
+ printf("Not implemented because of twbp\n");
+ exit(0); 
 }

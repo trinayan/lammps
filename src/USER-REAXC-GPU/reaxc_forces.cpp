@@ -101,9 +101,18 @@ void Compute_Total_Force( reax_system *system, control_params *control,
                           simulation_data *data, storage *workspace,
                           reax_list **lists, mpi_datatypes * /*mpi_data*/ )
 {
+int i, pj;
+  reax_list *bonds = (*lists) + BONDS;
 
- printf("Compute forces not impl because of list");
- exit(0);
+  for( i = 0; i < system->N; ++i )
+    for( pj = Start_Index(i, bonds); pj < End_Index(i, bonds); ++pj )
+      if (i < bonds->select.bond_list[pj].nbr) {
+        if (control->virial == 0)
+          Add_dBond_to_Forces( system, i, pj, workspace, lists );
+        else
+          Add_dBond_to_Forces_NPT( i, pj, data, workspace, lists );
+      }
+ 
 }
 
 void Validate_Lists( reax_system *system, storage * /*workspace*/, reax_list **lists,
@@ -167,9 +176,10 @@ void Validate_Lists( reax_system *system, storage * /*workspace*/, reax_list **l
 
 void Init_Forces_noQEq( reax_system *system, control_params *control,
                         simulation_data *data, storage *workspace,
-                        reax_list **lists, output_controls * /*out_control*/ ) {
-printf("Init forces no impl because of list \n");
-exit(0);
+                        reax_list **lists, output_controls * /*out_control*/ ) 
+{
+  printf("Not implemented because of twbp\n");
+  exit(0);  
 }
 
 
@@ -177,8 +187,8 @@ void Estimate_Storages( reax_system *system, control_params *control,
                         reax_list **lists, int *Htop, int *hb_top,
                         int *bond_top, int *num_3body )
 {
-	printf("Estimate storage not impl because of list \n");
-	exit(0);
+ printf("Not implemented because of twbp\n");
+ exit(0);
 }
 
 

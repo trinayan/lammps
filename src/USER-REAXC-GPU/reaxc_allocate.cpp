@@ -118,7 +118,8 @@ void DeAllocate_System( reax_system *system )
 */
   printf("Fix fbp incompat first\n");
   exit(0);
-  }
+
+}
 
 
 /*************       workspace        *************/

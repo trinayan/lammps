@@ -44,6 +44,7 @@
   #include "config.h"
 #endif
 
+#define HAVE_HIP
 #include <ctype.h>
 #include <math.h>
 #include <mpi.h>
@@ -57,7 +58,7 @@
 
 #ifdef HAVE_HIP
   //#include <cuda.h>
-  #include <hip/hip_runtime.h>
+  //#include <hip/hip_runtime.h>
 #endif
 
 typedef LAMMPS_NS::tagint rc_tagint;
@@ -242,6 +243,7 @@ typedef LAMMPS_NS::bigint rc_bigint;
   #warn "No support for NaN"
   #define IS_NAN_REAL(a) (0)
 #endif
+
 
 /**************** RESOURCE CONSTANTS **********************/
 /* 500 MB */
@@ -2043,6 +2045,9 @@ struct reallocate_data
 
     int num_far;
     int num_3body;
+
+    int num_bonds;
+    int num_hbonds;
 };
 
 struct storage
@@ -2224,10 +2229,8 @@ struct reax_list
 /**/
 struct output_controls
 {
-#if defined(PURE_REAX)
     /**/
     MPI_File trj;
-#endif
     /**/
     FILE *strj;
     /**/
