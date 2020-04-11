@@ -15,7 +15,7 @@ HIPCCINCS = -I/opt/rocm/include -I/opt/rocm/hcc/include -I/usr/lib/x86_64-linux-
 
 HIPCCDEFS = $(HIPCCFLAGS) $(HIPCCINCS)
 
-CCINCS = -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include -I/usr/lib/x86_64-linux-gnu/openmpi/include -pthread
+CCINCS =  -D__HIP_PLATFORM_HCC__=   -I/opt/rocm/include -I/opt/rocm/hcc/include  -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include -I/usr/lib/x86_64-linux-gnu/openmpi/include -pthread
 CCFLAGS = -fpermissive  -w -ggdb
 CCDEFS =  $(CCFLAGS) $(CCINCS)
 

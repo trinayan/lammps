@@ -27,7 +27,7 @@
 #include "index_utils.h"
 
 #if defined(HAVE_HIP)
-  #include "cuda/cuda_lookup.h"
+  #include "cuda_lookup.h"
 #endif
 
 

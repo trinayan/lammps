@@ -27,7 +27,7 @@
 #include "tool_box.h"
 
 #if defined(HAVE_HIP)
-  #include "cuda/cuda_copy.h"
+  #include "cuda_copy.h"
 #endif
 
 

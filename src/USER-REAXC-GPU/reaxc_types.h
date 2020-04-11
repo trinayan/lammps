@@ -859,6 +859,10 @@ struct single_body_parameters
     real ecore2;
     /**/
     real acore2;
+
+     double lgcij;
+     double lgre;
+
 };
 
 
@@ -927,6 +931,8 @@ struct two_body_parameters
     /* electrostatic parameters,
      * note: this parameter is gamma^-3 and not gamma */
     real gamma;
+
+      double lgcij, lgre;
 
     /**/
     real v13cor;

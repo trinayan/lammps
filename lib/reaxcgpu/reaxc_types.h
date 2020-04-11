@@ -44,6 +44,7 @@
   #include "config.h"
 #endif
 
+#define HAVE_HIP
 #include <ctype.h>
 #include <math.h>
 #include <mpi.h>
@@ -242,6 +243,7 @@ typedef LAMMPS_NS::bigint rc_bigint;
   #warn "No support for NaN"
   #define IS_NAN_REAL(a) (0)
 #endif
+
 
 /**************** RESOURCE CONSTANTS **********************/
 /* 500 MB */
@@ -2043,6 +2045,9 @@ struct reallocate_data
 
     int num_far;
     int num_3body;
+
+    int num_bonds;
+    int num_hbonds;
 };
 
 struct storage

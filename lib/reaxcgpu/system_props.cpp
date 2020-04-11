@@ -26,7 +26,7 @@
 #include "vector.h"
 
 #if defined(HAVE_HIP)
-  #include "cuda/cuda_system_props.h"
+  #include "cuda_system_props.h"
 #endif
 
 

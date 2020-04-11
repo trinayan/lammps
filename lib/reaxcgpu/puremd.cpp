@@ -40,15 +40,15 @@
 #include "vector.h"
 
 #if defined(HAVE_HIP)
-  #include "cuda/cuda_copy.h"
-  #include "cuda/cuda_environment.h"
-  #include "cuda/cuda_forces.h"
-  #include "cuda/cuda_init_md.h"
-  #include "cuda/cuda_neighbors.h"
-  #include "cuda/cuda_post_evolve.h"
-  #include "cuda/cuda_reset_tools.h"
-  #include "cuda/cuda_system_props.h"
-  #include "cuda/cuda_utils.h"
+  #include "cuda_copy.h"
+  #include "cuda_environment.h"
+  #include "cuda_forces.h"
+  #include "cuda_init_md.h"
+  #include "cuda_neighbors.h"
+  #include "cuda_post_evolve.h"
+  #include "cuda_reset_tools.h"
+  #include "cuda_system_props.h"
+  #include "cuda_utils.h"
 #endif
 
 
