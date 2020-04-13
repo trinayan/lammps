@@ -505,55 +505,73 @@ char Read_Force_Field( FILE *fp, reax_interaction *reax,
     j = atoi(tmp[0]) - 1;
     k = atoi(tmp[1]) - 1;
 
+    index1 = j * __N + k;
+    index2 = k * __N + j;
+    
     if (j < reax->num_atom_types && k < reax->num_atom_types)        {
-      val = atof(tmp[2]);
-      if (val > 0.0) {
-        reax->tbp[j][k].D = val;
-        reax->tbp[k][j].D = val;
-      }
+   
+           val = atof(tmp[2]);
+            if (val > 0.0)
+            {
+                reax->tbp[index1].D = val;
+                reax->tbp[index2].D = val;
+            }
 
-      val = atof(tmp[3]);
-      if (val > 0.0) {
-        reax->tbp[j][k].r_vdW = 2 * val;
-        reax->tbp[k][j].r_vdW = 2 * val;
-      }
+            val = atof(tmp[3]);
+            if (val > 0.0)
+            {
+                reax->tbp[index1].r_vdW = 2 * val;
+                reax->tbp[index2].r_vdW = 2 * val;
+            }
 
-      val = atof(tmp[4]);
-      if (val > 0.0) {
-        reax->tbp[j][k].alpha = val;
-        reax->tbp[k][j].alpha = val;
-      }
+            val = atof(tmp[4]);
+            if (val > 0.0)
+            {
+                reax->tbp[index1].alpha = val;
+                reax->tbp[index2].alpha = val;
+            }
 
-      val = atof(tmp[5]);
-      if (val > 0.0) {
-        reax->tbp[j][k].r_s = val;
-        reax->tbp[k][j].r_s = val;
-      }
+            val = atof(tmp[5]);
+            if (val > 0.0)
+            {
+                reax->tbp[index1].r_s = val;
+                reax->tbp[index2].r_s = val;
+            }
 
-      val = atof(tmp[6]);
-      if (val > 0.0) {
-        reax->tbp[j][k].r_p = val;
-        reax->tbp[k][j].r_p = val;
-      }
+	     val = atof(tmp[6]);
+            if (val > 0.0)
+            {
+                reax->tbp[index1].r_p = val;
+                reax->tbp[index2].r_p = val;
+            }
 
-      val = atof(tmp[7]);
-      if (val > 0.0) {
-        reax->tbp[j][k].r_pp = val;
-        reax->tbp[k][j].r_pp = val;
-      }
+            val = atof(tmp[7]);
+            if (val > 0.0)
+            {
+                reax->tbp[index1].r_pp = val;
+                reax->tbp[index2].r_pp = val;
+            }
 
-      val = atof(tmp[8]);
-      if (val >= 0.0) {
-        reax->tbp[j][k].lgcij = val;
-        reax->tbp[k][j].lgcij = val;
-      }
+      
+            val = atof(tmp[8]);
+            if (val >= 0.0) 
+	    {
+               reax->tbp[index1].lgcij = val;
+               reax->tbp[index2].lgcij = val;
+            }
     }
   }
 
   for( i = 0; i < reax->num_atom_types; ++i )
+  {
     for( j = 0; j < reax->num_atom_types; ++j )
+    {
       for( k = 0; k < reax->num_atom_types; ++k )
-        reax->thbp[i][j][k].cnt = 0;
+      {
+        reax->thbp[i * __N * __N + j * __N + k].cnt = 0;
+      }
+    }
+  }
 
   fgets( s, MAX_LINE, fp );
   c = Tokenize( s, &tmp );
@@ -566,119 +584,152 @@ char Read_Force_Field( FILE *fp, reax_interaction *reax,
     j = atoi(tmp[0]) - 1;
     k = atoi(tmp[1]) - 1;
     m = atoi(tmp[2]) - 1;
+    index1 = j * __N * __N + k * __N + m;
+    index2 = m * __N * __N + k * __N + j;
+
 
     if (j < reax->num_atom_types && k < reax->num_atom_types &&
-        m < reax->num_atom_types) {
-      cnt = reax->thbp[j][k][m].cnt;
-      reax->thbp[j][k][m].cnt++;
-      reax->thbp[m][k][j].cnt++;
+        m < reax->num_atom_types)
+    {
 
-      val = atof(tmp[3]);
-      reax->thbp[j][k][m].prm[cnt].theta_00 = val;
-      reax->thbp[m][k][j].prm[cnt].theta_00 = val;
+	     cnt = reax->thbp[index1].cnt;
+            reax->thbp[index1].cnt++;
+            reax->thbp[index2].cnt++;
 
-      val = atof(tmp[4]);
-      reax->thbp[j][k][m].prm[cnt].p_val1 = val;
-      reax->thbp[m][k][j].prm[cnt].p_val1 = val;
+            val = atof(tmp[3]);
+            reax->thbp[index1].prm[cnt].theta_00 = val;
+            reax->thbp[index2].prm[cnt].theta_00 = val;
 
-      val = atof(tmp[5]);
-      reax->thbp[j][k][m].prm[cnt].p_val2 = val;
-      reax->thbp[m][k][j].prm[cnt].p_val2 = val;
+            val = atof(tmp[4]);
+            reax->thbp[index1].prm[cnt].p_val1 = val;
+            reax->thbp[index2].prm[cnt].p_val1 = val;
 
-      val = atof(tmp[6]);
-      reax->thbp[j][k][m].prm[cnt].p_coa1 = val;
-      reax->thbp[m][k][j].prm[cnt].p_coa1 = val;
+            val = atof(tmp[5]);
+            reax->thbp[index1].prm[cnt].p_val2 = val;
+            reax->thbp[index2].prm[cnt].p_val2 = val;
 
-      val = atof(tmp[7]);
-      reax->thbp[j][k][m].prm[cnt].p_val7 = val;
-      reax->thbp[m][k][j].prm[cnt].p_val7 = val;
+            val = atof(tmp[6]);
+            reax->thbp[index1].prm[cnt].p_coa1 = val;
+            reax->thbp[index2].prm[cnt].p_coa1 = val;
 
-      val = atof(tmp[8]);
-      reax->thbp[j][k][m].prm[cnt].p_pen1 = val;
-      reax->thbp[m][k][j].prm[cnt].p_pen1 = val;
+            val = atof(tmp[7]);
+            reax->thbp[index1].prm[cnt].p_val7 = val;
+            reax->thbp[index2].prm[cnt].p_val7 = val;
 
-      val = atof(tmp[9]);
-      reax->thbp[j][k][m].prm[cnt].p_val4 = val;
-      reax->thbp[m][k][j].prm[cnt].p_val4 = val;
+            val = atof(tmp[8]);
+            reax->thbp[index1].prm[cnt].p_pen1 = val;
+            reax->thbp[index2].prm[cnt].p_pen1 = val;
+
+            val = atof(tmp[9]);
+            reax->thbp[index1].prm[cnt].p_val4 = val;
+            reax->thbp[index2].prm[cnt].p_val4 = val;
+
     }
   }
 
   /* clear all entries first */
   for( i = 0; i < reax->num_atom_types; ++i )
+  {
     for( j = 0; j < reax->num_atom_types; ++j )
+    {
       for( k = 0; k < reax->num_atom_types; ++k )
-        for( m = 0; m < reax->num_atom_types; ++m ) {
-          reax->fbp[i][j][k][m].cnt = 0;
-          tor_flag[i][j][k][m] = 0;
+      {
+	 for( m = 0; m < reax->num_atom_types; ++m )
+	 {
+		 reax->fbp[i * __N * __N * __N + j * __N * __N + k * __N + m].cnt = 0;
+                 tor_flag[i * __N * __N * __N + j * __N * __N + k * __N + m] = 0;
         }
+      }
+    }
+  }
 
   /* next line is number of 4-body params and some comments */
   fgets( s, MAX_LINE, fp );
   c = Tokenize( s, &tmp );
   l = atoi( tmp[0] );
 
-  for( i = 0; i < l; i++ ) {
-    fgets( s, MAX_LINE, fp );
-    c = Tokenize( s, &tmp );
+    for ( i = 0; i < l; i++ )
+    {
+        fgets( s, MAX_LINE, fp );
+        c = Tokenize( s, &tmp );
 
-    j = atoi(tmp[0]) - 1;
-    k = atoi(tmp[1]) - 1;
-    m = atoi(tmp[2]) - 1;
-    n = atoi(tmp[3]) - 1;
+        j = atoi(tmp[0]) - 1;
+        k = atoi(tmp[1]) - 1;
+        m = atoi(tmp[2]) - 1;
+        n = atoi(tmp[3]) - 1;
+        index1 = j * __N * __N * __N + k * __N * __N + m * __N + n;
+        index2 = n * __N * __N * __N + m * __N * __N + k * __N + j;
 
-    if (j >= 0 && n >= 0) { // this means the entry is not in compact form
-      if (j < reax->num_atom_types && k < reax->num_atom_types &&
-          m < reax->num_atom_types && n < reax->num_atom_types) {
-        tor_flag[j][k][m][n] = 1;
-        tor_flag[n][m][k][j] = 1;
+        /* this means the entry is not in compact form */
+        if ( j >= 0 && n >= 0 )
+        {
+            if ( j < reax->num_atom_types && k < reax->num_atom_types &&
+                    m < reax->num_atom_types && n < reax->num_atom_types )
+            {
+                /* these flags ensure that this entry take precedence
+                   over the compact form entries */
+                tor_flag[index1] = 1;
+                tor_flag[index2] = 1;
 
-        reax->fbp[j][k][m][n].cnt = 1;
-        reax->fbp[n][m][k][j].cnt = 1;
+                reax->fbp[index1].cnt = 1;
+                reax->fbp[index2].cnt = 1;
 
-        val = atof(tmp[4]);
-        reax->fbp[j][k][m][n].prm[0].V1 = val;
-        reax->fbp[n][m][k][j].prm[0].V1 = val;
+                val = atof(tmp[4]);
+                reax->fbp[index1].prm[0].V1 = val;
+                reax->fbp[index2].prm[0].V1 = val;
 
-        val = atof(tmp[5]);
-        reax->fbp[j][k][m][n].prm[0].V2 = val;
-        reax->fbp[n][m][k][j].prm[0].V2 = val;
+                val = atof(tmp[5]);
+                reax->fbp[index1].prm[0].V2 = val;
+                reax->fbp[index2].prm[0].V2 = val;
 
-        val = atof(tmp[6]);
-        reax->fbp[j][k][m][n].prm[0].V3 = val;
-        reax->fbp[n][m][k][j].prm[0].V3 = val;
+                val = atof(tmp[6]);
+                reax->fbp[index1].prm[0].V3 = val;
+                reax->fbp[index2].prm[0].V3 = val;
 
-        val = atof(tmp[7]);
-        reax->fbp[j][k][m][n].prm[0].p_tor1 = val;
-        reax->fbp[n][m][k][j].prm[0].p_tor1 = val;
+                val = atof(tmp[7]);
+                reax->fbp[index1].prm[0].p_tor1 = val;
+                reax->fbp[index2].prm[0].p_tor1 = val;
 
-        val = atof(tmp[8]);
-        reax->fbp[j][k][m][n].prm[0].p_cot1 = val;
-        reax->fbp[n][m][k][j].prm[0].p_cot1 = val;
-      }
-    } else { /* This means the entry is of the form 0-X-Y-0 */
-      if (k < reax->num_atom_types && m < reax->num_atom_types)
-        for( p = 0; p < reax->num_atom_types; p++ )
-          for( o = 0; o < reax->num_atom_types; o++ ) {
-            reax->fbp[p][k][m][o].cnt = 1;
-            reax->fbp[o][m][k][p].cnt = 1;
-
-            if (tor_flag[p][k][m][o] == 0) {
-              reax->fbp[p][k][m][o].prm[0].V1 = atof(tmp[4]);
-              reax->fbp[p][k][m][o].prm[0].V2 = atof(tmp[5]);
-              reax->fbp[p][k][m][o].prm[0].V3 = atof(tmp[6]);
-              reax->fbp[p][k][m][o].prm[0].p_tor1 = atof(tmp[7]);
-              reax->fbp[p][k][m][o].prm[0].p_cot1 = atof(tmp[8]);
+                val = atof(tmp[8]);
+                reax->fbp[index1].prm[0].p_cot1 = val;
+                reax->fbp[index2].prm[0].p_cot1 = val;
             }
+        }
+    
+     else { /* This means the entry is of the form 0-X-Y-0 */
+	     if ( k < reax->num_atom_types && m < reax->num_atom_types )
+            {
+                for ( p = 0; p < reax->num_atom_types; p++ )
+                {
+                    for ( o = 0; o < reax->num_atom_types; o++ )
+                    {
+                        index1 = p * __N * __N * __N + k * __N * __N + m * __N + o;
+                        index2 = o * __N * __N * __N + m * __N * __N + k * __N + p;
 
-            if (tor_flag[o][m][k][p] == 0) {
-              reax->fbp[o][m][k][p].prm[0].V1 = atof(tmp[4]);
-              reax->fbp[o][m][k][p].prm[0].V2 = atof(tmp[5]);
-              reax->fbp[o][m][k][p].prm[0].V3 = atof(tmp[6]);
-              reax->fbp[o][m][k][p].prm[0].p_tor1 = atof(tmp[7]);
-              reax->fbp[o][m][k][p].prm[0].p_cot1 = atof(tmp[8]);
+                        reax->fbp[index1].cnt = 1;
+                        reax->fbp[index2].cnt = 1;
+
+                        if (tor_flag[index1] == 0)
+                        {
+                            reax->fbp[index1].prm[0].V1 = atof(tmp[4]);
+                            reax->fbp[index1].prm[0].V2 = atof(tmp[5]);
+                            reax->fbp[index1].prm[0].V3 = atof(tmp[6]);
+                            reax->fbp[index1].prm[0].p_tor1 = atof(tmp[7]);
+                            reax->fbp[index1].prm[0].p_cot1 = atof(tmp[8]);
+                        }
+
+                        if (tor_flag[index2] == 0)
+                        {
+                            reax->fbp[index2].prm[0].V1 = atof(tmp[4]);
+                            reax->fbp[index2].prm[0].V2 = atof(tmp[5]);
+                            reax->fbp[index2].prm[0].V3 = atof(tmp[6]);
+                            reax->fbp[index2].prm[0].p_tor1 = atof(tmp[7]);
+                            reax->fbp[index2].prm[0].p_cot1 = atof(tmp[8]);
+                        }
+                    }
+                }
             }
-          }
-    }
+     }
   }
 
 
@@ -701,19 +752,21 @@ char Read_Force_Field( FILE *fp, reax_interaction *reax,
     k = atoi(tmp[1]) - 1;
     m = atoi(tmp[2]) - 1;
 
+    index1 = j * __N * __N + k * __N + m;
+
 
     if (j < reax->num_atom_types && m < reax->num_atom_types) {
-      val = atof(tmp[3]);
-      reax->hbp[j][k][m].r0_hb = val;
+       val = atof(tmp[3]);
+       reax->hbp[index1].r0_hb = val;
 
-      val = atof(tmp[4]);
-      reax->hbp[j][k][m].p_hb1 = val;
+       val = atof(tmp[4]);
+       reax->hbp[index1].p_hb1 = val;
 
-      val = atof(tmp[5]);
-      reax->hbp[j][k][m].p_hb2 = val;
+       val = atof(tmp[5]);
+       reax->hbp[index1].p_hb2 = val;
 
-      val = atof(tmp[6]);
-      reax->hbp[j][k][m].p_hb3 = val;
+       val = atof(tmp[6]);
+       reax->hbp[index1].p_hb3 = val;
     }
   }
 
@@ -725,15 +778,6 @@ char Read_Force_Field( FILE *fp, reax_interaction *reax,
 
 
   /* deallocate tor_flag */
-  for( i = 0; i < reax->num_atom_types; i++ ) {
-    for( j = 0; j < reax->num_atom_types; j++ ) {
-      for( k = 0; k < reax->num_atom_types; k++ ) {
-        free( tor_flag[i][j][k] );
-      }
-      free( tor_flag[i][j] );
-    }
-    free( tor_flag[i] );
-  }
   free( tor_flag );
 
   // close file
