@@ -154,6 +154,7 @@ void Reset_Grid( grid * const g )
 {
     int i, j, k;
 
+    printf("N cells %d, %d ,%d\n", g->ncells[0], g->ncells[1], g->ncells[2]);
     for ( i = 0; i < g->ncells[0]; i++ )
     {
         for ( j = 0; j < g->ncells[1]; j++ )

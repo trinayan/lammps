@@ -458,6 +458,8 @@ void Cuda_Allocate_Workspace( reax_system *system, control_params *control,
 
     /* Taper params */
     cuda_malloc( (void **) &workspace->Tap, 8 * sizeof(real), TRUE, "Tap" );
+
+
 }
 
 

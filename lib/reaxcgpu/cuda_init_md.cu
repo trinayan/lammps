@@ -11,6 +11,7 @@
 #include "cuda_system_props.h"
 #include "cuda_utils.h"
 
+
 #include "box.h"
 #include "comm_tools.h"
 #include "grid.h"
@@ -23,10 +24,10 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-#include "random.h"
-#include "reset_tools.h"
-#include "tool_box.h"
-#include "vector.h"
+  #include "random.h"
+  #include "reset_tools.h"
+  #include "tool_box.h"
+  #include "vector.h"
 
 static void Cuda_Init_Scratch_Space( storage *workspace )
 {
@@ -42,20 +43,19 @@ int Cuda_Init_System( reax_system *system, control_params *control,
         simulation_data *data, storage *workspace,
         mpi_datatypes *mpi_data, char *msg )
 {
+    int i;
+    int nrecv[MAX_NBRS];
+
+
+    reax_atom *atom;
     
-  int i;
-  reax_atom *atom;
+    int mincap = system->mincap;
+    double safezone = system->safezone;
+    double saferzone = system->saferzone;
 
-  int mincap = system->mincap;
-  double safezone = system->safezone;
-  double saferzone = system->saferzone;
-
-   int nrecv[MAX_NBRS];
-
-  // determine the local and total capacity
-
-  system->local_cap = MAX( (int)(system->n * safezone), mincap);
-  system->total_cap = MAX( (int)(system->N * safezone), mincap);
+    
+     system->local_cap = MAX( (int)(system->n * safezone), mincap);
+     system->total_cap = MAX( (int)(system->N * safezone), mincap);
 
   /* estimate numH and Hcap */
   system->numH = 0;
@@ -66,14 +66,14 @@ int Cuda_Init_System( reax_system *system, control_params *control,
         atom->Hindex = system->numH++;
       else atom->Hindex = -1;
     }
-  system->Hcap = (int)(MAX( system->numH * saferzone, mincap ));	
+  system->Hcap = (int)(MAX( system->numH * saferzone, mincap ));
 
 
-    Setup_New_Grid( system, control, MPI_COMM_WORLD );
- 
 
-     Bin_My_Atoms( system, workspace );
-    Reorder_My_Atoms( system, workspace );
+
+    //Setup_New_Grid( system, control, MPI_COMM_WORLD ); //TB:: Commented
+   // Bin_My_Atoms( system, workspace); //TB:: Commented
+    //Reorder_My_Atoms( system, workspace ); //TB:: Commented
 
     /* estimate N and total capacity */
     for ( i = 0; i < MAX_NBRS; ++i )
@@ -83,31 +83,28 @@ int Cuda_Init_System( reax_system *system, control_params *control,
 
     MPI_Barrier( MPI_COMM_WORLD );
     system->max_recved = 0;
-    system->N = SendRecv( system, mpi_data, mpi_data->boundary_atom_type, nrecv,
+    
+    /*system->N = SendRecv( system, mpi_data, mpi_data->boundary_atom_type, nrecv,
             Estimate_Boundary_Atoms, Unpack_Estimate_Message, TRUE );
+    */ //TB:: Commented
+    
     system->total_cap = MAX( (int)(system->N * SAFE_ZONE), MIN_CAP );
-    Bin_Boundary_Atoms( system ); 
+    
+    //Bin_Boundary_Atoms( system );
+
     /* Sync atoms here to continue the computation */
     Cuda_Allocate_System( system );
     Sync_System( system );
 
     /* estimate numH and Hcap */
-    Cuda_Reset_Atoms( system, control, workspace );
+    //Cuda_Reset_Atoms( system, control, workspace ); /TB:: Commented
 
-#if defined(DEBUG_FOCUS)
-    fprintf( stderr, "p%d: n=%d local_cap=%d\n",
-             system->my_rank, system->n, system->local_cap );
-    fprintf( stderr, "p%d: N=%d total_cap=%d\n",
-             system->my_rank, system->N, system->total_cap );
-    fprintf( stderr, "p%d: numH=%d H_cap=%d\n",
-             system->my_rank, system->numH, system->Hcap );
-#endif
-
-    Cuda_Compute_Total_Mass( system, control, workspace,
+    /* Cuda_Compute_Total_Mass( system, control, workspace,
             data, mpi_data->comm_mesh3D );
 
     Cuda_Compute_Center_of_Mass( system, control, workspace,
-            data, mpi_data, mpi_data->comm_mesh3D );
+            data, mpi_data, mpi_data->comm_mesh3D );*/ //TB:: Commented
+
 
 //    if( Reposition_Atoms( system, control, data, mpi_data, msg ) == FAILURE )
 //    {
@@ -115,16 +112,17 @@ int Cuda_Init_System( reax_system *system, control_params *control,
 //    }
 
     /* initialize velocities so that desired init T can be attained */
-    if ( !control->restart || (control->restart && control->random_vel) )
+  //TB:: Commented
+    /*  if ( !control->restart || (control->restart && control->random_vel) )
     {
         Cuda_Generate_Initial_Velocities( system, control->T_init );
     }
 
     Cuda_Compute_Kinetic_Energy( system, control, workspace,
             data, mpi_data->comm_mesh3D );
+*/
 
     return SUCCESS;
-
 }
 
 
@@ -227,15 +225,15 @@ void Cuda_Init_Simulation_Data( reax_system *system, control_params *control,
 void Cuda_Init_Workspace( reax_system *system, control_params *control,
         storage *workspace )
 {
-
-    Cuda_Allocate_Workspace( system, control, workspace,
+    Cuda_Allocate_Workspace( system, control, workspace->d_workspace,
             system->local_cap, system->total_cap );
 
     memset( &workspace->realloc, 0, sizeof(reallocate_data) );
-    //TB::Commented out for now
-    //Cuda_Reset_Workspace( system, workspace );
+    
 
-    /*Init_Taper( control, workspace );*/
+    Cuda_Reset_Workspace( system, workspace );
+
+    Init_Taper( control, workspace->d_workspace );
 }
 
 
@@ -309,7 +307,6 @@ void Cuda_Initialize( reax_system *system, control_params *control,
 
     Cuda_Init_Scratch_Space( workspace );
 
-    //TB:: Check init MPI code in original vs lammps uSER-REAXC. Why are they different?
     Init_MPI_Datatypes( system, workspace, mpi_data );
 
     if ( Cuda_Init_System( system, control, data, workspace, mpi_data, msg ) == FAILURE )
@@ -320,17 +317,15 @@ void Cuda_Initialize( reax_system *system, control_params *control,
         MPI_Abort( MPI_COMM_WORLD, CANNOT_INITIALIZE );
     }
 
- 
+    /*Cuda_Allocate_Grid( system ); 
+    Sync_Grid( &system->my_grid, &system->d_my_grid );*/ //TB:: Commented out
 
-    //TB::Commented out grid functionality
-    /*Cuda_Allocate_Grid( system );
-    Sync_Grid( &system->my_grid, &system->d_my_grid );
-*/
+
     //validate_grid( system );
 
     Cuda_Init_Simulation_Data( system, control, data );
 
-    Cuda_Init_Workspace( system, control, workspace);
+    Cuda_Init_Workspace( system, control, workspace );
 
     Cuda_Allocate_Control( control );
 

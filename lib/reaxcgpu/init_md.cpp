@@ -628,11 +628,15 @@ void Initialize( reax_system * const system, control_params * const control,
         reax_list ** const lists, output_controls * const out_control,
         mpi_datatypes * const mpi_data )
 {
+
+   printf("Done with mpi data \n");
+      
     Init_MPI_Datatypes( system, workspace, mpi_data );
 
-    exit(0);
+  
     Init_System( system, control, data, workspace, mpi_data );
 
+    printf("Done with init system \n");
     Init_Simulation_Data( system, control, data );
 
     Init_Workspace( system, control, workspace );
@@ -652,7 +656,8 @@ void Initialize( reax_system * const system, control_params * const control,
 //    Init_Force_Test_Functions( );
 //    fprintf( stderr, "p%d: initialized force test functions\n", system->my_rank );
 #endif
-}
+   printf("Done with force functions \n");
+ }
 
 
 void Pure_Initialize( reax_system * const system, control_params * const control,

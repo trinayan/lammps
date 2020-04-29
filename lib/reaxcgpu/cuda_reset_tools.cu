@@ -13,13 +13,13 @@ extern "C"
 
 void Cuda_Reset_Workspace( reax_system *system , storage *workspace)
 {
-    cuda_memset( workspace->total_bond_order, 0,
+    cuda_memset( workspace->d_workspace->total_bond_order, 0,
             system->total_cap * sizeof(real), "total_bond_order" );
-    cuda_memset( workspace->dDeltap_self, 0,
+    cuda_memset( workspace->d_workspace->dDeltap_self, 0,
             system->total_cap * sizeof(rvec), "dDeltap_self" );
-    cuda_memset( workspace->CdDelta, 0,
+    cuda_memset( workspace->d_workspace->CdDelta, 0,
             system->total_cap * sizeof(real), "CdDelta" );
-    cuda_memset(workspace->f, 0,
+    cuda_memset(workspace->d_workspace->f, 0,
             system->total_cap * sizeof(rvec), "f" );
 }
 

@@ -331,8 +331,19 @@ void Setup_New_Grid( reax_system * const system, control_params * const control,
                 system->bndry_cuts.ghost_bond / g->cell_len[d] );
     }
 
+    printf("Gcells %d, %d \n", g->ncells[0],g->ncells[1]);
+
+    printf("Ghost cutoff %d \n",system->bndry_cuts.ghost_cutoff);
+
+    printf("Native cells %d,%d,%d : Ghost Span: %d,%d,%d\n", g->native_cells[0], g->native_cells[1], g->native_cells[2], g->ghost_span[0], g->ghost_span[1], g->ghost_span[2]);
     /* total number of grid cells */
     ivec_ScaledSum( g->ncells, 1, g->native_cells, 2, g->ghost_span );
+
+
+             printf("Gcells %d, %d \n", g->ncells[0],g->ncells[1]);
+
+
+
     g->total = g->ncells[0] * g->ncells[1] * g->ncells[2];
 
 #if defined(DEBUG_FOCUS)

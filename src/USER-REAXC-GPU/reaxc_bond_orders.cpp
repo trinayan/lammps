@@ -364,5 +364,6 @@ int BOp( storage *workspace, reax_list *bonds, double bo_cut,
 void BO( reax_system *system, control_params * /*control*/, simulation_data * /*data*/,
          storage *workspace, reax_list **lists, output_controls * /*out_control*/ )
 {
-
+	printf("Bond orders \n");
+	exit(0);
 }
