@@ -58,7 +58,7 @@
 extern "C" void Cuda_Init_Block_Sizes( reax_system *system, control_params *control );
 extern "C" void Setup_Cuda_Environment( int, int, int );
 extern "C" void Cuda_Initialize( reax_system*, control_params*, simulation_data*,
-        storage*,reax_list**, output_controls*, mpi_datatypes* );
+        storage*,reax_list*, output_controls*, mpi_datatypes* );
 
 
 
@@ -491,7 +491,11 @@ void PairReaxCGPU::setup( )
     (lists+FAR_NBRS)->error_ptr=error;
 
     write_reax_lists();
-    Cuda_Initialize(system, control, data, workspace, &lists, out_control,
+
+
+   
+
+    Cuda_Initialize(system, control, data, workspace, lists, out_control,
                 mpi_data);
     for( int k = 0; k < system->N; ++k ) {
       num_bonds[k] = system->my_atoms[k].num_bonds;

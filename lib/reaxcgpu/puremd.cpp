@@ -266,7 +266,7 @@ int simulate( const void * const handle )
             t_start = Get_Time( );
         }
 
-        Cuda_Initialize( system, control, data, workspace, lists, out_control, mpi_data );
+        //Cuda_Initialize( system, control, data, workspace, lists, out_control, mpi_data );
 
         /* compute f_0 */
         Comm_Atoms( system, control, data, workspace, mpi_data, TRUE );

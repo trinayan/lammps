@@ -10,12 +10,12 @@ extern "C" {
 #endif
 
 
-void Cuda_Init_Neighbor_Indices( reax_system *, reax_list ** );
+void Cuda_Init_Neighbor_Indices( reax_system *, reax_list * );
 
 void Cuda_Init_HBond_Indices( reax_system *, storage *,
-        reax_list ** );
+        reax_list * );
 
-void Cuda_Init_Bond_Indices( reax_system *, reax_list ** );
+void Cuda_Init_Bond_Indices( reax_system *, reax_list *);
 
 void Cuda_Init_Sparse_Matrix_Indices( reax_system *, sparse_matrix * );
 

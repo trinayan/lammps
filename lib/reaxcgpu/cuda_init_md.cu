@@ -238,28 +238,39 @@ void Cuda_Init_Workspace( reax_system *system, control_params *control,
 
 
 void Cuda_Init_Lists( reax_system *system, control_params *control,
-        simulation_data *data, storage *workspace, reax_list **lists,
+        simulation_data *data, storage *workspace, reax_list *lists,
         mpi_datatypes *mpi_data )
 {
-    Cuda_Estimate_Neighbors( system );
 
-    Cuda_Make_List( system->total_cap, system->total_far_nbrs,
-            TYP_FAR_NEIGHBOR, lists[FAR_NBRS] );
+   int i, total_hbonds, total_bonds, bond_cap, num_3body, cap_3body, Htop;
+  int *hb_top, *bond_top;
 
-#if defined(DEBUG_FOCUS)
-    fprintf( stderr, "p%d: allocated far_nbrs: num_far=%d, space=%dMB\n",
-            system->my_rank, system->total_far_nbrs,
-            (int)(system->total_far_nbrs * sizeof(far_neighbor_data) / (1024 * 1024)) );
-    fprintf( stderr, "N: %d and total_cap: %d \n", system->N, system->total_cap );
-#endif
+  int mincap = system->mincap;
+  double safezone = system->safezone;
+  double saferzone = system->saferzone;
 
-    Cuda_Init_Neighbor_Indices( system, lists );
+  bond_top = (int*) calloc( system->total_cap, sizeof(int) );
+  hb_top = (int*) calloc( system->local_cap, sizeof(int) );
 
-    Cuda_Generate_Neighbor_Lists( system, data, workspace, lists );
+    
+  //Cuda_Estimate_Neighbors( system ); //TB:: Commented out
+
+   Cuda_Make_List( system->total_cap, system->total_far_nbrs,
+            TYP_FAR_NEIGHBOR, (lists+FAR_NBRS));
+
+
+/*    Cuda_Init_Neighbor_Indices( system, lists );
+
+    Cuda_Generate_Neighbor_Lists( system, data, workspace, lists );*/ //TB::Commented out
 
     /* estimate storage for bonds, hbonds, and sparse matrix */
-    Cuda_Estimate_Storages( system, control, lists,
-            TRUE, TRUE, TRUE, data->step );
+    
+   /*Cuda_Estimate_Storages( system, control, lists,
+            TRUE, TRUE, TRUE, data->step );*/ //TB::Commented out
+
+
+
+
 
     Cuda_Allocate_Matrix( &workspace->d_workspace->H, system->total_cap, system->total_cm_entries );
     Cuda_Init_Sparse_Matrix_Indices( system, &workspace->d_workspace->H );
@@ -272,7 +283,7 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
 
     if ( control->hbond_cut > 0.0 && system->numH > 0 )
     {
-        Cuda_Make_List( system->total_cap, system->total_hbonds, TYP_HBOND, lists[HBONDS] );
+        Cuda_Make_List( system->total_cap, system->total_hbonds, TYP_HBOND, (lists+HBONDS));
         Cuda_Init_HBond_Indices( system, workspace, lists );
 
 #if defined(DEBUG_FOCUS)
@@ -283,7 +294,7 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
     }
 
     /* bonds list */
-    Cuda_Make_List( system->total_cap, system->total_bonds, TYP_BOND, lists[BONDS] );
+    Cuda_Make_List( system->total_cap, system->total_bonds, TYP_BOND, (lists+BONDS));
     Cuda_Init_Bond_Indices( system, lists );
 
 #if defined(DEBUG_FOCUS)
@@ -300,7 +311,7 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
 
 void Cuda_Initialize( reax_system *system, control_params *control,
         simulation_data *data, storage *workspace,
-        reax_list **lists, output_controls *out_control,
+        reax_list *lists, output_controls *out_control,
         mpi_datatypes *mpi_data )
 {
     char msg[MAX_STR];
@@ -329,6 +340,10 @@ void Cuda_Initialize( reax_system *system, control_params *control,
 
     Cuda_Allocate_Control( control );
 
+
+    printf("hbonds %d \n", (lists+HBONDS)->allocated);
+
+    
     Cuda_Init_Lists( system, control, data, workspace, lists, mpi_data );
 
     Init_Output_Files( system, control, out_control, mpi_data );

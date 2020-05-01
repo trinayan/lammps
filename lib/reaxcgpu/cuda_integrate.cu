@@ -322,7 +322,8 @@ int Cuda_Velocity_Verlet_NVE( reax_system* system, control_params* control,
         Cuda_Init_Block_Sizes( system, control );
     }
 
-    Cuda_ReAllocate( system, control, data, workspace, lists, mpi_data );
+    exit(0);
+    //Cuda_ReAllocate( system, control, data, workspace, lists, mpi_data );
 
     Cuda_Reset( system, control, data, workspace, lists );
 
@@ -426,7 +427,8 @@ int Cuda_Velocity_Verlet_Nose_Hoover_NVT_Klein( reax_system* system,
         Cuda_Init_Block_Sizes( system, control );
     }
 
-    Cuda_ReAllocate( system, control, data, workspace, lists, mpi_data );
+    exit(0);
+//    Cuda_ReAllocate( system, control, data, workspace, lists, mpi_data );
 
     Cuda_Reset( system, control, data, workspace, lists );
 
@@ -549,7 +551,8 @@ int Cuda_Velocity_Verlet_Berendsen_NVT( reax_system* system, control_params* con
         MPI_Barrier( MPI_COMM_WORLD );
 #endif
 
-        Cuda_ReAllocate( system, control, data, workspace, lists, mpi_data );
+	exit(0);
+       // Cuda_ReAllocate( system, control, data, workspace, lists, mpi_data );
 
         if ( renbr )
         {
@@ -565,11 +568,13 @@ int Cuda_Velocity_Verlet_Berendsen_NVT( reax_system* system, control_params* con
 
         Cuda_Init_Block_Sizes( system, control );
     
-        Cuda_Reset( system, control, data, workspace, lists );
+	exit(0);
+    //    Cuda_Reset( system, control, data, workspace, lists );
     }
     else
     {
-        Cuda_ReAllocate( system, control, data, workspace, lists, mpi_data );
+	exit(0);    
+        //Cuda_ReAllocate( system, control, data, workspace, lists, mpi_data );
     
         Cuda_Reset( system, control, data, workspace, lists );
     }
@@ -699,7 +704,8 @@ int Cuda_Velocity_Verlet_Berendsen_NPT( reax_system* system, control_params* con
         Cuda_Init_Block_Sizes( system, control );
     }
 
-    Cuda_ReAllocate( system, control, data, workspace, lists, mpi_data );
+    exit(0);
+//    Cuda_ReAllocate( system, control, data, workspace, lists, mpi_data );
 
     Cuda_Reset( system, control, data, workspace, lists );
 
