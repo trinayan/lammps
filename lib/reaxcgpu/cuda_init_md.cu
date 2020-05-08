@@ -11,6 +11,7 @@
 #include "cuda_system_props.h"
 #include "cuda_utils.h"
 
+ #include "lookup.h"
 
 #include "box.h"
 #include "comm_tools.h"
@@ -238,8 +239,8 @@ void Cuda_Init_Workspace( reax_system *system, control_params *control,
 
 
 void Cuda_Init_Lists( reax_system *system, control_params *control,
-        simulation_data *data, storage *workspace, reax_list *lists,
-        mpi_datatypes *mpi_data )
+        simulation_data *data, storage *workspace, reax_list **lists,
+		reax_list *cpu_lists,mpi_datatypes *mpi_data )
 {
 
    int i, total_hbonds, total_bonds, bond_cap, num_3body, cap_3body, Htop;
@@ -255,22 +256,32 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
     
   //Cuda_Estimate_Neighbors( system ); //TB:: Commented out
 
-   Cuda_Make_List( system->total_cap, system->total_far_nbrs,
-            TYP_FAR_NEIGHBOR, (lists+FAR_NBRS));
+   printf("Total cap %d, total far nbrs:%d \n", system->total_cap, system->total_far_nbrs);
+
+   Cuda_Make_List(system->total_cap, system->total_far_nbrs,
+            TYP_FAR_NEIGHBOR, lists[FAR_NBRS]);
+
+   printf("Number %d, num:%d \n", cpu_lists->allocated,lists[FAR_NBRS]->max_intrs);
+
+   printf("Size of cpu list %d \n", sizeof(cpu_lists));
+
+   copy_host_device( (cpu_lists+FAR_NBRS)->index, lists[FAR_NBRS]->index,
+		   system->total_cap * sizeof(int),
+                      hipMemcpyHostToDevice, "Output_Sync_Lists::far_neighbor_list" );
 
 
-/*    Cuda_Init_Neighbor_Indices( system, lists );
+   copy_host_device( (cpu_lists+FAR_NBRS)->end_index, lists[FAR_NBRS]->end_index,
+		   system->total_cap * sizeof(int),
+                      hipMemcpyHostToDevice, "Output_Sync_Lists::far_neighbor_list" );
+
+    /*Cuda_Init_Neighbor_Indices( system, lists );
 
     Cuda_Generate_Neighbor_Lists( system, data, workspace, lists );*/ //TB::Commented out
 
     /* estimate storage for bonds, hbonds, and sparse matrix */
     
-   /*Cuda_Estimate_Storages( system, control, lists,
-            TRUE, TRUE, TRUE, data->step );*/ //TB::Commented out
-
-
-
-
+   Cuda_Estimate_Storages( system, control, lists,
+            TRUE, TRUE, TRUE, data->step ); 
 
     Cuda_Allocate_Matrix( &workspace->d_workspace->H, system->total_cap, system->total_cm_entries );
     Cuda_Init_Sparse_Matrix_Indices( system, &workspace->d_workspace->H );
@@ -283,7 +294,8 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
 
     if ( control->hbond_cut > 0.0 && system->numH > 0 )
     {
-        Cuda_Make_List( system->total_cap, system->total_hbonds, TYP_HBOND, (lists+HBONDS));
+    	printf("hbonds %d \n",system->total_hbonds);
+        Cuda_Make_List( system->total_cap, system->total_hbonds, TYP_HBOND, lists[HBONDS]);
         Cuda_Init_HBond_Indices( system, workspace, lists );
 
 #if defined(DEBUG_FOCUS)
@@ -294,7 +306,7 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
     }
 
     /* bonds list */
-    Cuda_Make_List( system->total_cap, system->total_bonds, TYP_BOND, (lists+BONDS));
+    Cuda_Make_List( system->total_cap, system->total_bonds, TYP_BOND, lists[BONDS]);
     Cuda_Init_Bond_Indices( system, lists );
 
 #if defined(DEBUG_FOCUS)
@@ -311,7 +323,7 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
 
 void Cuda_Initialize( reax_system *system, control_params *control,
         simulation_data *data, storage *workspace,
-        reax_list *lists, output_controls *out_control,
+        reax_list **lists,reax_list *cpu_lists, output_controls *out_control,
         mpi_datatypes *mpi_data )
 {
     char msg[MAX_STR];
@@ -340,20 +352,14 @@ void Cuda_Initialize( reax_system *system, control_params *control,
 
     Cuda_Allocate_Control( control );
 
-
-    printf("hbonds %d \n", (lists+HBONDS)->allocated);
-
-    
-    Cuda_Init_Lists( system, control, data, workspace, lists, mpi_data );
+    Cuda_Init_Lists( system, control, data, workspace, lists,cpu_lists, mpi_data );
 
     Init_Output_Files( system, control, out_control, mpi_data );
 
     /* Lookup Tables */
     if ( control->tabulate )
     {
-      printf("Unable to link exiting \n");
-      exit(0);
-        //Init_Lookup_Tables( system, control, workspace->d_workspace, mpi_data );
+       //Init_Lookup_Tables( system, control, workspace->d_workspace, mpi_data );
     }
 
     Cuda_Init_Block_Sizes( system, control );

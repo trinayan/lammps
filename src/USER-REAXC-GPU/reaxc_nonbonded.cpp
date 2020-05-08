@@ -31,6 +31,7 @@
 #include "reaxc_types.h"
 #include "reaxc_list.h"
 #include "reaxc_vector.h"
+#include "index_utils.h"
 
 void vdW_Coulomb_Energy( reax_system *system, control_params *control,
                          simulation_data *data, storage *workspace,
@@ -178,7 +179,94 @@ void Compute_Polarization_Energy( reax_system *system, simulation_data *data )
 
 void LR_vdW_Coulomb( reax_system *system, storage *workspace,
         control_params *control, int i, int j, double r_ij, LR_data *lr )
-{
- printf("Not impl because of twbp\n");
- exit(0);
+{double p_vdW1 = system->reax_param.gp.l[28];
+double p_vdW1i = 1.0 / p_vdW1;
+double powr_vdW1, powgi_vdW1;
+double tmp, fn13, exp1, exp2;
+double Tap, dTap, dfn13;
+double dr3gamij_1, dr3gamij_3;
+double e_core, de_core;
+double e_lg, de_lg, r_ij5, r_ij6, re6;
+two_body_parameters *twbp;
+
+twbp = &system->reax_param.tbp[
+            index_tbp(i, j, system->reax_param.num_atom_types) ];
+e_core = 0;
+de_core = 0;
+e_lg = de_lg = 0.0;
+
+/* calculate taper and its derivative */
+Tap = workspace->Tap[7] * r_ij + workspace->Tap[6];
+Tap = Tap * r_ij + workspace->Tap[5];
+Tap = Tap * r_ij + workspace->Tap[4];
+Tap = Tap * r_ij + workspace->Tap[3];
+Tap = Tap * r_ij + workspace->Tap[2];
+Tap = Tap * r_ij + workspace->Tap[1];
+Tap = Tap * r_ij + workspace->Tap[0];
+
+dTap = 7*workspace->Tap[7] * r_ij + 6*workspace->Tap[6];
+dTap = dTap * r_ij + 5*workspace->Tap[5];
+dTap = dTap * r_ij + 4*workspace->Tap[4];
+dTap = dTap * r_ij + 3*workspace->Tap[3];
+dTap = dTap * r_ij + 2*workspace->Tap[2];
+dTap += workspace->Tap[1]/r_ij;
+
+/*vdWaals Calculations*/
+if(system->reax_param.gp.vdw_type==1 || system->reax_param.gp.vdw_type==3)
+  { // shielding
+    powr_vdW1 = pow(r_ij, p_vdW1);
+    powgi_vdW1 = pow( 1.0 / twbp->gamma_w, p_vdW1);
+
+    fn13 = pow( powr_vdW1 + powgi_vdW1, p_vdW1i );
+    exp1 = exp( twbp->alpha * (1.0 - fn13 / twbp->r_vdW) );
+    exp2 = exp( 0.5 * twbp->alpha * (1.0 - fn13 / twbp->r_vdW) );
+
+    lr->e_vdW = Tap * twbp->D * (exp1 - 2.0 * exp2);
+
+    dfn13 = pow( powr_vdW1 + powgi_vdW1, p_vdW1i-1.0) * pow(r_ij, p_vdW1-2.0);
+
+    lr->CEvd = dTap * twbp->D * (exp1 - 2.0 * exp2) -
+      Tap * twbp->D * (twbp->alpha / twbp->r_vdW) * (exp1 - exp2) * dfn13;
+  }
+else { // no shielding
+  exp1 = exp( twbp->alpha * (1.0 - r_ij / twbp->r_vdW) );
+  exp2 = exp( 0.5 * twbp->alpha * (1.0 - r_ij / twbp->r_vdW) );
+
+  lr->e_vdW = Tap * twbp->D * (exp1 - 2.0 * exp2);
+  lr->CEvd = dTap * twbp->D * (exp1 - 2.0 * exp2) -
+    Tap * twbp->D * (twbp->alpha / twbp->r_vdW) * (exp1 - exp2) / r_ij;
+}
+
+if(system->reax_param.gp.vdw_type==2 || system->reax_param.gp.vdw_type==3)
+  { // inner wall
+    e_core = twbp->ecore * exp(twbp->acore * (1.0-(r_ij/twbp->rcore)));
+    lr->e_vdW += Tap * e_core;
+
+    de_core = -(twbp->acore/twbp->rcore) * e_core;
+    lr->CEvd += dTap * e_core + Tap * de_core / r_ij;
+
+    //  lg correction, only if lgvdw is yes
+    if (control->lgflag) {
+      r_ij5 = pow( r_ij, 5.0 );
+      r_ij6 = pow( r_ij, 6.0 );
+      re6 = pow( twbp->lgre, 6.0 );
+      e_lg = -(twbp->lgcij/( r_ij6 + re6 ));
+      lr->e_vdW += Tap * e_lg;
+
+      de_lg = -6.0 * e_lg *  r_ij5 / ( r_ij6 + re6 ) ;
+      lr->CEvd += dTap * e_lg + Tap * de_lg/r_ij;
+    }
+
+  }
+
+
+/* Coulomb calculations */
+dr3gamij_1 = ( r_ij * r_ij * r_ij + twbp->gamma );
+dr3gamij_3 = pow( dr3gamij_1 , 0.33333333333333 );
+
+tmp = Tap / dr3gamij_3;
+lr->H = EV_to_KCALpMOL * tmp;
+lr->e_ele = C_ele * tmp;
+
+lr->CEclmb = C_ele * ( dTap -  Tap * r_ij / dr3gamij_1 ) / dr3gamij_3;
 }

@@ -18,6 +18,7 @@ void copy_LR_table_to_device( reax_system *system, control_params *control,
 
     fprintf( stderr, "Copying the LR Lookyp Table to the device ... \n" );
 
+    printf("num atom typ3 %d, size %d \n", num_atom_types, sizeof(LR_lookup_table));
     cuda_malloc( (void **) &workspace->d_LR,
             sizeof(LR_lookup_table) * ( num_atom_types * num_atom_types ),
             FALSE, "LR_lookup:table" );
@@ -29,6 +30,7 @@ void copy_LR_table_to_device( reax_system *system, control_params *control,
        for( i = 0; i < system->N; ++i )
        existing_types[ system->atoms[i].type ] = 1;
      */
+    printf("Size %d \n", sizeof(LR_lookup_table) );
 
     copy_host_device( workspace->LR, workspace->d_LR,
             sizeof(LR_lookup_table) * (num_atom_types * num_atom_types), 

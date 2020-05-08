@@ -634,7 +634,7 @@ void Cuda_Reallocate_Thbodies_List( reax_list *thbodies, size_t n, size_t max_in
 
 
 void Cuda_ReAllocate( reax_system *system, control_params *control,
-        simulation_data *data, storage *workspace, reax_list *lists,
+        simulation_data *data, storage *workspace, reax_list **lists,
         mpi_datatypes *mpi_data )
 {
     int i, j, k, p;
@@ -695,7 +695,7 @@ void Cuda_ReAllocate( reax_system *system, control_params *control,
     renbr = (data->step - data->prev_steps) % control->reneighbor == 0;
     if ( renbr && (Nflag == TRUE || realloc->far_nbrs == TRUE) )
     {
-        far_nbrs = (lists+FAR_NBRS);
+        far_nbrs = (*lists+FAR_NBRS);
 
 #if defined(DEBUG_FOCUS)
         fprintf( stderr, "p%d: reallocating far_nbrs: far_nbrs=%d, space=%dMB\n",
@@ -746,7 +746,7 @@ void Cuda_ReAllocate( reax_system *system, control_params *control,
                     (int)(system->total_hbonds * sizeof(hbond_data) / (1024 * 1024)) );
 #endif
 
-            Cuda_Reallocate_HBonds_List( (lists+HBONDS), system->total_cap, system->total_hbonds );
+            Cuda_Reallocate_HBonds_List( *lists+HBONDS, system->total_cap, system->total_hbonds );
 
             Cuda_Init_HBond_Indices( system, workspace, lists );
 
@@ -763,7 +763,7 @@ void Cuda_ReAllocate( reax_system *system, control_params *control,
                  (int)(system->total_bonds * sizeof(bond_data) / (1024 * 1024)) );
 #endif
 
-        Cuda_Reallocate_Bonds_List( (lists+BONDS), system->total_cap, system->total_bonds );
+        Cuda_Reallocate_Bonds_List( (*lists+BONDS), system->total_cap, system->total_bonds );
 
         Cuda_Init_Bond_Indices( system, lists );
 
@@ -780,7 +780,7 @@ void Cuda_ReAllocate( reax_system *system, control_params *control,
                 (1024*1024)) );
 #endif
 
-        Cuda_Reallocate_Thbodies_List( (lists+THREE_BODIES),
+        Cuda_Reallocate_Thbodies_List( (*lists+THREE_BODIES),
                 system->total_thbodies_indices, system->total_thbodies );
 
         realloc->thbody = FALSE;

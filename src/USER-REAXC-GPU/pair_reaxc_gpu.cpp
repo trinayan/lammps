@@ -58,7 +58,7 @@
 extern "C" void Cuda_Init_Block_Sizes( reax_system *system, control_params *control );
 extern "C" void Setup_Cuda_Environment( int, int, int );
 extern "C" void Cuda_Initialize( reax_system*, control_params*, simulation_data*,
-        storage*,reax_list*, output_controls*, mpi_datatypes* );
+        storage*,reax_list**, reax_list*,output_controls*, mpi_datatypes* );
 
 
 
@@ -106,12 +106,23 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 
   grid * const g = &system->my_grid;
 
+  gpu_lists = (reax_list **)memory->smalloc(sizeof(reax_list*) * LIST_N ,"reax:gpu_lists");
+  for ( int i = 0; i < LIST_N; ++i )
+  {
+    gpu_lists[i] = (reax_list *)memory->smalloc( sizeof(reax_list),
+                "Setup::pmd_handle->lists[i]" );
+  	gpu_lists[i]->allocated = FALSE;
+  }
+
+  cpu_lists = (reax_list *)
+      memory->smalloc(LIST_N * sizeof(reax_list),"reax:lists");
+  memset(cpu_lists,0,LIST_N * sizeof(reax_list));
+
+
+printf("Hbonds %d \n", gpu_lists[HBONDS]->allocated);
 
 
 
-  lists = (reax_list *)
-    memory->smalloc(LIST_N * sizeof(reax_list),"reax:lists");
-  memset(lists,0,LIST_N * sizeof(reax_list));
   out_control = (output_controls *)
     memory->smalloc(sizeof(output_controls),"reax:out_control");
   memset(out_control,0,sizeof(output_controls));
@@ -159,7 +170,9 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 
 PairReaxCGPU::~PairReaxCGPU()
 {
-  if (copymode) return;
+printf("Unimpl \n");
+exit(0);
+ /* if (copymode) return;
 
   if (fix_reax) modify->delete_fix(fix_id);
   delete[] fix_id;
@@ -204,7 +217,7 @@ PairReaxCGPU::~PairReaxCGPU()
   memory->destroy(tmpbo);
 
   delete [] pvector;
-
+*/
 }
 
 /* ---------------------------------------------------------------------- */
@@ -437,10 +450,10 @@ void PairReaxCGPU::init_style( )
     error->warning(FLERR,"Total cutoff < 2*bond cutoff. May need to use an "
                    "increased neighbor list skin.");
 
-  for( int i = 0; i < LIST_N; ++i )
+/*  for( int i = 0; i < LIST_N; ++i )
     if (lists[i].allocated != 1)
       lists[i].allocated = 0;
-
+*/
   if (fix_reax == NULL) {
     char **fixarg = new char*[3];
     fixarg[0] = (char *) fix_id;
@@ -485,30 +498,48 @@ void PairReaxCGPU::setup( )
     write_reax_atoms();
 
     int num_nbrs = estimate_reax_lists();
-    if(!Make_List(system->total_cap, num_nbrs, TYP_FAR_NEIGHBOR,
-                  lists+FAR_NBRS))
+
+    system->total_far_nbrs = num_nbrs;
+
+    printf("Num nbrs %d \n", num_nbrs);   
+  
+  //TB::Commented  
+   if(!Make_List(system->total_cap, num_nbrs, TYP_FAR_NEIGHBOR,
+                  (cpu_lists+FAR_NBRS)))
       error->one(FLERR,"Pair reax/c problem in far neighbor list");
-    (lists+FAR_NBRS)->error_ptr=error;
+    (cpu_lists+FAR_NBRS)->error_ptr=error;
 
     write_reax_lists();
 
+    printf("Number in CPU %d \n", cpu_lists->max_intrs);
 
-   
 
-    Cuda_Initialize(system, control, data, workspace, lists, out_control,
+    printf("Control tabulate %d \n", control->tabulate);
+    Cuda_Initialize(system, control, data, workspace, gpu_lists,cpu_lists, out_control,
                 mpi_data);
-    for( int k = 0; k < system->N; ++k ) {
+
+    if (control->tabulate) {
+        char msg[MAX_STR];
+
+    	if (Init_Lookup_Tables( system, control, workspace, mpi_data, msg ) == FAILURE) {
+    	    control->error_ptr->one(FLERR,"Lookup table could not be created");
+    	    }
+    }
+
+    for( int k = 0; k < system->N; ++k )
+    {
       num_bonds[k] = system->my_atoms[k].num_bonds;
       num_hbonds[k] = system->my_atoms[k].num_hbonds;
     }
+  }
+  else
+  {
 
- 
-
-  } else {
-
+   printf("Unimpl \n");
+   exit(0);
     // fill in reax datastructures
 
-    write_reax_atoms();
+   /* write_reax_atoms();
 
     // reset the bond list info for new atoms
 
@@ -517,7 +548,7 @@ void PairReaxCGPU::setup( )
 
     // check if I need to shrink/extend my data-structs
 
-    ReAllocate( system, control, data, workspace, &lists );
+    ReAllocate( system, control, data, workspace, &lists );*/
   }
 
   bigint local_ngroup = list->inum;
@@ -538,7 +569,9 @@ double PairReaxCGPU::init_one(int i, int j)
 
 void PairReaxCGPU::compute(int eflag, int vflag)
 {
-  double evdwl,ecoul;
+printf("Unimpl \n");
+exit(0);	
+/*  double evdwl,ecoul;
   double t_start, t_end;
 
   // communicate num_bonds once every reneighboring
@@ -653,7 +686,7 @@ void PairReaxCGPU::compute(int eflag, int vflag)
       }
     FindBond();
   }
-
+*/
 }
 
 /* ---------------------------------------------------------------------- */
@@ -749,6 +782,7 @@ int PairReaxCGPU::estimate_reax_lists()
 
 int PairReaxCGPU::write_reax_lists()
 {
+
   int itr_i, itr_j, i, j;
   int num_nbrs;
   int *ilist, *jlist, *numneigh, **firstneigh;
@@ -763,8 +797,10 @@ int PairReaxCGPU::write_reax_lists()
   numneigh = list->numneigh;
   firstneigh = list->firstneigh;
 
-  far_nbrs = lists + FAR_NBRS;
+  far_nbrs = (cpu_lists +FAR_NBRS);
   far_list = far_nbrs->select.far_nbr_list;
+
+
 
   num_nbrs = 0;
   int inum = list->inum;
@@ -847,7 +883,9 @@ void *PairReaxCGPU::extract(const char *str, int &dim)
 
 double PairReaxCGPU::memory_usage()
 {
-  double bytes = 0.0;
+printf("Unimpl \n");    
+exit(0);	
+/*  double bytes = 0.0;
 
   // From pair_reax_c
   bytes += 1.0 * system->N * sizeof(int);
@@ -870,14 +908,16 @@ double PairReaxCGPU::memory_usage()
   if(fixspecies_flag)
     bytes += 2 * nmax * MAXSPECBOND * sizeof(double);
 
-  return bytes;
+  return bytes;*/
 }
 
 /* ---------------------------------------------------------------------- */
 
 void PairReaxCGPU::FindBond()
 {
-  int i, j, pj, nj;
+printf("Unimpl \n");
+exit(0);
+/*  int i, j, pj, nj;
   double bo_tmp, bo_cut;
 
   bond_data *bo_ij;
@@ -899,5 +939,5 @@ void PairReaxCGPU::FindBond()
         if (nj > MAXSPECBOND) error->all(FLERR,"Increase MAXSPECBOND in reaxc_defs.h");
       }
     }
-  }
+  }*/
 }

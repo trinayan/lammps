@@ -48,6 +48,9 @@ CUDA_DEVICE real Cuda_DistSqr_to_Special_Point( rvec cp, rvec x )
 }
 
 
+
+
+
 /* Generate far neighbor lists by scanning the atoms list and applying cutoffs */
 CUDA_GLOBAL void k_generate_neighbor_lists( reax_atom *my_atoms, 
         simulation_box my_ext_box, grid g, reax_list far_nbrs_list, int n, int N,

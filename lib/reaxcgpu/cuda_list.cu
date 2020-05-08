@@ -40,6 +40,7 @@ void Cuda_Make_List( int n, int max_intrs, int type, reax_list *l )
     {
         fprintf( stderr, "[WARNING] attempted to allocate list which was already allocated."
                 " Returning without allocation...\n" );
+        exit(0);
         return;
     }
 
@@ -51,6 +52,7 @@ void Cuda_Make_List( int n, int max_intrs, int type, reax_list *l )
     cuda_malloc( (void **) &l->index, n * sizeof(int), TRUE, "Cuda_Make_List::index" );
     cuda_malloc( (void **) &l->end_index, n * sizeof(int), TRUE, "Cuda_Make_List::end_index" );
 
+    printf("Size %d \n", sizeof(far_neighbor_data)); 
 #if defined(DEBUG_FOCUS)
     fprintf( stderr, "list: n=%d max_intrs=%d type=%d\n", n, max_intrs, type );
 #endif

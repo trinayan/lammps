@@ -179,7 +179,9 @@ void FixReaxCBonds::Output_ReaxC_Bonds(bigint /*ntimestep*/, FILE * /*fp*/)
 
 void FixReaxCBonds::FindBond(struct _reax_list * /*lists*/, int &numbonds)
 {
-  int *ilist, i, ii, inum;
+ printf("Unimpl \n");
+ exit(0);
+/*  int *ilist, i, ii, inum;
   int j, pj, nj;
   tagint jtag;
   double bo_tmp,bo_cut;
@@ -210,7 +212,7 @@ void FixReaxCBonds::FindBond(struct _reax_list * /*lists*/, int &numbonds)
     numneigh[i] = nj;
     if (nj > numbonds) numbonds = nj;
   }
-
+*/
 }
 /* ---------------------------------------------------------------------- */
 

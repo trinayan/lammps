@@ -78,6 +78,9 @@ void *smalloc( LAMMPS_NS::Error *error_ptr, rc_bigint n, const char *name )
   void *ptr;
   char errmsg[256];
 
+  printf("Allocating %d \n", n);
+
+
   if (n <= 0) {
     snprintf(errmsg, 256, "Trying to allocate %ld bytes for array %s. "
               "returning NULL.", n, name);
