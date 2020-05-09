@@ -78,7 +78,7 @@ void *smalloc( LAMMPS_NS::Error *error_ptr, rc_bigint n, const char *name )
   void *ptr;
   char errmsg[256];
 
-  printf("Allocating %d \n", n);
+  //printf("Allocating %d \n", n);
 
 
   if (n <= 0) {

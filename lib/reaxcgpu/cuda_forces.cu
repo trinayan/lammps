@@ -1476,7 +1476,9 @@ int Cuda_Init_Forces( reax_system *system, control_params *control,
     cuda_memset( system->d_realloc_cm_entries, FALSE, sizeof(int), 
             "Cuda_Init_Forces::d_realloc_cm_entries" );
 
-    hipLaunchKernelGGL(k_init_forces, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  system->d_my_atoms, system->reax_param.d_sbp,
+    printf("Not imple because of LR \n");
+    exit(0);
+  /*  hipLaunchKernelGGL(k_init_forces, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  system->d_my_atoms, system->reax_param.d_sbp,
           system->reax_param.d_tbp, *(workspace->d_workspace),
           (control_params *)control->d_control_params,
           *(lists[FAR_NBRS]), *(lists[BONDS]),
@@ -1487,7 +1489,7 @@ int Cuda_Init_Forces( reax_system *system, control_params *control,
           system->d_max_bonds, system->d_realloc_bonds,
           system->d_max_hbonds, system->d_realloc_hbonds );
     hipDeviceSynchronize( );
-    cudaCheckError( );
+    cudaCheckError( );*/
 
     /* check reallocation flags on device */
     copy_host_device( &ret_bonds, system->d_realloc_bonds, sizeof(int), 

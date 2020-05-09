@@ -156,16 +156,16 @@ int Init_Lookup_Tables( reax_system *system, control_params *control,
 		storage *workspace, mpi_datatypes *mpi_data, char * /*msg*/ )
 {
 
-	/*int i, j, r;
+
+	int i, j, r;
 	int num_atom_types;
 	int existing_types[MAX_ATOM_TYPES], aggregated[MAX_ATOM_TYPES];
-	real dr;
+	double dr;
 	double *h, *fh, *fvdw, *fele, *fCEvd, *fCEclmb;
 	double v0_vdw, v0_ele, vlast_vdw, vlast_ele;
-#if defined(HAVE_HIP)
-	real t_start, t_end;
-#endif
+	LR_lookup_table ** & LR = workspace->LR;
 
+	/* initializations */
 	v0_vdw = 0;
 	v0_ele = 0;
 	vlast_vdw = 0;
@@ -173,35 +173,29 @@ int Init_Lookup_Tables( reax_system *system, control_params *control,
 
 	num_atom_types = system->reax_param.num_atom_types;
 	dr = control->nonb_cut / control->tabulate;
-
-
-
 	h = (double*)
-    				smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:h");
+	    		smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:h");
 	fh = (double*)
-    				smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fh");
+	    		smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fh");
 	fvdw = (double*)
-    				smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fvdw");
+	    		smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fvdw");
 	fCEvd = (double*)
-    				smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fCEvd");
+	    		smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fCEvd");
 	fele = (double*)
-    				smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fele");
+	    		smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fele");
 	fCEclmb = (double*)
-    				smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fCEclmb");
+	    		smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fCEclmb");
 
+	LR = (LR_lookup_table**)
+	    		scalloc(system->error_ptr,  num_atom_types, sizeof(LR_lookup_table*), "lookup:LR");
+	for( i = 0; i < num_atom_types; ++i )
+		LR[i] = (LR_lookup_table*)
+		scalloc(system->error_ptr,  num_atom_types, sizeof(LR_lookup_table), "lookup:LR[i]");
 
-
-	workspace->LR = (LR_lookup_table*)smalloc(system->error_ptr,sizeof(LR_lookup_table) * num_atom_types * num_atom_types,
-			"Init_Lookup_Tables::LR" );
-
-	for ( i = 0; i < MAX_ATOM_TYPES; ++i )
-	{
+	for( i = 0; i < MAX_ATOM_TYPES; ++i )
 		existing_types[i] = 0;
-	}
-	for ( i = 0; i < system->n; ++i )
-	{
+	for( i = 0; i < system->n; ++i )
 		existing_types[ system->my_atoms[i].type ] = 1;
-	}
 
 	MPI_Allreduce( existing_types, aggregated, MAX_ATOM_TYPES,
 			MPI_INT, MPI_SUM, mpi_data->world );
@@ -210,168 +204,84 @@ int Init_Lookup_Tables( reax_system *system, control_params *control,
 		if (aggregated[i]) {
 			for( j = i; j < num_atom_types; ++j ) {
 				if (aggregated[j]) {
-					workspace->LR[index_lr(i, j, num_atom_types)].xmin = 0;
-					workspace->LR[index_lr(i, j, num_atom_types)].xmax = control->nonb_cut;
-					workspace->LR[index_lr(i, j, num_atom_types)].n = control->tabulate + 2;
-					workspace->LR[index_lr(i, j, num_atom_types)].dx = dr;
-					workspace->LR[index_lr(i, j, num_atom_types)].inv_dx = control->tabulate / control->nonb_cut;
-					workspace->LR[ index_lr(i, j, num_atom_types) ].y =
-							 (LR_data*)smalloc(system->error_ptr, workspace->LR[ sizeof(LR_data) * index_lr(i, j, num_atom_types) ].n,
-									"Init_Lookup_Tables::LR[i,j].y" );
+					LR[i][j].xmin = 0;
+					LR[i][j].xmax = control->nonb_cut;
+					LR[i][j].n = control->tabulate + 2;
+					LR[i][j].dx = dr;
+					LR[i][j].inv_dx = control->tabulate / control->nonb_cut;
+					LR[i][j].y = (LR_data*)
+	            		smalloc(system->error_ptr,  LR[i][j].n * sizeof(LR_data), "lookup:LR[i,j].y");
+					LR[i][j].H = (cubic_spline_coef*)
+	            		smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),"lookup:LR[i,j].H");
+					LR[i][j].vdW = (cubic_spline_coef*)
+	            		smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),"lookup:LR[i,j].vdW");
+					LR[i][j].CEvd = (cubic_spline_coef*)
+	            		smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),"lookup:LR[i,j].CEvd");
+					LR[i][j].ele = (cubic_spline_coef*)
+	            		smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),"lookup:LR[i,j].ele");
+					LR[i][j].CEclmb = (cubic_spline_coef*)
+	            		smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),
+	            				"lookup:LR[i,j].CEclmb");
 
-					workspace->LR[ index_lr(i, j, num_atom_types) ].H =
-							(cubic_spline_coef*)smalloc(system->error_ptr, workspace->LR[ sizeof(cubic_spline_coef) * index_lr(i, j, num_atom_types) ].n,
-									"Init_Lookup_Tables::LR[i,j].H" );
-					workspace->LR[ index_lr(i, j, num_atom_types) ].vdW =
-							(cubic_spline_coef*)smalloc( system->error_ptr,workspace->LR[ sizeof(cubic_spline_coef) * index_lr(i, j, num_atom_types) ].n,
-									"Init_Lookup_Tables::LR[i,j].vdW" );
-					workspace->LR[ index_lr(i, j, num_atom_types) ].CEvd =
-							(cubic_spline_coef*)smalloc( system->error_ptr,workspace->LR[ sizeof(cubic_spline_coef) * index_lr(i, j, num_atom_types) ].n,
-									"Init_Lookup_Tables::LR[i,j].CEvd" );
-					workspace->LR[ index_lr(i, j, num_atom_types) ].ele =
-							(cubic_spline_coef*)smalloc( system->error_ptr,workspace->LR[ sizeof(cubic_spline_coef) * index_lr(i, j, num_atom_types) ].n,
-									"Init_Lookup_Tables::LR[i,j].ele" );
-					workspace->LR[ index_lr(i, j, num_atom_types) ].CEclmb =
-							(cubic_spline_coef*)smalloc(system->error_ptr, workspace->LR[ sizeof(cubic_spline_coef) * index_lr(i, j, num_atom_types) ].n,
-									"Init_Lookup_Tables::LR[i,j].CEclmb" );
+					for( r = 1; r <= control->tabulate; ++r ) {
+						LR_vdW_Coulomb( system, workspace, control, i, j, r * dr, &(LR[i][j].y[r]) );
+						h[r] = LR[i][j].dx;
+						fh[r] = LR[i][j].y[r].H;
+						fvdw[r] = LR[i][j].y[r].e_vdW;
+						fCEvd[r] = LR[i][j].y[r].CEvd;
+						fele[r] = LR[i][j].y[r].e_ele;
+						fCEclmb[r] = LR[i][j].y[r].CEclmb;
+					}
+
+					// init the start-end points
+					h[r] = LR[i][j].dx;
+					v0_vdw = LR[i][j].y[1].CEvd;
+					v0_ele = LR[i][j].y[1].CEclmb;
+					fh[r] = fh[r-1];
+					fvdw[r] = fvdw[r-1];
+					fCEvd[r] = fCEvd[r-1];
+					fele[r] = fele[r-1];
+					fCEclmb[r] = fCEclmb[r-1];
+					vlast_vdw = fCEvd[r-1];
+					vlast_ele = fele[r-1];
+
+					Natural_Cubic_Spline( control->error_ptr, &h[1], &fh[1],
+							&(LR[i][j].H[1]), control->tabulate+1);
+
+					Complete_Cubic_Spline( control->error_ptr, &h[1], &fvdw[1], v0_vdw, vlast_vdw,
+							&(LR[i][j].vdW[1]), control->tabulate+1);
+
+					Natural_Cubic_Spline( control->error_ptr, &h[1], &fCEvd[1],
+							&(LR[i][j].CEvd[1]), control->tabulate+1);
+
+					Complete_Cubic_Spline( control->error_ptr, &h[1], &fele[1], v0_ele, vlast_ele,
+							&(LR[i][j].ele[1]), control->tabulate+1);
+
+					Natural_Cubic_Spline( control->error_ptr, &h[1], &fCEclmb[1],
+							&(LR[i][j].CEclmb[1]), control->tabulate+1);
+				} else {
+					LR[i][j].n = 0;
 				}
 			}
 		}
-	}*/
-
-
-//---------------------------------------------
-
-	//New
-
-	int i, j, r;
-	  int num_atom_types;
-	  int existing_types[MAX_ATOM_TYPES], aggregated[MAX_ATOM_TYPES];
-	  double dr;
-	  double *h, *fh, *fvdw, *fele, *fCEvd, *fCEclmb;
-	  double v0_vdw, v0_ele, vlast_vdw, vlast_ele;
-	  LR_lookup_table ** & LR = system->LR;
-
-	  /* initializations */
-	  v0_vdw = 0;
-	  v0_ele = 0;
-	  vlast_vdw = 0;
-	  vlast_ele = 0;
-
-	  num_atom_types = system->reax_param.num_atom_types;
-	  dr = control->nonb_cut / control->tabulate;
-	  h = (double*)
-	    smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:h");
-	  fh = (double*)
-	    smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fh");
-	  fvdw = (double*)
-	    smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fvdw");
-	  fCEvd = (double*)
-	    smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fCEvd");
-	  fele = (double*)
-	    smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fele");
-	  fCEclmb = (double*)
-	    smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fCEclmb");
-
-	  LR = (LR_lookup_table**)
-	    scalloc(system->error_ptr,  num_atom_types, sizeof(LR_lookup_table*), "lookup:LR");
-	  for( i = 0; i < num_atom_types; ++i )
-	    LR[i] = (LR_lookup_table*)
-	      scalloc(system->error_ptr,  num_atom_types, sizeof(LR_lookup_table), "lookup:LR[i]");
-
-	  for( i = 0; i < MAX_ATOM_TYPES; ++i )
-	    existing_types[i] = 0;
-	  for( i = 0; i < system->n; ++i )
-	    existing_types[ system->my_atoms[i].type ] = 1;
-
-	  MPI_Allreduce( existing_types, aggregated, MAX_ATOM_TYPES,
-	                 MPI_INT, MPI_SUM, mpi_data->world );
-
-	  for( i = 0; i < num_atom_types; ++i ) {
-	    if (aggregated[i]) {
-	      for( j = i; j < num_atom_types; ++j ) {
-	        if (aggregated[j]) {
-	          LR[i][j].xmin = 0;
-	          LR[i][j].xmax = control->nonb_cut;
-	          LR[i][j].n = control->tabulate + 2;
-	          LR[i][j].dx = dr;
-	          LR[i][j].inv_dx = control->tabulate / control->nonb_cut;
-	          LR[i][j].y = (LR_data*)
-	            smalloc(system->error_ptr,  LR[i][j].n * sizeof(LR_data), "lookup:LR[i,j].y");
-	          LR[i][j].H = (cubic_spline_coef*)
-	            smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),"lookup:LR[i,j].H");
-	          LR[i][j].vdW = (cubic_spline_coef*)
-	            smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),"lookup:LR[i,j].vdW");
-	          LR[i][j].CEvd = (cubic_spline_coef*)
-	            smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),"lookup:LR[i,j].CEvd");
-	          LR[i][j].ele = (cubic_spline_coef*)
-	            smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),"lookup:LR[i,j].ele");
-	          LR[i][j].CEclmb = (cubic_spline_coef*)
-	            smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),
-	                     "lookup:LR[i,j].CEclmb");
-
-	          for( r = 1; r <= control->tabulate; ++r ) {
-	            LR_vdW_Coulomb( system, workspace, control, i, j, r * dr, &(LR[i][j].y[r]) );
-	            h[r] = LR[i][j].dx;
-	            fh[r] = LR[i][j].y[r].H;
-	            fvdw[r] = LR[i][j].y[r].e_vdW;
-	            fCEvd[r] = LR[i][j].y[r].CEvd;
-	            fele[r] = LR[i][j].y[r].e_ele;
-	            fCEclmb[r] = LR[i][j].y[r].CEclmb;
-	          }
-
-	          // init the start-end points
-	          h[r] = LR[i][j].dx;
-	          v0_vdw = LR[i][j].y[1].CEvd;
-	          v0_ele = LR[i][j].y[1].CEclmb;
-	          fh[r] = fh[r-1];
-	          fvdw[r] = fvdw[r-1];
-	          fCEvd[r] = fCEvd[r-1];
-	          fele[r] = fele[r-1];
-	          fCEclmb[r] = fCEclmb[r-1];
-	          vlast_vdw = fCEvd[r-1];
-	          vlast_ele = fele[r-1];
-
-	          Natural_Cubic_Spline( control->error_ptr, &h[1], &fh[1],
-	                                &(LR[i][j].H[1]), control->tabulate+1);
-
-	          Complete_Cubic_Spline( control->error_ptr, &h[1], &fvdw[1], v0_vdw, vlast_vdw,
-	                                 &(LR[i][j].vdW[1]), control->tabulate+1);
-
-	          Natural_Cubic_Spline( control->error_ptr, &h[1], &fCEvd[1],
-	                                &(LR[i][j].CEvd[1]), control->tabulate+1);
-
-	          Complete_Cubic_Spline( control->error_ptr, &h[1], &fele[1], v0_ele, vlast_ele,
-	                                 &(LR[i][j].ele[1]), control->tabulate+1);
-
-	          Natural_Cubic_Spline( control->error_ptr, &h[1], &fCEclmb[1],
-	                                &(LR[i][j].CEclmb[1]), control->tabulate+1);
-	        } else {
-	          LR[i][j].n = 0;
-	        }
-	      }
-	    }
-	  }
-	  free(h);
-	  free(fh);
-	  free(fvdw);
-	  free(fCEvd);
-	  free(fele);
-	  free(fCEclmb);
+	}
+	free(h);
+	free(fh);
+	free(fvdw);
+	free(fCEvd);
+	free(fele);
+	free(fCEclmb);
 
 
 
-
-
-	//copy_LR_table_to_device( system, control, workspace, aggregated );
-
-	//return 1;
+  copy_LR_table_to_device( system, control, workspace, aggregated );
+  return 1;
 }
 
 
 void Deallocate_Lookup_Tables( reax_system *system )
 {
-	int i, j;
+	/*int i, j;
 	int ntypes;
 	LR_lookup_table ** & LR = system->LR;
 
@@ -389,5 +299,7 @@ void Deallocate_Lookup_Tables( reax_system *system )
 			}
 		sfree(system->error_ptr,  LR[i], "LR[i]" );
 	}
-	sfree(system->error_ptr,  LR, "LR" );
+	sfree(system->error_ptr,  LR, "LR" );*/
+	printf("Not impl because of lookup \n");
+	exit(0);
 }

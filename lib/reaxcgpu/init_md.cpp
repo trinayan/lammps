@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------
-  PuReMD - Purdue ReaxFF Molecular Dynamics Program
+xfI  PuReMD - Purdue ReaxFF Molecular Dynamics Program
 
   Copyright (2010) Purdue University
   Hasan Metin Aktulga, haktulga@cs.purdue.edu
@@ -647,7 +647,7 @@ void Initialize( reax_system * const system, control_params * const control,
 
     if ( control->tabulate )
     {
-        Init_Lookup_Tables( system, control, workspace, mpi_data );
+        //Init_Lookup_Tables( system, control, workspace, mpi_data );
     }
 
     Init_Force_Functions( control );
@@ -898,7 +898,9 @@ void Finalize( reax_system * const system, control_params * const control,
 {
     if ( control->tabulate )
     {
-        Finalize_LR_Lookup_Table( system, control, workspace, mpi_data );
+    	printf("LR unimpl \n");
+    	exit(0);
+        //Finalize_LR_Lookup_Table( system, control, workspace, mpi_data );
     }
 
     if ( output_enabled == TRUE )

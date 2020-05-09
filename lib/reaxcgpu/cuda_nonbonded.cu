@@ -367,147 +367,11 @@ CUDA_GLOBAL void k_vdW_coulomb_energy( reax_atom *my_atoms,
 CUDA_GLOBAL void k_tabulated_vdW_coulomb_energy( reax_atom *my_atoms, 
         global_parameters gp, control_params *control, 
         storage p_workspace, reax_list p_far_nbrs, 
-        LR_lookup_table *t_LR, int n, int N, int num_atom_types, 
+        LR_lookup_table **t_LR, int n, int N, int num_atom_types,
         int step, int prev_steps, int energy_update_freq, 
         real *data_e_vdW, real *data_e_ele, rvec *data_ext_press )
 {
-    int i, j, pj, r, natoms, steps, update_freq, update_energies;
-    int type_i, type_j, tmin, tmax;
-    int start_i, end_i, orig_i, orig_j;
-    real r_ij, base, dif;
-    real e_vdW, e_ele;
-    real CEvd, CEclmb;
-    rvec temp, ext_press;
-    far_neighbor_data *nbr_pj;
-    reax_list *far_nbrs;
-    LR_lookup_table *t;
-    storage *workspace;
 
-    i = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if ( i >= N )
-    {
-        return;
-    }
-
-    workspace = &p_workspace;
-    natoms = n;
-    far_nbrs = &p_far_nbrs;
-    steps = step - prev_steps;
-    update_freq = energy_update_freq;
-    update_energies = update_freq > 0 && steps % update_freq == 0;
-    e_ele = e_vdW = 0;
-    data_e_vdW[i] = 0;
-    data_e_ele[i] = 0;
-
-    //for( i = 0; i < natoms; ++i ) {
-    type_i = my_atoms[i].type;
-    start_i = Cuda_Start_Index(i,far_nbrs);
-    end_i = Cuda_End_Index(i,far_nbrs);
-    orig_i = my_atoms[i].orig_id;
-
-    for ( pj = start_i; pj < end_i; ++pj )
-    {
-        nbr_pj = &far_nbrs->select.far_nbr_list[pj];
-        j = nbr_pj->nbr;
-        orig_j  = my_atoms[j].orig_id;
-
-        //if ( nbr_pj->d <= control->nonb_cut && (j < natoms || orig_i < orig_j) ) {
-        if ( nbr_pj->d <= control->nonb_cut && 
-                (((i < j) && (i < natoms) && (j < natoms || orig_i < orig_j))
-                 || ((i > j) && (i < natoms) && (j < natoms)) 
-                 || (i > j && i >= natoms && j < natoms && orig_j < orig_i)))
-        { // ji with j >= n
-            j = nbr_pj->nbr;
-            type_j = my_atoms[j].type;
-            r_ij   = nbr_pj->d;
-            tmin  = MIN( type_i, type_j );
-            tmax  = MAX( type_i, type_j );
-
-            t = &t_LR[ index_lr(tmin, tmax, num_atom_types) ];
-
-            //table = &LR[type_i][type_j]; 
-
-            /* Cubic Spline Interpolation */
-            r = (int)(r_ij * t->inv_dx);
-            if( r == 0 )
-            {
-                ++r;
-            }
-            base = (real)(r+1) * t->dx;
-            dif = r_ij - base;
-            //fprintf(stderr, "r: %f, i: %d, base: %f, dif: %f\n", r, i, base, dif);
-
-            if ( update_energies )
-            {
-                e_vdW = ((t->vdW[r].d*dif + t->vdW[r].c)*dif + t->vdW[r].b)*dif + 
-                    t->vdW[r].a;
-
-                e_ele = ((t->ele[r].d*dif + t->ele[r].c)*dif + t->ele[r].b)*dif + 
-                    t->ele[r].a;
-                e_ele *= my_atoms[i].q * my_atoms[j].q;
-
-                //data_e_vdW[i] += e_vdW;
-                data_e_vdW[i] += e_vdW / 2.0;
-                //data_e_ele[i] += e_ele;
-                data_e_ele[i] += e_ele / 2.0;
-            }    
-
-            CEvd = ((t->CEvd[r].d * dif + t->CEvd[r].c) * dif + t->CEvd[r].b) * dif + 
-                t->CEvd[r].a;
-
-            CEclmb = ((t->CEclmb[r].d * dif + t->CEclmb[r].c) * dif + t->CEclmb[r].b) * dif + 
-                t->CEclmb[r].a;
-            CEclmb *= my_atoms[i].q * my_atoms[j].q;
-
-            if( control->virial == 0 )
-            {
-                if ( i < j ) 
-                {
-                    rvec_ScaledAdd( workspace->f[i], -(CEvd + CEclmb), nbr_pj->dvec );
-                }
-                else 
-                {
-                    rvec_ScaledAdd( workspace->f[i], +(CEvd + CEclmb), nbr_pj->dvec );
-                }
-                //rvec_ScaledAdd( workspace->f[i], -(CEvd + CEclmb), nbr_pj->dvec );
-                //rvec_ScaledAdd( workspace->f[j], +(CEvd + CEclmb), nbr_pj->dvec );
-            }
-            /* NPT, iNPT or sNPT */
-            else
-            {
-                /* for pressure coupling, terms not related to bond order derivatives
-                   are added directly into pressure vector/tensor */
-                rvec_Scale( temp, CEvd + CEclmb, nbr_pj->dvec );
-
-                rvec_ScaledAdd( workspace->f[i], -1., temp );
-                rvec_Add( workspace->f[j], temp );
-
-                rvec_iMultiply( ext_press, nbr_pj->rel_box, temp );
-                rvec_Add( data_ext_press [i], ext_press );
-            }
-
-#ifdef TEST_ENERGY
-            //fprintf( out_control->evdw, "%6d%6d%24.15e%24.15e%24.15e\n",
-            fprintf( out_control->evdw, "%6d%6d%12.4f%12.4f%12.4f\n",
-                    system->my_atoms[i].orig_id, system->my_atoms[j].orig_id, 
-                    r_ij, e_vdW, data->my_en.e_vdW );
-            //fprintf(out_control->ecou,"%6d%6d%24.15e%24.15e%24.15e%24.15e%24.15e\n",
-            fprintf( out_control->ecou, "%6d%6d%12.4f%12.4f%12.4f%12.4f%12.4f\n",
-                    system->my_atoms[i].orig_id, system->my_atoms[j].orig_id,
-                    r_ij, system->my_atoms[i].q, system->my_atoms[j].q, 
-                    e_ele, data->my_en.e_ele );
-#endif
-
-#ifdef TEST_FORCES
-            rvec_ScaledAdd( workspace->f_vdw[i], -CEvd, nbr_pj->dvec );
-            rvec_ScaledAdd( workspace->f_vdw[j], +CEvd, nbr_pj->dvec );
-            rvec_ScaledAdd( workspace->f_ele[i], -CEclmb, nbr_pj->dvec );
-            rvec_ScaledAdd( workspace->f_ele[j], +CEclmb, nbr_pj->dvec );
-#endif
-        }
-    }
-    //  }
 }
 
 
@@ -585,7 +449,9 @@ void Cuda_NonBonded_Energy( reax_system *system, control_params *control,
     }
     else
     {
-        hipLaunchKernelGGL(k_tabulated_vdW_coulomb_energy, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  system->d_my_atoms, system->reax_param.d_gp, 
+    	printf("LR impl issue \n");
+    	exit(0);
+        /*hipLaunchKernelGGL(k_tabulated_vdW_coulomb_energy, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  system->d_my_atoms, system->reax_param.d_gp,
               (control_params *)control->d_control_params, 
               *(workspace->d_workspace), *(lists[FAR_NBRS]), 
               workspace->d_LR, system->n, system->N,
@@ -595,7 +461,7 @@ void Cuda_NonBonded_Energy( reax_system *system, control_params *control,
               spad, spad + 2 * system->N, 
               (rvec *)(spad + 4 * system->N));
         hipDeviceSynchronize( );
-        cudaCheckError( );
+        cudaCheckError( );*/
     }
 
     /* reduction for vdw */

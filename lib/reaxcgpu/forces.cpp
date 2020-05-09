@@ -244,9 +244,9 @@ static inline real Compute_tabH( storage * const workspace, real r_ij,
     real val, dif, base;
     int tmin = MIN( ti, tj );
     int tmax = MAX( ti, tj );
-    const LR_lookup_table * const t = &workspace->LR[ index_lr( tmin, tmax, num_atom_types ) ];
+    /*const LR_lookup_table * const t = &workspace->LR[ index_lr( tmin, tmax, num_atom_types ) ];
 
-    /* cubic spline interpolation */
+    /* cubic spline interpolation
     r = (int)(r_ij * t->inv_dx);
     if ( r == 0 )
     {
@@ -258,7 +258,9 @@ static inline real Compute_tabH( storage * const workspace, real r_ij,
         + t->ele[r].a;
     val *= EV_to_KCALpMOL / C_ele;
 
-    return val;
+    return val;*/
+    printf("Not impl because of LR \n");
+    exit(0);
 }
 
 

@@ -48,7 +48,7 @@ void Tabulated_vdW_Coulomb_Energy( reax_system *system,control_params *control,
                                    reax_list **lists,
                                    output_controls * /*out_control*/ )
 {
-  int i, j, pj, r, natoms;
+  /*int i, j, pj, r, natoms;
   int type_i, type_j, tmin, tmax;
   int start_i, end_i, flag;
   rc_tagint orig_i, orig_j;
@@ -103,7 +103,7 @@ void Tabulated_vdW_Coulomb_Energy( reax_system *system,control_params *control,
       tmax  = MAX( type_i, type_j );
       t = &( LR[tmin][tmax] );
 
-      /* Cubic Spline Interpolation */
+      /* Cubic Spline Interpolation
       r = (int)(r_ij * t->inv_dx);
       if (r == 0)  ++r;
       base = (double)(r+1) * t->dx;
@@ -126,7 +126,7 @@ void Tabulated_vdW_Coulomb_Energy( reax_system *system,control_params *control,
         t->CEclmb[r].a;
       CEclmb *= system->my_atoms[i].q * system->my_atoms[j].q;
 
-      /* tally into per-atom energy */
+      /* tally into per-atom energy
       if (system->pair_ptr->evflag || system->pair_ptr->vflag_atom) {
         rvec_ScaledSum( delij, 1., system->my_atoms[i].x,
                               -1., system->my_atoms[j].x );
@@ -151,7 +151,9 @@ void Tabulated_vdW_Coulomb_Energy( reax_system *system,control_params *control,
     }
   }
 
-  Compute_Polarization_Energy( system, data );
+  Compute_Polarization_Energy( system, data );*/
+  printf("LR lookup table impl \n");
+  exit(0);
 }
 
 

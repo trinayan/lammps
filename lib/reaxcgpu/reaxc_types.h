@@ -1412,7 +1412,7 @@ struct reax_system
     int my_bonds;
     int mincap;
     double safezone, saferzone;
-    LR_lookup_table **LR;
+   // LR_lookup_table **LR;
 
     int omp_active;
 
@@ -2119,13 +2119,15 @@ struct storage
 
   reallocate_data realloc;
   /* lookup table for force tabulation */
-  LR_lookup_table *LR;
+  //LR_lookup_table *LR;
+  LR_lookup_table **LR;
+
     /* temporary workspace */
   void *host_scratch;
     /* temporary workspace (GPU) */
   void *scratch;
     /* lookup table for force tabulation (GPU) */
-  LR_lookup_table *d_LR;
+  LR_lookup_table **d_LR;
     /* storage (GPU) */
   storage *d_workspace;
   
