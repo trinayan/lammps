@@ -1033,6 +1033,7 @@ void Cuda_Compute_Total_Mass( reax_system *system, control_params *control,
     hipDeviceSynchronize( );
     cudaCheckError( );
 
+    printf("Blocks pow 2 %d \n", control->blocks_pow_2);
     hipLaunchKernelGGL(k_reduction, dim3(1), dim3(control->blocks_pow_2), sizeof(real) * control->blocks_pow_2 , 0,  block_mass, block_mass + control->blocks_pow_2, control->blocks_pow_2 );
     hipDeviceSynchronize( );
     cudaCheckError( );

@@ -24,7 +24,16 @@
 #include "list.h"
 #include "tool_box.h"
 
+#include "cuda_list.h"
 extern "C" {
+
+void Cuda_Adjust_End_Index_Before_ReAllocation(int oldN, int systemN, reax_list **gpu_lists) {
+	 for(int k = oldN; k < systemN; ++k) {
+	        Cuda_Set_End_Index( k, Cuda_Start_Index( k, gpu_lists[BONDS] ), gpu_lists[BONDS] );
+
+	    }
+}
+
 
 
 /* Allocate space for interaction list

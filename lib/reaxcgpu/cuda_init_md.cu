@@ -72,9 +72,9 @@ int Cuda_Init_System( reax_system *system, control_params *control,
 
 
 
-    //Setup_New_Grid( system, control, MPI_COMM_WORLD ); //TB:: Commented
-   // Bin_My_Atoms( system, workspace); //TB:: Commented
-    //Reorder_My_Atoms( system, workspace ); //TB:: Commented
+    //Setup_New_Grid( system, control, MPI_COMM_WORLD ); //TB:: Commented, Reason: Grid not required
+   // Bin_My_Atoms( system, workspace); //TB:: Commented , Reason: Grid not required
+    //Reorder_My_Atoms( system, workspace ); //TB:: Commented, , Reason: Grid not required
 
     /* estimate N and total capacity */
     for ( i = 0; i < MAX_NBRS; ++i )
@@ -86,8 +86,8 @@ int Cuda_Init_System( reax_system *system, control_params *control,
     system->max_recved = 0;
     
     /*system->N = SendRecv( system, mpi_data, mpi_data->boundary_atom_type, nrecv,
-            Estimate_Boundary_Atoms, Unpack_Estimate_Message, TRUE );
-    */ //TB:: Commented
+            Estimate_Boundary_Atoms, Unpack_Estimate_Message, TRUE );*/
+     //TB:: Commented. Not required
     
     system->total_cap = MAX( (int)(system->N * SAFE_ZONE), MIN_CAP );
     
@@ -98,12 +98,12 @@ int Cuda_Init_System( reax_system *system, control_params *control,
     Sync_System( system );
 
     /* estimate numH and Hcap */
-    //Cuda_Reset_Atoms( system, control, workspace ); /TB:: Commented
+    Cuda_Reset_Atoms( system, control, workspace ); //TB:: Commented
 
     /* Cuda_Compute_Total_Mass( system, control, workspace,
-            data, mpi_data->comm_mesh3D );
+            data, mpi_data->comm_mesh3D );*/ //TB:: Commented. Not required since MPI part fails
 
-    Cuda_Compute_Center_of_Mass( system, control, workspace,
+    /*Cuda_Compute_Center_of_Mass( system, control, workspace,
             data, mpi_data, mpi_data->comm_mesh3D );*/ //TB:: Commented
 
 
@@ -276,7 +276,7 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
 
     /*Cuda_Init_Neighbor_Indices( system, lists );
 
-    Cuda_Generate_Neighbor_Lists( system, data, workspace, lists );*/ //TB::Commented out
+    Cuda_Generate_Neighbor_Lists( system, data, workspace, lists );*/ //TB::Commented out. Replaced with above copies from CPU side writreaxlists
 
     /* estimate storage for bonds, hbonds, and sparse matrix */
     
@@ -341,7 +341,7 @@ void Cuda_Initialize( reax_system *system, control_params *control,
     }
 
     /*Cuda_Allocate_Grid( system ); 
-    Sync_Grid( &system->my_grid, &system->d_my_grid );*/ //TB:: Commented out
+    Sync_Grid( &system->my_grid, &system->d_my_grid );*/ //TB:: Commented out, Reason: Grid not required
 
 
     //validate_grid( system );
@@ -359,10 +359,10 @@ void Cuda_Initialize( reax_system *system, control_params *control,
     /* Lookup Tables */
     if ( control->tabulate )
     {
-       //Init_Lookup_Tables( system, control, workspace->d_workspace, mpi_data );
+       //Init_Lookup_Tables( system, control, workspace->d_workspace, mpi_data ); //TB:: Commented out, Reason: Moved to host side
     }
 
-    Cuda_Init_Block_Sizes( system, control );
+    //Cuda_Init_Block_Sizes( system, control ); //TB::Commented out, Moved to pairreaxcgpu.cpp
 
 #if defined(DEBUG_FOCUS)
     Cuda_Print_Mem_Usage( );

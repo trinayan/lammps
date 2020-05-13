@@ -655,6 +655,7 @@ int SendRecv( reax_system * const system, mpi_datatypes * const mpi_data, MPI_Da
         /* for estimates in1_buffer & in2_buffer will be NULL */
         if ( est_flag == TRUE )
         {
+        	printf("Nbr %d, %d \n",nbr1->rank, nbr2->rank);
             Estimate_Init_Storage( system->my_rank, nbr1, nbr2, d,
                     &max, nrecv, mpi_data, comm );
         }
