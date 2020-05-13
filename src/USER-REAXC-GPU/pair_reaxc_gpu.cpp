@@ -61,6 +61,11 @@ extern "C" void Cuda_Initialize( reax_system*, control_params*, simulation_data*
         storage*,reax_list**, reax_list*,output_controls*, mpi_datatypes* );
 
 
+extern "C" void Cuda_Adjust_End_Index_Before_ReAllocation(int oldN, int systemN, reax_list **gpu_lists);
+
+
+extern "C" void Cuda_ReAllocate( reax_system *system, control_params *control,
+        simulation_data *data, storage *workspace, reax_list **lists);
 
 using namespace LAMMPS_NS;
 
@@ -326,7 +331,6 @@ void PairReaxCGPU::settings(int narg, char **arg)
             control->nprocs, control->gpus_per_node );
 
 
-  Cuda_Init_Block_Sizes(system, control);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -477,6 +481,7 @@ void PairReaxCGPU::setup( )
   system->N = atom->nlocal + atom->nghost; // mine + ghosts
   oldN = system->N;
   system->bigN = static_cast<int> (atom->natoms);  // all atoms in the system
+  Cuda_Init_Block_Sizes(system, control);
 
   if (setup_flag == 0) {
 
@@ -531,24 +536,24 @@ void PairReaxCGPU::setup( )
       num_bonds[k] = system->my_atoms[k].num_bonds;
       num_hbonds[k] = system->my_atoms[k].num_hbonds;
     }
+    printf("Initial setup done \n");
   }
   else
   {
 
-   printf("Unimpl \n");
-   exit(0);
     // fill in reax datastructures
 
-   /* write_reax_atoms();
+    write_reax_atoms();
 
     // reset the bond list info for new atoms
 
-    for(int k = oldN; k < system->N; ++k)
-      Set_End_Index( k, Start_Index( k, lists+BONDS ), lists+BONDS );
+    Cuda_Adjust_End_Index_Before_ReAllocation(oldN, system->N, gpu_lists);
 
     // check if I need to shrink/extend my data-structs
 
-    ReAllocate( system, control, data, workspace, &lists );*/
+   // ReAllocate( system, control, data, workspace, &cpu_lists );
+    Cuda_ReAllocate(system, control,
+            data, workspace->d_workspace, gpu_lists);
   }
 
   bigint local_ngroup = list->inum;
@@ -569,9 +574,8 @@ double PairReaxCGPU::init_one(int i, int j)
 
 void PairReaxCGPU::compute(int eflag, int vflag)
 {
-printf("Unimpl \n");
-exit(0);	
-/*  double evdwl,ecoul;
+
+  double evdwl,ecoul;
   double t_start, t_end;
 
   // communicate num_bonds once every reneighboring
@@ -601,7 +605,7 @@ exit(0);
 
   setup();
 
-  Reset( system, control, data, workspace, &lists );
+  /*Reset( system, control, data, workspace, &lists );
   workspace->realloc.num_far = write_reax_lists();
   // timing for filling in the reax lists
   if (comm->me == 0) {
