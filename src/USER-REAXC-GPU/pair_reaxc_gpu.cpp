@@ -516,7 +516,7 @@ void PairReaxCGPU::setup( )
 
     write_reax_lists();
 
-    printf("Number in CPU %d \n", cpu_lists->max_intrs);
+    printf("Number in CPU %d \n", (cpu_lists+FAR_NBRS)->num_intrs);
 
 
     printf("Control tabulate %d \n", control->tabulate);
@@ -536,7 +536,6 @@ void PairReaxCGPU::setup( )
       num_bonds[k] = system->my_atoms[k].num_bonds;
       num_hbonds[k] = system->my_atoms[k].num_hbonds;
     }
-    printf("Initial setup done \n");
   }
   else
   {
@@ -546,14 +545,22 @@ void PairReaxCGPU::setup( )
     write_reax_atoms();
 
     // reset the bond list info for new atoms
+    printf("Initial setup done. far numbers gpu %d \n", gpu_lists[FAR_NBRS]->num_intrs);
+
 
     Cuda_Adjust_End_Index_Before_ReAllocation(oldN, system->N, gpu_lists);
+
+    printf("Initial setup done. far numbers gpu %d \n", gpu_lists[FAR_NBRS]->num_intrs);
 
     // check if I need to shrink/extend my data-structs
 
    // ReAllocate( system, control, data, workspace, &cpu_lists );
+	reallocate_data *realloc;
+	realloc = &(workspace->realloc);
+
+    printf("Num far %d \n",realloc->num_far);
     Cuda_ReAllocate(system, control,
-            data, workspace->d_workspace, gpu_lists);
+            data, workspace, gpu_lists);
   }
 
   bigint local_ngroup = list->inum;
@@ -604,6 +611,9 @@ void PairReaxCGPU::compute(int eflag, int vflag)
   // setup data structures
 
   setup();
+
+  printf("Force incomplete \n");
+  exit(0);
 
   /*Reset( system, control, data, workspace, &lists );
   workspace->realloc.num_far = write_reax_lists();

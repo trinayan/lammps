@@ -1040,12 +1040,12 @@ static int Cuda_Estimate_Storage_Three_Body( reax_system *system, control_params
                 TYP_THREE_BODY, lists[THREE_BODIES] );
     }
 
-    if ( system->total_thbodies > lists[THREE_BODIES]->max_intrs ||
+    if ( system->total_thbodies > lists[THREE_BODIES]->num_intrs ||
             system->total_bonds > lists[THREE_BODIES]->n )
     {
-        if ( system->total_thbodies > lists[THREE_BODIES]->max_intrs )
+        if ( system->total_thbodies > lists[THREE_BODIES]->num_intrs )
         {
-            system->total_thbodies = MAX( (int)(lists[THREE_BODIES]->max_intrs * SAFE_ZONE),
+            system->total_thbodies = MAX( (int)(lists[THREE_BODIES]->num_intrs * SAFE_ZONE),
                     system->total_thbodies );
         }
         if ( system->total_bonds > lists[THREE_BODIES]->n )
@@ -1263,7 +1263,7 @@ static void Print_HBonds( reax_system *system, int step )
 void Cuda_Init_Neighbor_Indices( reax_system *system, reax_list **lists )
 {
     int blocks;
-    reax_list *far_nbrs = (*lists+FAR_NBRS);
+    reax_list *far_nbrs = lists[FAR_NBRS];
 
     /* init indices */
     Cuda_Scan_Excl_Sum( system->d_max_far_nbrs, far_nbrs->index, system->total_cap );
@@ -1707,10 +1707,10 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
             data->step, lists, thbody );
 
 #if defined(DEBUG_FOCUS)
-    fprintf( stderr, "system->total_thbodies = %d, lists:THREE_BODIES->max_intrs = %d,\n",
-            system->total_thbodies, lists[THREE_BODIES]->max_intrs );
-    fprintf( stderr, "lists:THREE_BODIES->n = %d, lists:BONDS->max_intrs = %d,\n",
-            lists[THREE_BODIES]->n, lists[BONDS]->max_intrs );
+    fprintf( stderr, "system->total_thbodies = %d, lists:THREE_BODIES->num_intrs = %d,\n",
+            system->total_thbodies, lists[THREE_BODIES]->num_intrs );
+    fprintf( stderr, "lists:THREE_BODIES->n = %d, lists:BONDS->num_intrs = %d,\n",
+            lists[THREE_BODIES]->n, lists[BONDS]->num_intrs );
     fprintf( stderr, "system->total_thbodies = %d\n", system->total_thbodies );
 #endif
 

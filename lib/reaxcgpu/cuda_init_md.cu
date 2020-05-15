@@ -261,9 +261,10 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
    Cuda_Make_List(system->total_cap, system->total_far_nbrs,
             TYP_FAR_NEIGHBOR, lists[FAR_NBRS]);
 
-   printf("Number %d, num:%d \n", cpu_lists->allocated,lists[FAR_NBRS]->max_intrs);
+   printf("Number %d, num:%d \n", (cpu_lists+FAR_NBRS)->num_intrs,lists[FAR_NBRS]->num_intrs);
 
    printf("Size of cpu list %d \n", sizeof(cpu_lists));
+
 
    copy_host_device( (cpu_lists+FAR_NBRS)->index, lists[FAR_NBRS]->index,
 		   system->total_cap * sizeof(int),
@@ -274,9 +275,10 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
 		   system->total_cap * sizeof(int),
                       hipMemcpyHostToDevice, "Output_Sync_Lists::far_neighbor_list" );
 
-    /*Cuda_Init_Neighbor_Indices( system, lists );
+   //TB:: Verify if requried to use this
+    Cuda_Init_Neighbor_Indices( system, lists );
 
-    Cuda_Generate_Neighbor_Lists( system, data, workspace, lists );*/ //TB::Commented out. Replaced with above copies from CPU side writreaxlists
+    /*Cuda_Generate_Neighbor_Lists( system, data, workspace, lists );*/ //TB::Commented out. Replaced with above copies from CPU side writreaxlists
 
     /* estimate storage for bonds, hbonds, and sparse matrix */
     

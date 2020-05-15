@@ -606,31 +606,31 @@ void Cuda_Deallocate_Matrix( sparse_matrix *H )
 }
 
 
-void Cuda_Reallocate_Neighbor_List( reax_list *far_nbrs, size_t n, size_t max_intrs )
+void Cuda_Reallocate_Neighbor_List( reax_list *far_nbrs, size_t n, size_t num_intrs )
 {
 	Cuda_Delete_List( far_nbrs );
-	Cuda_Make_List( n, max_intrs, TYP_FAR_NEIGHBOR, far_nbrs );
+	Cuda_Make_List( n, num_intrs, TYP_FAR_NEIGHBOR, far_nbrs );
 }
 
 
-void Cuda_Reallocate_HBonds_List( reax_list *hbonds, size_t n, size_t max_intrs )
+void Cuda_Reallocate_HBonds_List( reax_list *hbonds, size_t n, size_t num_intrs )
 {
 	Cuda_Delete_List( hbonds );
-	Cuda_Make_List( n, max_intrs, TYP_HBOND, hbonds );
+	Cuda_Make_List( n, num_intrs, TYP_HBOND, hbonds );
 }
 
 
-void Cuda_Reallocate_Bonds_List( reax_list *bonds, size_t n, size_t max_intrs )
+void Cuda_Reallocate_Bonds_List( reax_list *bonds, size_t n, size_t num_intrs )
 {
 	Cuda_Delete_List( bonds );
-	Cuda_Make_List( n, max_intrs, TYP_BOND, bonds );
+	Cuda_Make_List( n, num_intrs, TYP_BOND, bonds );
 }
 
 
-void Cuda_Reallocate_Thbodies_List( reax_list *thbodies, size_t n, size_t max_intrs )
+void Cuda_Reallocate_Thbodies_List( reax_list *thbodies, size_t n, size_t num_intrs )
 {
 	Cuda_Delete_List( thbodies );
-	Cuda_Make_List( n, max_intrs, TYP_THREE_BODY, thbodies );
+	Cuda_Make_List( n, num_intrs, TYP_THREE_BODY, thbodies );
 
 }
 
@@ -663,11 +663,13 @@ void Cuda_ReAllocate( reax_system *system, control_params *control,
 	if( system->N >= DANGER_ZONE * system->total_cap ||
 			(0 && system->N <= LOOSE_ZONE * system->total_cap) ) {
 		Nflag = 1;
-        old_total_cap = system->total_cap;
+		old_total_cap = system->total_cap;
 		system->total_cap = MAX( (int)(system->N * safezone), mincap );
 	}
 
 	printf("N flag %d \n",Nflag);
+
+
 
 	if (Nflag) {
 		/* system */
@@ -676,7 +678,97 @@ void Cuda_ReAllocate( reax_system *system, control_params *control,
 			printf("Not enough space for list \n");
 			exit(0);
 		}
+		Cuda_Deallocate_Workspace( control, workspace );
+		Cuda_Allocate_Workspace( system, control, workspace, system->local_cap,
+				system->total_cap );
 
 	}
+
+	renbr = (data->step - data->prev_steps) % control->reneighbor == 0;
+
+	if (renbr) {
+		far_nbrs = lists[FAR_NBRS];
+
+		if (Nflag || realloc->num_far >= far_nbrs->num_intrs * DANGER_ZONE) {
+			if (realloc->num_far > far_nbrs->num_intrs) {
+				printf("Num far %d , far nbrs %d\n ", realloc->num_far, far_nbrs->num_intrs);
+				printf("Ran out of space \n");
+				exit(0);
+			}
+
+			newsize = static_cast<int>
+			(MAX( realloc->num_far*safezone, mincap*MIN_NBRS ));
+			Cuda_Reallocate_Neighbor_List( far_nbrs, system->total_cap, system->total_far_nbrs );
+			Cuda_Init_Neighbor_Indices( system, lists );
+
+
+			//TB:: Verify if both are same
+			realloc->num_far = 0;
+			realloc->far_nbrs = FALSE;
+
+		}
+	}
+
+	/* hydrogen bonds list */
+	if ( control->hbond_cut > 0.0 && system->numH > 0 )
+	{
+
+		if ( Nflag == TRUE || realloc->hbonds == TRUE )
+		{
+#if defined(DEBUG_FOCUS)
+			fprintf( stderr, "p%d: reallocating hbonds: total_hbonds=%d space=%dMB\n",
+					system->my_rank, system->total_hbonds,
+					(int)(system->total_hbonds * sizeof(hbond_data) / (1024 * 1024)) );
+#endif
+
+			Cuda_Reallocate_HBonds_List( lists[HBONDS], system->total_cap, system->total_hbonds );
+
+			Cuda_Init_HBond_Indices( system, workspace, lists );
+
+			realloc->hbonds = FALSE;
+		}
+	}
+
+	/* bonds list */
+	if ( Nflag == TRUE || realloc->bonds == TRUE )
+	{
+#if defined(DEBUG_FOCUS)
+		fprintf( stderr, "p%d: reallocating bonds: total_bonds=%d, space=%dMB\n",
+				system->my_rank, system->total_bonds,
+				(int)(system->total_bonds * sizeof(bond_data) / (1024 * 1024)) );
+#endif
+
+		Cuda_Reallocate_Bonds_List( lists[BONDS], system->total_cap, system->total_bonds );
+
+		Cuda_Init_Bond_Indices( system, lists );
+
+		realloc->bonds = FALSE;
+	}
+
+
+	 /* 3-body list */
+	    if ( Nflag == TRUE || realloc->thbody == TRUE )
+	    {
+	#if defined(DEBUG_FOCUS)
+	        fprintf( stderr, "p%d: reallocating thbody list: num_thbody=%d, space=%dMB\n",
+	                system->my_rank, system->total_thbodies,
+	                (int)(system->total_thbodies * sizeof(three_body_interaction_data) /
+	                (1024*1024)) );
+	#endif
+
+	        Cuda_Reallocate_Thbodies_List( lists[THREE_BODIES],
+	                system->total_thbodies_indices, system->total_thbodies );
+
+	        realloc->thbody = FALSE;
+	    }
+
+
+
+
+
+
+
+
+
 }
 }

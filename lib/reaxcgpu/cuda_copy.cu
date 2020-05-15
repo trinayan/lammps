@@ -139,7 +139,7 @@ void Output_Sync_Lists( reax_list *host_list, reax_list *device_list, int type )
     {
         Delete_List( host_list );
     }
-    Make_List( device_list->n, device_list->max_intrs, type, host_list );
+    Make_List( device_list->n, device_list->num_intrs, type, host_list );
 
 #if defined(DEBUG_FOCUS)
     fprintf( stderr, " [INFO] trying to copy %d list from device to host\n", type );
@@ -154,26 +154,26 @@ void Output_Sync_Lists( reax_list *host_list, reax_list *device_list, int type )
     {   
         case TYP_FAR_NEIGHBOR:
             copy_host_device( host_list->select.far_nbr_list, device_list->select.far_nbr_list,
-                    sizeof(far_neighbor_data) * device_list->max_intrs,
+                    sizeof(far_neighbor_data) * device_list->num_intrs,
                     hipMemcpyDeviceToHost, "Output_Sync_Lists::far_neighbor_list" );
             break;
 
         case TYP_BOND:
             copy_host_device( host_list->select.bond_list, device_list->select.bond_list,
-                    sizeof(bond_data) * device_list->max_intrs,
+                    sizeof(bond_data) * device_list->num_intrs,
                     hipMemcpyDeviceToHost, "Output_Sync_Lists::bond_list" );
             break;
 
         case TYP_HBOND:
             copy_host_device( host_list->select.hbond_list, device_list->select.hbond_list,
-                    sizeof(hbond_data) * device_list->max_intrs,
+                    sizeof(hbond_data) * device_list->num_intrs,
                     hipMemcpyDeviceToHost, "Output_Sync_Lists::hbond_list" );
             break;
 
         case TYP_THREE_BODY:
             copy_host_device( host_list->select.three_body_list,
                     device_list->select.three_body_list,
-                    sizeof(three_body_interaction_data ) * device_list->max_intrs,
+                    sizeof(three_body_interaction_data ) * device_list->num_intrs,
                     hipMemcpyDeviceToHost, "Output_Sync_Lists::three_body_list" );
             break;
 

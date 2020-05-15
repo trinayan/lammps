@@ -48,7 +48,7 @@ void Print_List( reax_list * const list )
  * */
 void Make_List( int n, int max_intrs, int type, reax_list * const l )
 {
-    if ( l->allocated == TRUE )
+    /*if ( l->allocated == TRUE )
     {
         fprintf( stderr, "[WARNING] attempted to allocate list which was already allocated."
                 " Returning without allocation...\n" );
@@ -99,13 +99,13 @@ void Make_List( int n, int max_intrs, int type, reax_list * const l )
         fprintf( stderr, "[ERROR] unknown list type (%d)\n", l->type );
         MPI_Abort( MPI_COMM_WORLD, INVALID_INPUT );
         break;
-    }
+    }*/
 }
 
 
 void Delete_List( reax_list * const l )
 {
-    if ( l->allocated == FALSE )
+   /* if ( l->allocated == FALSE )
     {
         fprintf( stderr, "[WARNING] attempted to free list which was not allocated."
                 " Returning without deallocation...\n" );
@@ -153,7 +153,7 @@ void Delete_List( reax_list * const l )
         fprintf( stderr, "[ERROR] unknown list type (%d)\n", l->type );
         MPI_Abort( MPI_COMM_WORLD, INVALID_INPUT );
         break;
-    }
+    }*/
 }
 
 

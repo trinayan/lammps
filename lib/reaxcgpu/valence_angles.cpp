@@ -516,7 +516,9 @@ void Valence_Angles( reax_system * const system, control_params * const control,
         }
     }
 
-    if ( num_thb_intrs >= (int)(thb_list->max_intrs * DANGER_ZONE) )
+    printf("Not implemetned in valence \n");
+    exit(0);
+    /*if ( num_thb_intrs >= (int)(thb_list->max_intrs * DANGER_ZONE) )
     {
         system->total_thbodies = MAX( num_thb_intrs * SAFE_ZONE, MIN_3BODIES );
         workspace->realloc.thbody = TRUE;
@@ -528,7 +530,7 @@ void Valence_Angles( reax_system * const system, control_params * const control,
                      data->step, num_thb_intrs, thb_list->max_intrs );
             MPI_Abort( MPI_COMM_WORLD, INSUFFICIENT_MEMORY );
         }
-    }
+    }*/
 
 #if defined(DEBUG_FOCUS)
     fprintf( stderr, "Number of angle interactions: %d\n", num_thb_intrs );

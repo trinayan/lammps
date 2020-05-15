@@ -39,11 +39,11 @@ void Cuda_Adjust_End_Index_Before_ReAllocation(int oldN, int systemN, reax_list 
 /* Allocate space for interaction list
  *
  * n: num. of elements to be allocated for list
- * max_intrs: max. num. of interactions for which to allocate space
+ * num_intrs: max. num. of interactions for which to allocate space
  * type: list interaction type
  * l: pointer to list to be allocated
  * */
-void Cuda_Make_List( int n, int max_intrs, int type, reax_list *l )
+void Cuda_Make_List( int n, int num_intrs, int type, reax_list *l )
 {
     if ( l->allocated == TRUE )
     {
@@ -55,7 +55,7 @@ void Cuda_Make_List( int n, int max_intrs, int type, reax_list *l )
 
     l->allocated = TRUE;
     l->n = n;
-    l->max_intrs = max_intrs;
+    l->num_intrs = num_intrs;
     l->type = type;
 
     cuda_malloc( (void **) &l->index, n * sizeof(int), TRUE, "Cuda_Make_List::index" );
@@ -63,30 +63,30 @@ void Cuda_Make_List( int n, int max_intrs, int type, reax_list *l )
 
     printf("Size %d \n", sizeof(far_neighbor_data)); 
 #if defined(DEBUG_FOCUS)
-    fprintf( stderr, "list: n=%d max_intrs=%d type=%d\n", n, max_intrs, type );
+    fprintf( stderr, "list: n=%d num_intrs=%d type=%d\n", n, num_intrs, type );
 #endif
 
     switch ( l->type )
     {
         case TYP_FAR_NEIGHBOR:
             cuda_malloc( (void **) &l->select.far_nbr_list, 
-                    l->max_intrs * sizeof(far_neighbor_data), TRUE, "Cuda_Make_List::far_nbrs" );
+                    l->num_intrs * sizeof(far_neighbor_data), TRUE, "Cuda_Make_List::far_nbrs" );
             break;
 
         case TYP_THREE_BODY:
             cuda_malloc( (void **) &l->select.three_body_list,
-                    l->max_intrs * sizeof(three_body_interaction_data), TRUE,
+                    l->num_intrs * sizeof(three_body_interaction_data), TRUE,
                     "Cuda_Make_List::three_bodies" );
             break;
 
         case TYP_HBOND:
             cuda_malloc( (void **) &l->select.hbond_list, 
-                    l->max_intrs * sizeof(hbond_data), TRUE, "Cuda_Make_List::hbonds" );
+                    l->num_intrs * sizeof(hbond_data), TRUE, "Cuda_Make_List::hbonds" );
             break;            
 
         case TYP_BOND:
             cuda_malloc( (void **) &l->select.bond_list,
-                    l->max_intrs * sizeof(bond_data), TRUE, "Cuda_Make_List::bonds" );
+                    l->num_intrs * sizeof(bond_data), TRUE, "Cuda_Make_List::bonds" );
             break;
 
         default:

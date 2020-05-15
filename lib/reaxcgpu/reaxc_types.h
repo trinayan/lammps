@@ -2216,7 +2216,6 @@ struct reax_list
     /* total num. of entities, each of which correspond to zero or more interactions */
     int n;
     /* max. num. of interactions for which space is allocated */
-    int max_intrs;
     /* beginning position for interactions corresponding to a particular entity,
      * where the entity ID used for indexing is an integer between 0 and n - 1, inclusive */
     int *index;
