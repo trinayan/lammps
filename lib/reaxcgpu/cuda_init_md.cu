@@ -266,14 +266,17 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
    printf("Size of cpu list %d \n", sizeof(cpu_lists));
 
 
-   copy_host_device( (cpu_lists+FAR_NBRS)->index, lists[FAR_NBRS]->index,
+   /*copy_host_device( (cpu_lists+FAR_NBRS)->index, lists[FAR_NBRS]->index,
 		   system->total_cap * sizeof(int),
                       hipMemcpyHostToDevice, "Output_Sync_Lists::far_neighbor_list" );
 
 
    copy_host_device( (cpu_lists+FAR_NBRS)->end_index, lists[FAR_NBRS]->end_index,
 		   system->total_cap * sizeof(int),
-                      hipMemcpyHostToDevice, "Output_Sync_Lists::far_neighbor_list" );
+                      hipMemcpyHostToDevice, "Output_Sync_Lists::far_neighbor_list" );*/
+
+   Cuda_Write_Reax_Lists(system,  lists, cpu_lists);
+
 
    //TB:: Verify if requried to use this
     Cuda_Init_Neighbor_Indices( system, lists );
@@ -321,6 +324,21 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
      * three body interactions requires that bond orders have
      * been computed, delay estimation until computation */
 }
+
+
+
+void Cuda_Write_Reax_Lists(reax_system *system, reax_list **gpu_lists, reax_list *cpu_lists) {
+
+	   copy_host_device( (cpu_lists+FAR_NBRS)->index, gpu_lists[FAR_NBRS]->index,
+			   system->total_cap * sizeof(int),
+	                      hipMemcpyHostToDevice, "Output_Sync_Lists::far_neighbor_list" );
+
+
+	   copy_host_device( (cpu_lists+FAR_NBRS)->end_index, gpu_lists[FAR_NBRS]->end_index,
+			   system->total_cap * sizeof(int),
+	                      hipMemcpyHostToDevice, "Output_Sync_Lists::far_neighbor_list" );
+}
+
 
 
 void Cuda_Initialize( reax_system *system, control_params *control,

@@ -71,6 +71,9 @@ extern "C" void Cuda_ReAllocate( reax_system *system, control_params *control,
 extern "C" void Cuda_Reset( reax_system *system, control_params *control,
         simulation_data *data, storage *workspace, reax_list **lists);
 
+
+extern "C" void Cuda_Write_Reax_Lists(reax_system *system, reax_list**, reax_list*);
+
 using namespace LAMMPS_NS;
 
 static const char cite_pair_reax_c[] =
@@ -520,6 +523,8 @@ void PairReaxCGPU::setup( )
 
     write_reax_lists();
 
+
+
     printf("Number in CPU %d \n", (cpu_lists+FAR_NBRS)->num_intrs);
 
 
@@ -558,11 +563,6 @@ void PairReaxCGPU::setup( )
 
     // check if I need to shrink/extend my data-structs
 
-   // ReAllocate( system, control, data, workspace, &cpu_lists );
-	reallocate_data *realloc;
-	realloc = &(workspace->realloc);
-
-    printf("Num far %d \n",realloc->num_far);
     Cuda_ReAllocate(system, control,
             data, workspace, gpu_lists);
   }
@@ -619,17 +619,17 @@ void PairReaxCGPU::compute(int eflag, int vflag)
 
 
   Cuda_Reset(system, control, data, workspace, gpu_lists);
-
-  printf("Force incomplete after reset  \n");
-  exit(0);
-
   workspace->realloc.num_far = write_reax_lists();
+  printf("Num far %d \n", workspace->realloc.num_far);
+ Cuda_Write_Reax_Lists(system,  gpu_lists, cpu_lists);
+
+
+
   // timing for filling in the reax lists
   if (comm->me == 0) {
     t_end = MPI_Wtime();
     data->timing.nbrs = t_end - t_start;
   }
-
 
 
   // forces
