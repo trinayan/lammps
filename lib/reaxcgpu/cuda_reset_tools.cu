@@ -84,10 +84,10 @@ void Cuda_Reset( reax_system *system, control_params *control,
 
     if ( control->virial )
     {
+    	printf("Cuda virtial \n");
         Reset_Pressures( data );
     }
 
-    //TB:: Commented here
     Cuda_Reset_Workspace( system, workspace );
 
 #if defined(DEBUG_FOCUS)

@@ -67,6 +67,10 @@ extern "C" void Cuda_Adjust_End_Index_Before_ReAllocation(int oldN, int systemN,
 extern "C" void Cuda_ReAllocate( reax_system *system, control_params *control,
         simulation_data *data, storage *workspace, reax_list **lists);
 
+
+extern "C" void Cuda_Reset( reax_system *system, control_params *control,
+        simulation_data *data, storage *workspace, reax_list **lists);
+
 using namespace LAMMPS_NS;
 
 static const char cite_pair_reax_c[] =
@@ -612,10 +616,13 @@ void PairReaxCGPU::compute(int eflag, int vflag)
 
   setup();
 
-  printf("Force incomplete \n");
+
+
+  Cuda_Reset(system, control, data, workspace, gpu_lists);
+
+  printf("Force incomplete after reset  \n");
   exit(0);
 
-  /*Reset( system, control, data, workspace, &lists );
   workspace->realloc.num_far = write_reax_lists();
   // timing for filling in the reax lists
   if (comm->me == 0) {
@@ -623,9 +630,11 @@ void PairReaxCGPU::compute(int eflag, int vflag)
     data->timing.nbrs = t_end - t_start;
   }
 
+
+
   // forces
 
-  Compute_Forces(system,control,data,workspace,&lists,out_control,mpi_data);
+  /*Compute_Forces(system,control,data,workspace,&lists,out_control,mpi_data);
   read_reax_forces(vflag);
 
   for(int k = 0; k < system->N; ++k) {
