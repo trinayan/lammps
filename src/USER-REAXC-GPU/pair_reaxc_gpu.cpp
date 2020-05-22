@@ -74,6 +74,11 @@ extern "C" void Cuda_Reset( reax_system *system, control_params *control,
 
 extern "C" void Cuda_Write_Reax_Lists(reax_system *system, reax_list**, reax_list*);
 
+
+extern "C" int Cuda_Compute_Forces( reax_system *system, control_params *control,
+        simulation_data *data, storage *workspace, reax_list **lists,
+        output_controls *out_control, mpi_datatypes *mpi_data );
+
 using namespace LAMMPS_NS;
 
 static const char cite_pair_reax_c[] =
@@ -634,6 +639,9 @@ void PairReaxCGPU::compute(int eflag, int vflag)
 
   // forces
 
+  printf("Computing forces \n");
+  Cuda_Compute_Forces(system, control, data, workspace, gpu_lists, out_control, mpi_data);
+
   /*Compute_Forces(system,control,data,workspace,&lists,out_control,mpi_data);
   read_reax_forces(vflag);
 
@@ -749,6 +757,7 @@ void PairReaxCGPU::get_distance( rvec xj, rvec xi, double *d_sqr, rvec *dvec )
 void PairReaxCGPU::set_far_nbr( far_neighbor_data *fdest,
                               int j, double d, rvec dvec )
 {
+
   fdest->nbr = j;
   fdest->d = d;
   rvec_Copy( fdest->dvec, dvec );

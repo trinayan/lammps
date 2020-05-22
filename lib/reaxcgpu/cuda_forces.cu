@@ -1584,6 +1584,7 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
                 control->blocks_n, control->block_size );
 #endif
 
+
         hipLaunchKernelGGL(Cuda_Calculate_BO_init, dim3(control->blocks_n), dim3(control->block_size ), 0, 0,  system->d_my_atoms, system->reax_param.d_sbp, 
               *(workspace->d_workspace), system->N );
         hipDeviceSynchronize( );
@@ -1969,146 +1970,10 @@ int Cuda_Compute_Forces( reax_system *system, control_params *control,
         simulation_data *data, storage *workspace, reax_list **lists,
         output_controls *out_control, mpi_datatypes *mpi_data )
 {
-    int charge_flag, retVal;
-    static int init_forces_done = FALSE;
+	Cuda_Compute_Bonded_Forces(system, control, data, workspace, lists, out_control);
 
-#if defined(LOG_PERFORMANCE)
-    real t_start = 0;
+	Cuda_Compute_NonBonded_Forces(system, control, data, workspace, lists, out_control,mpi_data);
 
-    //MPI_Barrier( MPI_COMM_WORLD );
-    if ( system->my_rank == MASTER_NODE )
-    {
-        t_start = Get_Time( );
-    }
-#endif
 
-    retVal = SUCCESS;
-
-    /********* init forces ************/
-    if ( control->charge_freq && (data->step - data->prev_steps) % control->charge_freq == 0 )
-    {
-        charge_flag = TRUE;
-    }
-    else
-    {
-        charge_flag = FALSE;
-    }
-
-    if ( init_forces_done == FALSE )
-    {
-        if ( charge_flag == TRUE )
-        {
-            retVal = Cuda_Init_Forces( system, control, data, workspace, lists, out_control );
-        }
-        else
-        {
-            retVal = Cuda_Init_Forces_No_Charges( system, control, data, workspace, lists, out_control );
-        }
-
-        if ( retVal == SUCCESS )
-        {
-            init_forces_done = TRUE;
-        }
-    }
-
-    if ( retVal == SUCCESS )
-    {
-        //validate_sparse_matrix( system, workspace );
-
-#if defined(LOG_PERFORMANCE)
-        //MPI_Barrier( MPI_COMM_WORLD );
-
-        if ( system->my_rank == MASTER_NODE )
-        {
-            Update_Timing_Info( &t_start, &data->timing.init_forces );
-        }
-#endif
-
-        /********* bonded interactions ************/
-        retVal = Cuda_Compute_Bonded_Forces( system, control, data,
-                workspace, lists, out_control );
-
-#if defined(LOG_PERFORMANCE)
-        //MPI_Barrier( MPI_COMM_WORLD );
-
-        if ( system->my_rank == MASTER_NODE )
-        {
-            Update_Timing_Info( &t_start, &data->timing.bonded );
-        }
-#endif
-
-#if defined(DEBUG_FOCUS)
-        fprintf( stderr, "p%d @ step%d: completed bonded\n",
-                 system->my_rank, data->step );
-        MPI_Barrier( MPI_COMM_WORLD );
-#endif
-    }
-
-    if ( retVal == SUCCESS )
-    {
-    /**************** charges ************************/
-#if defined(PURE_REAX)
-        if ( charge_flag == TRUE )
-        {
-            Cuda_Compute_Charges( system, control, data, workspace, out_control, mpi_data );
-        }
-
-#if defined(LOG_PERFORMANCE)
-        //MPI_Barrier( MPI_COMM_WORLD );
-        if ( system->my_rank == MASTER_NODE )
-        {
-            Update_Timing_Info( &t_start, &data->timing.cm );
-        }
-#endif
-
-#if defined(DEBUG_FOCUS)
-        fprintf( stderr, "p%d @ step%d: qeq completed\n", system->my_rank, data->step );
-        MPI_Barrier( MPI_COMM_WORLD );
-#endif
-
-#endif //PURE_REAX
-
-        /********* nonbonded interactions ************/
-        Cuda_Compute_NonBonded_Forces( system, control, data, workspace,
-                lists, out_control, mpi_data );
-
-#if defined(LOG_PERFORMANCE)
-        //MPI_Barrier( MPI_COMM_WORLD );
-
-        if ( system->my_rank == MASTER_NODE )
-        {
-            Update_Timing_Info( &t_start, &data->timing.nonb );
-        }
-#endif
-
-#if defined(DEBUG_FOCUS)
-        fprintf( stderr, "p%d @ step%d: nonbonded forces completed\n",
-                system->my_rank, data->step );
-        MPI_Barrier( MPI_COMM_WORLD );
-#endif
-
-        /*********** total force ***************/
-        Cuda_Compute_Total_Force( system, control, data, workspace, lists, mpi_data );
-
-#if defined(LOG_PERFORMANCE)
-        //MPI_Barrier( MPI_COMM_WORLD );
-
-        if ( system->my_rank == MASTER_NODE )
-        {
-            Update_Timing_Info( &t_start, &data->timing.bonded );
-        }
-#endif
-
-#if defined(DEBUG_FOCUS)
-        fprintf( stderr, "p%d @ step%d: total forces computed\n",
-                system->my_rank, data->step );
-//        Print_Total_Force( system, data, workspace );
-        MPI_Barrier( MPI_COMM_WORLD );
-#endif
-
-        init_forces_done = FALSE;
-    }
-
-    return retVal;
 }
 

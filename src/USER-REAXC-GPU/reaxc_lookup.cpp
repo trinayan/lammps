@@ -164,6 +164,8 @@ int Init_Lookup_Tables( reax_system *system, control_params *control,
 	double *h, *fh, *fvdw, *fele, *fCEvd, *fCEclmb;
 	double v0_vdw, v0_ele, vlast_vdw, vlast_ele;
 	LR_lookup_table ** & LR = workspace->LR;
+	//LR_lookup_table ** & d_LR = workspace->d_LR;
+
 
 	/* initializations */
 	v0_vdw = 0;
@@ -188,10 +190,15 @@ int Init_Lookup_Tables( reax_system *system, control_params *control,
 
 	LR = (LR_lookup_table**)
 	    		scalloc(system->error_ptr,  num_atom_types, sizeof(LR_lookup_table*), "lookup:LR");
-	for( i = 0; i < num_atom_types; ++i )
-		LR[i] = (LR_lookup_table*)
-		scalloc(system->error_ptr,  num_atom_types, sizeof(LR_lookup_table), "lookup:LR[i]");
+	/*d_LR = (LR_lookup_table**)
+	    	    		scalloc(system->error_ptr,  num_atom_types, sizeof(LR_lookup_table*), "lookup:LR");*/
 
+	for( i = 0; i < num_atom_types; ++i )
+	{
+		LR[i] = (LR_lookup_table*)scalloc(system->error_ptr,  num_atom_types, sizeof(LR_lookup_table), "lookup:LR[i]");
+		//d_LR[i] = (LR_lookup_table*)scalloc(system->error_ptr,  num_atom_types, sizeof(LR_lookup_table), "d_lookup:LR[i]");
+
+	}
 	for( i = 0; i < MAX_ATOM_TYPES; ++i )
 		existing_types[i] = 0;
 	for( i = 0; i < system->n; ++i )

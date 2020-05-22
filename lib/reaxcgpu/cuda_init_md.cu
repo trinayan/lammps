@@ -35,6 +35,8 @@ static void Cuda_Init_Scratch_Space( storage *workspace )
     cuda_malloc( (void **)&workspace->scratch, DEVICE_SCRATCH_SIZE, TRUE,
             "Cuda_Init_Scratch_Space::workspace->scratch" );
 
+    printf("Scratch size %d \n", DEVICE_SCRATCH_SIZE);
+
     workspace->host_scratch = (void *) smalloc( HOST_SCRATCH_SIZE,
             "Cuda_Init_Scratch_Space::workspace->host_scratch" );
 }
@@ -337,6 +339,9 @@ void Cuda_Write_Reax_Lists(reax_system *system, reax_list **gpu_lists, reax_list
 	   copy_host_device( (cpu_lists+FAR_NBRS)->end_index, gpu_lists[FAR_NBRS]->end_index,
 			   system->total_cap * sizeof(int),
 	                      hipMemcpyHostToDevice, "Output_Sync_Lists::far_neighbor_list" );
+
+
+
 }
 
 

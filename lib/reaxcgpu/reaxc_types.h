@@ -2127,7 +2127,7 @@ struct storage
     /* temporary workspace (GPU) */
   void *scratch;
     /* lookup table for force tabulation (GPU) */
-  LR_lookup_table **d_LR;
+  LR_lookup_table *d_LR;
     /* storage (GPU) */
   storage *d_workspace;
   
