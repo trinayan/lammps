@@ -176,20 +176,20 @@ int Init_Lookup_Tables( reax_system *system, control_params *control,
 	num_atom_types = system->reax_param.num_atom_types;
 	dr = control->nonb_cut / control->tabulate;
 	h = (double*)
-	    		smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:h");
+	    				smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:h");
 	fh = (double*)
-	    		smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fh");
+	    				smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fh");
 	fvdw = (double*)
-	    		smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fvdw");
+	    				smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fvdw");
 	fCEvd = (double*)
-	    		smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fCEvd");
+	    				smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fCEvd");
 	fele = (double*)
-	    		smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fele");
+	    				smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fele");
 	fCEclmb = (double*)
-	    		smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fCEclmb");
+	    				smalloc(system->error_ptr,  (control->tabulate+2) * sizeof(double), "lookup:fCEclmb");
 
 	LR = (LR_lookup_table**)
-	    		scalloc(system->error_ptr,  num_atom_types, sizeof(LR_lookup_table*), "lookup:LR");
+	    				scalloc(system->error_ptr,  num_atom_types, sizeof(LR_lookup_table*), "lookup:LR");
 	/*d_LR = (LR_lookup_table**)
 	    	    		scalloc(system->error_ptr,  num_atom_types, sizeof(LR_lookup_table*), "lookup:LR");*/
 
@@ -217,18 +217,18 @@ int Init_Lookup_Tables( reax_system *system, control_params *control,
 					LR[i][j].dx = dr;
 					LR[i][j].inv_dx = control->tabulate / control->nonb_cut;
 					LR[i][j].y = (LR_data*)
-	            		smalloc(system->error_ptr,  LR[i][j].n * sizeof(LR_data), "lookup:LR[i,j].y");
+	            				smalloc(system->error_ptr,  LR[i][j].n * sizeof(LR_data), "lookup:LR[i,j].y");
 					LR[i][j].H = (cubic_spline_coef*)
-	            		smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),"lookup:LR[i,j].H");
+	            				smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),"lookup:LR[i,j].H");
 					LR[i][j].vdW = (cubic_spline_coef*)
-	            		smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),"lookup:LR[i,j].vdW");
+	            				smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),"lookup:LR[i,j].vdW");
 					LR[i][j].CEvd = (cubic_spline_coef*)
-	            		smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),"lookup:LR[i,j].CEvd");
+	            				smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),"lookup:LR[i,j].CEvd");
 					LR[i][j].ele = (cubic_spline_coef*)
-	            		smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),"lookup:LR[i,j].ele");
+	            				smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),"lookup:LR[i,j].ele");
 					LR[i][j].CEclmb = (cubic_spline_coef*)
-	            		smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),
-	            				"lookup:LR[i,j].CEclmb");
+	            				smalloc(system->error_ptr,  LR[i][j].n*sizeof(cubic_spline_coef),
+	            						"lookup:LR[i,j].CEclmb");
 
 					for( r = 1; r <= control->tabulate; ++r ) {
 						LR_vdW_Coulomb( system, workspace, control, i, j, r * dr, &(LR[i][j].y[r]) );
@@ -279,10 +279,11 @@ int Init_Lookup_Tables( reax_system *system, control_params *control,
 	free(fele);
 	free(fCEclmb);
 
+	printf("Copying LR table \n");
 
 
-  copy_LR_table_to_device( system, control, workspace, aggregated );
-  return 1;
+	copy_LR_table_to_device( system, control, workspace, aggregated );
+	return 1;
 }
 
 

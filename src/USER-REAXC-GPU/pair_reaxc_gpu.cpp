@@ -527,6 +527,8 @@ void PairReaxCGPU::setup( )
     (cpu_lists+FAR_NBRS)->error_ptr=error;
 
     write_reax_lists();
+    Initialize( system, control, data, workspace, &cpu_lists, out_control,
+                   mpi_data, world );
 
 
 
@@ -537,13 +539,14 @@ void PairReaxCGPU::setup( )
     Cuda_Initialize(system, control, data, workspace, gpu_lists,cpu_lists, out_control,
                 mpi_data);
 
-    if (control->tabulate) {
+
+    /*if (control->tabulate) {
         char msg[MAX_STR];
 
     	if (Init_Lookup_Tables( system, control, workspace, mpi_data, msg ) == FAILURE) {
     	    control->error_ptr->one(FLERR,"Lookup table could not be created");
     	    }
-    }
+    }*/
 
     for( int k = 0; k < system->N; ++k )
     {

@@ -410,6 +410,7 @@ CUDA_GLOBAL void k_tabulated_vdW_coulomb_energy( reax_atom *my_atoms,
 		{
 			nbr_pj = &far_nbrs->select.far_nbr_list[pj];
 			j = nbr_pj->nbr;
+			printf("J is %d \n", j);
 			orig_j  = my_atoms[j].orig_id;
 
 			//if ( nbr_pj->d <= control->nonb_cut && (j < natoms || orig_i < orig_j) ) {
