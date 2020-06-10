@@ -39,6 +39,10 @@
 #include "reaxc_defs.h"
 #include "reaxc_types.h"
 
+
+extern "C" void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_gpu);
+
+
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
@@ -131,6 +135,12 @@ FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
   for (int i = 0; i < atom->nmax; i++)
     for (int j = 0; j < nprev; ++j)
       s_hist[i][j] = t_hist[i][j] = 0;
+
+
+  qeq_gpu = (fix_qeq_gpu *)
+      				memory->smalloc(sizeof(fix_qeq_gpu),"reax:storage");
+
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -173,6 +183,7 @@ void FixQEqReax::post_constructor()
 
 int FixQEqReax::setmask()
 {
+//TB:: Understand what this does
   int mask = 0;
   mask |= PRE_FORCE;
   mask |= PRE_FORCE_RESPA;
@@ -256,6 +267,8 @@ void FixQEqReax::allocate_storage()
   memory->create(q,size,"qeq:q");
   memory->create(r,size,"qeq:r");
   memory->create(d,size,"qeq:d");
+
+  CudaAllocateStorageForFixQeq(nmax, dual_enabled, qeq_gpu);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -275,6 +288,8 @@ void FixQEqReax::deallocate_storage()
   memory->destroy( q );
   memory->destroy( r );
   memory->destroy( d );
+
+  //TB::Add GPU free here
 }
 
 /* ---------------------------------------------------------------------- */

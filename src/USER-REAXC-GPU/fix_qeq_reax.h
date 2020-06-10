@@ -31,6 +31,7 @@ FixStyle(qeq/reax,FixQEqReax)
 #define LMP_FIX_QEQ_REAX_H
 
 #include "fix.h"
+#include "reaxc_types.h"
 
 namespace LAMMPS_NS {
 
@@ -54,6 +55,7 @@ class FixQEqReax : public Fix {
 
   int matvecs;
   double qeq_time;
+  fix_qeq_gpu *qeq_gpu;
 
  protected:
   int nevery,reaxflag;

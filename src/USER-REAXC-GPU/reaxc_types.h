@@ -558,6 +558,7 @@ typedef struct molecule molecule;
 typedef struct LR_data LR_data;
 typedef struct cubic_spline_coef cubic_spline_coef;
 typedef struct LR_lookup_table LR_lookup_table;
+typedef struct  fix_qeq_gpu fix_qeq_gpu;
 typedef struct puremd_handle puremd_handle;
 
 
@@ -2453,6 +2454,50 @@ struct LR_lookup_table
     cubic_spline_coef *CEclmb;
 };
 
+
+struct fix_qeq_gpu
+{
+	  int matvecs;
+	  double qeq_time;
+
+	  int nevery,reaxflag;
+	  int n, N, m_fill;
+	  int n_cap, nmax, m_cap;
+	  int pack_flag;
+	  int nlevels_respa;
+
+
+	  //class NeighList *list;
+	  //class PairReaxCGPU *reaxc;
+
+	  double swa, swb;      // lower/upper Taper cutoff radius
+	  double Tap[8];        // Taper function
+	  double tolerance;     // tolerance for the norm of the rel residual in CG
+
+	  double *chi,*eta,*gamma;  // qeq parameters
+	  double **shld;
+
+	  rc_bigint ngroup;
+
+	  // fictitious charges
+
+	  double *s, *t;
+	  double **s_hist, **t_hist;
+	  int nprev;
+
+
+	  sparse_matrix H;
+	  double *Hdia_inv;
+	  double *b_s, *b_t;
+	  double *b_prc, *b_prm;
+
+	  //CG storage
+	  double *p, *q, *r, *d;
+
+	  // dual CG support
+	  int dual_enabled;  // 0: Original, separate s & t optimization; 1: dual optimization
+	  int matvecs_s, matvecs_t; // Iteration count for each system
+};
 
 /* Handle for working with an instance of the PuReMD library */
 struct puremd_handle

@@ -1,5 +1,4 @@
 
-#include "cuda_allocate.h"
 
 #include "cuda_allocate.h"
 #include "cuda_forces.h"
@@ -381,7 +380,8 @@ void Cuda_Allocate_Workspace( reax_system *system, control_params *control,
 	cuda_malloc( (void **) &workspace->bond_mark, total_real, TRUE, "bond_mark" );
 
 	/* charge matrix storage */
-	if ( control->cm_solver_pre_comp_type == DIAG_PC )
+	//TB:: Moved to CudAllocateStorageForFixQEq
+	/*if ( control->cm_solver_pre_comp_type == DIAG_PC )
 	{
 		cuda_malloc( (void **) &workspace->Hdia_inv, total_cap * sizeof(real), TRUE, "Hdia_inv" );
 	}
@@ -390,7 +390,7 @@ void Cuda_Allocate_Workspace( reax_system *system, control_params *control,
 	cuda_malloc( (void **) &workspace->b_prc, total_cap * sizeof(real), TRUE, "b_prc" );
 	cuda_malloc( (void **) &workspace->b_prm, total_cap * sizeof(real), TRUE, "b_prm" );
 	cuda_malloc( (void **) &workspace->s, total_cap * sizeof(real), TRUE, "s" );
-	cuda_malloc( (void **) &workspace->t, total_cap * sizeof(real), TRUE, "t" );
+	cuda_malloc( (void **) &workspace->t, total_cap * sizeof(real), TRUE, "t" );*/
 	if ( control->cm_solver_pre_comp_type == ICHOLT_PC ||
 			control->cm_solver_pre_comp_type == ILUT_PAR_PC )
 	{
@@ -416,10 +416,11 @@ void Cuda_Allocate_Workspace( reax_system *system, control_params *control,
 		break;
 
 	case CG_S:
-		cuda_malloc( (void **) &workspace->r, total_cap * sizeof(real), TRUE, "r" );
+		//TB:: Moved to CudaAllocateStorageForFixQEq
+		/*cuda_malloc( (void **) &workspace->r, total_cap * sizeof(real), TRUE, "r" );
 		cuda_malloc( (void **) &workspace->d, total_cap * sizeof(real), TRUE, "d" );
 		cuda_malloc( (void **) &workspace->q, total_cap * sizeof(real), TRUE, "q" );
-		cuda_malloc( (void **) &workspace->p, total_cap * sizeof(real), TRUE, "p" );
+		cuda_malloc( (void **) &workspace->p, total_cap * sizeof(real), TRUE, "p" );*/
 		cuda_malloc( (void **) &workspace->r2, total_cap * sizeof(rvec2), TRUE, "r2" );
 		cuda_malloc( (void **) &workspace->d2, total_cap * sizeof(rvec2), TRUE, "d2" );
 		cuda_malloc( (void **) &workspace->q2, total_cap * sizeof(rvec2), TRUE, "q2" );
@@ -667,10 +668,6 @@ void Cuda_ReAllocate( reax_system *system, control_params *control,
 		system->total_cap = MAX( (int)(system->N * safezone), mincap );
 	}
 
-	printf("N flag %d \n",Nflag);
-
-
-
 	if (Nflag) {
 		/* system */
 		ret = Cuda_Reallocate_System( system,workspace,  old_total_cap, system->total_cap, msg );
@@ -746,29 +743,73 @@ void Cuda_ReAllocate( reax_system *system, control_params *control,
 	}
 
 
-	 /* 3-body list */
-	    if ( Nflag == TRUE || realloc->thbody == TRUE )
-	    {
-	#if defined(DEBUG_FOCUS)
-	        fprintf( stderr, "p%d: reallocating thbody list: num_thbody=%d, space=%dMB\n",
-	                system->my_rank, system->total_thbodies,
-	                (int)(system->total_thbodies * sizeof(three_body_interaction_data) /
-	                (1024*1024)) );
-	#endif
+	/* 3-body list */
+	if ( Nflag == TRUE || realloc->thbody == TRUE )
+	{
+#if defined(DEBUG_FOCUS)
+		fprintf( stderr, "p%d: reallocating thbody list: num_thbody=%d, space=%dMB\n",
+				system->my_rank, system->total_thbodies,
+				(int)(system->total_thbodies * sizeof(three_body_interaction_data) /
+						(1024*1024)) );
+#endif
 
-	        Cuda_Reallocate_Thbodies_List( lists[THREE_BODIES],
-	                system->total_thbodies_indices, system->total_thbodies );
+		Cuda_Reallocate_Thbodies_List( lists[THREE_BODIES],
+				system->total_thbodies_indices, system->total_thbodies );
 
-	        realloc->thbody = FALSE;
-	    }
+		realloc->thbody = FALSE;
+	}
+}
 
+void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_gpu)
+{
+	cuda_malloc( (void **) &qeq_gpu->s, sizeof(int) * nmax, TRUE,
+			"Cuda_Allocate_Matrix::start" );
+	cuda_malloc( (void **) &qeq_gpu->t, sizeof(int) * nmax, TRUE,
+			"Cuda_Allocate_Matrix::start" );
+	cuda_malloc( (void **) &qeq_gpu->Hdia_inv, sizeof(int) * nmax, TRUE,
+			"Cuda_Allocate_Matrix::start" );
+	cuda_malloc( (void **) &qeq_gpu->b_s, sizeof(int) * nmax, TRUE,
+			"Cuda_Allocate_Matrix::start" );
+	cuda_malloc( (void **) &qeq_gpu->b_t, sizeof(int) * nmax, TRUE,
+			"Cuda_Allocate_Matrix::start" );
+	cuda_malloc( (void **) &qeq_gpu->b_prc, sizeof(int) * nmax, TRUE,
+			"Cuda_Allocate_Matrix::start" );
+	cuda_malloc( (void **) &qeq_gpu->b_prm, sizeof(int) * nmax, TRUE,
+			"Cuda_Allocate_Matrix::start" );
 
+	int size = nmax;
+	if (dual_enabled)
+	{
+		size*= 2;
+	}
 
+	cuda_malloc( (void **) &qeq_gpu->p, sizeof(int) * size, TRUE,
+				"Cuda_Allocate_Matrix::start" );
+	cuda_malloc( (void **) &qeq_gpu->q, sizeof(int) * size, TRUE,
+				"Cuda_Allocate_Matrix::start" );
+	cuda_malloc( (void **) &qeq_gpu->r, sizeof(int) * size, TRUE,
+				"Cuda_Allocate_Matrix::start" );
+	cuda_malloc( (void **) &qeq_gpu->d, sizeof(int) * size, TRUE,
+				"Cuda_Allocate_Matrix::start" );
 
+	/*memory->create(s,nmax,"qeq:s");
+	  memory->create(t,nmax,"qeq:t");
 
+	  memory->create(Hdia_inv,nmax,"qeq:Hdia_inv");
+	  memory->create(b_s,nmax,"qeq:b_s");
+	  memory->create(b_t,nmax,"qeq:b_t");
+	  memory->create(b_prc,nmax,"qeq:b_prc");
+	  memory->create(b_prm,nmax,"qeq:b_prm");
 
+	  // dual CG support
+	  int size = nmax;
+	  if (dual_enabled) size*= 2;
 
-
+	  memory->create(p,size,"qeq:p");
+	  memory->create(q,size,"qeq:q");
+	  memory->create(r,size,"qeq:r");
+	  memory->create(d,size,"qeq:d");*/
 
 }
 }
+

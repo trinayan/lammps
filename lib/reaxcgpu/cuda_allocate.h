@@ -30,7 +30,9 @@ void Cuda_Deallocate_Matrix( sparse_matrix * );
 
 void Cuda_ReAllocate( reax_system*, control_params*, simulation_data*, storage*,
         reax_list**);
+void Cuda_Allocate_Simulation_Data( simulation_data *data );
 
+void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_gpu);
 
 #ifdef __cplusplus
 }
