@@ -44,3 +44,4 @@ Thumbs.db
 /cmake_install.cmake
 /lmp
 /src/USER-REAXC-GPU/lmp_reaxcgpu
+src/USER-REAXC-GPU/lmp_reaxcgpu

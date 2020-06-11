@@ -2030,6 +2030,7 @@ struct sparse_matrix
 };
 
 
+
 /* used to determine if and how much space should be reallocated */
 struct reallocate_data
 {

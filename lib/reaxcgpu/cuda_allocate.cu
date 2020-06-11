@@ -784,32 +784,26 @@ void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_
 	}
 
 	cuda_malloc( (void **) &qeq_gpu->p, sizeof(int) * size, TRUE,
-				"Cuda_Allocate_Matrix::start" );
+			"Cuda_Allocate_Matrix::start" );
 	cuda_malloc( (void **) &qeq_gpu->q, sizeof(int) * size, TRUE,
-				"Cuda_Allocate_Matrix::start" );
+			"Cuda_Allocate_Matrix::start" );
 	cuda_malloc( (void **) &qeq_gpu->r, sizeof(int) * size, TRUE,
-				"Cuda_Allocate_Matrix::start" );
+			"Cuda_Allocate_Matrix::start" );
 	cuda_malloc( (void **) &qeq_gpu->d, sizeof(int) * size, TRUE,
-				"Cuda_Allocate_Matrix::start" );
+			"Cuda_Allocate_Matrix::start" );
 
-	/*memory->create(s,nmax,"qeq:s");
-	  memory->create(t,nmax,"qeq:t");
+}
+void  CudaAllocateMatrixForFixQeq(fix_qeq_gpu *qeq_gpu, int n, int m)
+{
+	qeq_gpu->H.m = m;
+	qeq_gpu->H.n = n;
 
-	  memory->create(Hdia_inv,nmax,"qeq:Hdia_inv");
-	  memory->create(b_s,nmax,"qeq:b_s");
-	  memory->create(b_t,nmax,"qeq:b_t");
-	  memory->create(b_prc,nmax,"qeq:b_prc");
-	  memory->create(b_prm,nmax,"qeq:b_prm");
-
-	  // dual CG support
-	  int size = nmax;
-	  if (dual_enabled) size*= 2;
-
-	  memory->create(p,size,"qeq:p");
-	  memory->create(q,size,"qeq:q");
-	  memory->create(r,size,"qeq:r");
-	  memory->create(d,size,"qeq:d");*/
-
+	cuda_malloc( (void **) &qeq_gpu->H.start, sizeof(int) * n, TRUE,
+			"Cuda_Allocate_Matrix::start" );
+	cuda_malloc( (void **) &qeq_gpu->H.end, sizeof(int) * n, TRUE,
+			"Cuda_Allocate_Matrix::end" );
+	cuda_malloc( (void **) &qeq_gpu->H.entries, sizeof(sparse_matrix_entry) * m, TRUE,
+			"Cuda_Allocate_Matrix::entries" );
 }
 }
 

@@ -41,6 +41,9 @@
 
 
 extern "C" void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_gpu);
+extern "C" void  CudaAllocateMatrixForFixQeq(fix_qeq_gpu *qeq_gpu,int n_cap, int m_cap);
+
+
 
 
 using namespace LAMMPS_NS;
@@ -347,6 +350,10 @@ void FixQEqReax::allocate_matrix()
   memory->create(H.numnbrs,n_cap,"qeq:H.numnbrs");
   memory->create(H.jlist,m_cap,"qeq:H.jlist");
   memory->create(H.val,m_cap,"qeq:H.val");
+
+
+  CudaAllocateMatrixForFixQeq(qeq_gpu, n_cap, m_cap);
+
 }
 
 /* ---------------------------------------------------------------------- */

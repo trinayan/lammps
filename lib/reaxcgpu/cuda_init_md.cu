@@ -290,8 +290,8 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
 	Cuda_Estimate_Storages( system, control, lists,
 			TRUE, TRUE, TRUE, data->step );
 
-	//TB:: Verify if these are used
-	Cuda_Allocate_Matrix( &workspace->d_workspace->H, system->total_cap, system->total_cm_entries );
+	//TB:: Matrix allocated by fix
+	//Cuda_Allocate_Matrix( &workspace->d_workspace->H, system->total_cap, system->total_cm_entries );
 	Cuda_Init_Sparse_Matrix_Indices( system, &workspace->d_workspace->H );
 
 
