@@ -42,7 +42,7 @@
 
 extern "C" void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_gpu);
 extern "C" void  CudaAllocateMatrixForFixQeq(fix_qeq_gpu *qeq_gpu,int n_cap, int m_cap);
-
+extern "C" void  CudaInitStorageForFixQeq(fix_qeq_gpu *qeq_gpu,double *Hdia_inv, double *b_s,double *b_t,double *b_prc,double *b_prm,double *s,double *t, int NN);
 
 
 
@@ -364,6 +364,8 @@ void FixQEqReax::deallocate_matrix()
   memory->destroy( H.numnbrs );
   memory->destroy( H.jlist );
   memory->destroy( H.val );
+
+  //TB:: Implement deallocation of device side H matrix
 }
 
 /* ---------------------------------------------------------------------- */
@@ -494,6 +496,7 @@ void FixQEqReax::init_storage()
   else
     NN = list->inum + list->gnum;
 
+
   for (int i = 0; i < NN; i++) {
     Hdia_inv[i] = 1. / eta[atom->type[i]];
     b_s[i] = -chi[atom->type[i]];
@@ -502,6 +505,9 @@ void FixQEqReax::init_storage()
     b_prm[i] = 0;
     s[i] = t[i] = 0;
   }
+
+
+  CudaInitStorageForFixQeq(qeq_gpu, Hdia_inv, b_s, b_t, b_prc, b_prm, s, t,NN);
 }
 
 /* ---------------------------------------------------------------------- */
