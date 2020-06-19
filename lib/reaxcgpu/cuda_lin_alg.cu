@@ -645,7 +645,7 @@ int Cuda_dual_CG( reax_system *system, control_params *control, storage *workspa
             hipMemcpyHostToDevice, "Cuda_dual_CG:x:put" );
 
     //originally we were using only H->n which was system->n (init_md.c)
-    //Cuda_Dual_Matvec( control, H, x, workspace->d_workspace->q2, H->n, system->total_cap );
+    //swb( control, H, x, workspace->d_workspace->q2, H->n, system->total_cap );
     Cuda_Dual_Matvec( control, H, x, workspace->d_workspace->q2, system->N, system->total_cap );
 
     copy_host_device( spad, workspace->d_workspace->q2, sizeof(rvec2) * system->total_cap,
