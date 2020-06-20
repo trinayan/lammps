@@ -43,6 +43,9 @@
 extern "C" void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_gpu);
 extern "C" void  CudaAllocateMatrixForFixQeq(fix_qeq_gpu *qeq_gpu,int n_cap, int m_cap);
 extern "C" void  CudaInitStorageForFixQeq(fix_qeq_gpu *qeq_gpu,double *Hdia_inv, double *b_s,double *b_t,double *b_prc,double *b_prm,double *s,double *t, int NN);
+extern "C" void  Cuda_Calculate_H_Matrix(  int inum, int *ilist,int *jlist, int *numneigh,int **firstneigh, int *type, LAMMPS_NS::tagint *tag, double **x , int *mask);
+extern "C" void  Cuda_Init_Taper(fix_qeq_gpu *qeq_gpu, double *Tap, int numTap);
+extern "C" void  Cuda_Init_Shielding(fix_qeq_gpu *qeq_gpu,double **shld,int ntypes);
 
 
 
@@ -220,6 +223,7 @@ void FixQEqReax::pertype_parameters(char *arg)
   reaxflag = 0;
   ntypes = atom->ntypes;
 
+  printf("Pertype parameters\n");
   memory->create(chi,ntypes+1,"qeq/reax:chi");
   memory->create(eta,ntypes+1,"qeq/reax:eta");
   memory->create(gamma,ntypes+1,"qeq/reax:gamma");
@@ -423,6 +427,8 @@ void FixQEqReax::init_shielding()
   for (i = 1; i <= ntypes; ++i)
     for (j = 1; j <= ntypes; ++j)
       shld[i][j] = pow( gamma[i] * gamma[j], -1.5);
+
+  Cuda_Init_Shielding(qeq_gpu,shld,ntypes);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -444,6 +450,7 @@ void FixQEqReax::init_taper()
   swb2 = SQR( swb);
   swb3 = CUBE( swb);
 
+
   Tap[7] =  20.0 / d7;
   Tap[6] = -70.0 * (swa + swb) / d7;
   Tap[5] =  84.0 * (swa2 + 3.0*swa*swb + swb2) / d7;
@@ -453,6 +460,9 @@ void FixQEqReax::init_taper()
   Tap[1] = 140.0 * swa3 * swb3 / d7;
   Tap[0] = (-35.0*swa3*swb2*swb2 + 21.0*swa2*swb3*swb2 -
             7.0*swa*swb3*swb3 + swb3*swb3*swb) / d7;
+
+
+  Cuda_Init_Taper(qeq_gpu,Tap,8);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -624,7 +634,18 @@ void FixQEqReax::compute_H()
     firstneigh = list->firstneigh;
   }
 
+
+
+  printf("System N %d \n", reaxc->system->N);
+  Cuda_Calculate_H_Matrix(inum,ilist,jlist,numneigh,firstneigh,type,tag,x,mask);
+
+
   // fill in the H matrix
+
+  printf("I num %d \n", inum);
+
+  printf("Atom nmax %d, n local %d  \n", atom->nmax,atom->nlocal);
+
   m_fill = 0;
   r_sqr = 0;
   for (ii = 0; ii < inum; ii++) {
@@ -638,6 +659,7 @@ void FixQEqReax::compute_H()
         j = jlist[jj];
         j &= NEIGHMASK;
 
+        printf("I,J %d,%d \n",i,j);
         dx = x[j][0] - x[i][0];
         dy = x[j][1] - x[i][1];
         dz = x[j][2] - x[i][2];
@@ -666,6 +688,8 @@ void FixQEqReax::compute_H()
       H.numnbrs[i] = m_fill - H.firstnbr[i];
     }
   }
+
+  exit(0);
 
   if (m_fill >= H.m) {
     char str[128];
