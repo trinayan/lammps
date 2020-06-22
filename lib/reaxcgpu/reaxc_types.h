@@ -2496,11 +2496,11 @@ struct fix_qeq_gpu
 	  //class PairReaxCGPU *reaxc;
 
 	  double swa, swb;      // lower/upper Taper cutoff radius
-	  double Tap[8];        // Taper function
+	  double *d_Tap;        // Taper function
 	  double tolerance;     // tolerance for the norm of the rel residual in CG
 
 	  double *chi,*eta,*gamma;  // qeq parameters
-	  double **shld;
+	  double *shld;
 
 	  rc_bigint ngroup;
 

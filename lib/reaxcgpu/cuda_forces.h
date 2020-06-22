@@ -17,7 +17,6 @@ void Cuda_Init_HBond_Indices( reax_system *, storage *,
 
 void Cuda_Init_Bond_Indices( reax_system *, reax_list **);
 
-void Cuda_Init_Sparse_Matrix_Indices( reax_system *, sparse_matrix * );
 
 void Cuda_Init_Three_Body_Indices( int *, int, reax_list ** );
 
@@ -39,6 +38,7 @@ void Cuda_Compute_NonBonded_Forces( reax_system *, control_params *,
 
 int Cuda_Compute_Forces( reax_system*, control_params*, simulation_data*,
         storage*, reax_list**, output_controls*, mpi_datatypes* );
+CUDA_GLOBAL void k_init_end_index( int * intr_cnt, int *indices, int *end_indices, int N );
 
 
 #ifdef __cplusplus

@@ -585,26 +585,7 @@ void Cuda_Deallocate_Workspace( control_params *control, storage *workspace )
 }
 
 
-void Cuda_Allocate_Matrix( sparse_matrix *H, int n, int m )
-{
-	H->m = m;
-	H->n = n;
 
-	cuda_malloc( (void **) &H->start, sizeof(int) * n, TRUE,
-			"Cuda_Allocate_Matrix::start" );
-	cuda_malloc( (void **) &H->end, sizeof(int) * n, TRUE,
-			"Cuda_Allocate_Matrix::end" );
-	cuda_malloc( (void **) &H->entries, sizeof(sparse_matrix_entry) * m, TRUE,
-			"Cuda_Allocate_Matrix::entries" );
-}
-
-
-void Cuda_Deallocate_Matrix( sparse_matrix *H )
-{
-	cuda_free( H->start, "Cuda_Deallocate_Matrix::start" );
-	cuda_free( H->end, "Cuda_Deallocate_Matrix::end" );
-	cuda_free( H->entries, "Cuda_Deallocate_Matrix::entries" );
-}
 
 
 void Cuda_Reallocate_Neighbor_List( reax_list *far_nbrs, size_t n, size_t num_intrs )

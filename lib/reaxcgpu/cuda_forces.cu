@@ -1332,20 +1332,7 @@ void Cuda_Init_Bond_Indices( reax_system *system, reax_list **lists )
  *
  * system: atomic system info.
  * H: charge matrix */
-void Cuda_Init_Sparse_Matrix_Indices( reax_system *system, sparse_matrix *H )
-{
-	int blocks;
 
-	/* init indices */
-	Cuda_Scan_Excl_Sum( system->d_max_cm_entries, H->start, system->total_cap );
-
-	/* init end_indices */
-	blocks = system->total_cap / DEF_BLOCK_SIZE
-			+ ((system->total_cap % DEF_BLOCK_SIZE == 0) ? 0 : 1);
-	hipLaunchKernelGGL(k_init_end_index, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  system->d_cm_entries, H->start, H->end, system->total_cap );
-	hipDeviceSynchronize( );
-	cudaCheckError( );
-}
 
 
 /* Initialize indices for three body list post reallocation

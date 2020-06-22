@@ -43,10 +43,11 @@
 extern "C" void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_gpu);
 extern "C" void  CudaAllocateMatrixForFixQeq(fix_qeq_gpu *qeq_gpu,int n_cap, int m_cap);
 extern "C" void  CudaInitStorageForFixQeq(fix_qeq_gpu *qeq_gpu,double *Hdia_inv, double *b_s,double *b_t,double *b_prc,double *b_prm,double *s,double *t, int NN);
-extern "C" void  Cuda_Calculate_H_Matrix(  int inum, int *ilist,int *jlist, int *numneigh,int **firstneigh, int *type, LAMMPS_NS::tagint *tag, double **x , int *mask);
+extern "C" void  Cuda_Calculate_H_Matrix(reax_list **gpu_lists, reax_system *system);
 extern "C" void  Cuda_Init_Taper(fix_qeq_gpu *qeq_gpu, double *Tap, int numTap);
 extern "C" void  Cuda_Init_Shielding(fix_qeq_gpu *qeq_gpu,double **shld,int ntypes);
-
+extern "C" void  Cuda_Allocate_Matrix( sparse_matrix *, int, int );
+extern "C" void  Cuda_Init_Sparse_Matrix_Indices( reax_system *system, sparse_matrix *H );
 
 
 using namespace LAMMPS_NS;
@@ -213,9 +214,12 @@ void FixQEqReax::pertype_parameters(char *arg)
     if (chi == NULL || eta == NULL || gamma == NULL)
       error->all(FLERR,
                  "Fix qeq/reax could not extract params from pair reax/c/gpu");
+
+    //TB: SBP parameters updated in Sync_System for GPU
     return;
   }
 
+  //TB:: Not sure why the below part exists and if it will ever be called
   int i,itype,ntypes,rv;
   double v1,v2,v3;
   FILE *pf;
@@ -635,14 +639,22 @@ void FixQEqReax::compute_H()
   }
 
 
+  printf("Ttoal cap, total cm , n %d,%d,%d\n", reaxc->system->total_cap, reaxc->system->total_cm_entries,reaxc->system->N);
+  Cuda_Allocate_Matrix(&qeq_gpu->H, reaxc->system->total_cap, reaxc->system->total_cm_entries );
+  Cuda_Init_Sparse_Matrix_Indices( reaxc->system, &qeq_gpu->H);
+
+  Cuda_Calculate_H_Matrix(reaxc->gpu_lists, reaxc->system,qeq_gpu);
+
+
 
   printf("System N %d \n", reaxc->system->N);
-  Cuda_Calculate_H_Matrix(inum,ilist,jlist,numneigh,firstneigh,type,tag,x,mask);
+
+  exit(0);
 
 
   // fill in the H matrix
 
-  printf("I num %d \n", inum);
+  /*printf("I num %d \n", inum);
 
   printf("Atom nmax %d, n local %d  \n", atom->nmax,atom->nlocal);
 
@@ -697,7 +709,7 @@ void FixQEqReax::compute_H()
              m_fill, H.m);
     error->warning(FLERR,str);
     error->all(FLERR,"Fix qeq/reax has insufficient QEq matrix size");
-  }
+  }*/
 }
 
 /* ---------------------------------------------------------------------- */
