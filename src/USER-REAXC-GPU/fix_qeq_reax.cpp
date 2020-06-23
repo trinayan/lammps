@@ -43,7 +43,7 @@
 extern "C" void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_gpu);
 extern "C" void  CudaAllocateMatrixForFixQeq(fix_qeq_gpu *qeq_gpu,int n_cap, int m_cap);
 extern "C" void  CudaInitStorageForFixQeq(fix_qeq_gpu *qeq_gpu,double *Hdia_inv, double *b_s,double *b_t,double *b_prc,double *b_prm,double *s,double *t, int NN);
-extern "C" void  Cuda_Calculate_H_Matrix(reax_list **gpu_lists, reax_system *system);
+extern "C" void  Cuda_Calculate_H_Matrix(reax_list **gpu_lists,  reax_system *system,fix_qeq_gpu *qeq_gpu, control_params *control);
 extern "C" void  Cuda_Init_Taper(fix_qeq_gpu *qeq_gpu, double *Tap, int numTap);
 extern "C" void  Cuda_Init_Shielding(fix_qeq_gpu *qeq_gpu,double **shld,int ntypes);
 extern "C" void  Cuda_Allocate_Matrix( sparse_matrix *, int, int );
@@ -643,7 +643,7 @@ void FixQEqReax::compute_H()
   Cuda_Allocate_Matrix(&qeq_gpu->H, reaxc->system->total_cap, reaxc->system->total_cm_entries );
   Cuda_Init_Sparse_Matrix_Indices( reaxc->system, &qeq_gpu->H);
 
-  Cuda_Calculate_H_Matrix(reaxc->gpu_lists, reaxc->system,qeq_gpu);
+  Cuda_Calculate_H_Matrix(reaxc->gpu_lists, reaxc->system,qeq_gpu,reaxc->control);
 
 
 
