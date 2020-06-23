@@ -13,6 +13,10 @@
 
 extern "C"
 {
+
+
+
+
 /* Compute the charge matrix entries and store the matrix in full format
  * using the far neighbors list (stored in full format) and according to
  * the full shell communication method */
@@ -22,7 +26,51 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms, single_body_parameters 
 		int *max_cm_entries, int *realloc_cm_entries )
 {
 
+
 }
+/* Compute the distances and displacement vectors for entries
+ * in the far neighbors list if it's a NOT re-neighboring step */
+CUDA_GLOBAL void k_init_distance( reax_atom *my_atoms, reax_list far_nbrs_list, int N )
+{
+	int i, j, pj;
+	int start_i, end_i;
+	reax_atom *atom_i, *atom_j;
+	far_neighbor_data *nbr_pj;
+
+	i = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if ( i >= N )
+	{
+		return;
+	}
+
+	atom_i = &my_atoms[i];
+	start_i = Cuda_Start_Index( i, &far_nbrs_list );
+	end_i =   Cuda_End_Index( i, &far_nbrs_list );
+
+	/* update distance and displacement vector between atoms i and j (i-j) */
+	for ( pj = start_i; pj < end_i; ++pj )
+	{
+		nbr_pj = &far_nbrs_list.select.far_nbr_list[pj];
+		j = nbr_pj->nbr;
+		atom_j = &my_atoms[j];
+
+		if ( i < j )
+		{
+			nbr_pj->dvec[0] = atom_j->x[0] - atom_i->x[0];
+			nbr_pj->dvec[1] = atom_j->x[1] - atom_i->x[1];
+			nbr_pj->dvec[2] = atom_j->x[2] - atom_i->x[2];
+		}
+		else
+		{
+			nbr_pj->dvec[0] = atom_i->x[0] - atom_j->x[0];
+			nbr_pj->dvec[1] = atom_i->x[1] - atom_j->x[1];
+			nbr_pj->dvec[2] = atom_i->x[2] - atom_j->x[2];
+		}
+		nbr_pj->d = rvec_Norm(nbr_pj->dvec);
+	}
+}
+
 void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_gpu)
 {
 	cuda_malloc( (void **) &qeq_gpu->s, sizeof(int) * nmax, TRUE,
@@ -88,8 +136,16 @@ void  CudaInitStorageForFixQeq(fix_qeq_gpu *qeq_gpu, double *Hdia_inv, double *b
 
 }
 
-void  Cuda_Calculate_H_Matrix(reax_list **lists,  reax_system *system, fix_qeq_gpu *qeq_gpu)
+void  Cuda_Calculate_H_Matrix(reax_list **lists,  reax_system *system, fix_qeq_gpu *qeq_gpu,control_params *control)
 {
+
+	printf("Blocks n %d, block size %d\n", control->blocks_n, control->block_size);
+
+	hipLaunchKernelGGL(k_init_distance, dim3(control->blocks_n), dim3(control->block_size), 0, 0,  system->d_my_atoms, *(lists[FAR_NBRS]), system->N );
+	hipDeviceSynchronize();
+
+
+
 
 
 	int blocks;
