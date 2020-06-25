@@ -2026,6 +2026,7 @@ struct sparse_matrix
     int *end;
     /* secondary structure for matrix entry info */
     sparse_matrix_entry *entries;
+
 };
 
 
@@ -2475,7 +2476,7 @@ struct fix_qeq_gpu
 	  double tolerance;     // tolerance for the norm of the rel residual in CG
 
 	  double *chi,*eta,*gamma;  // qeq parameters
-	  double *shld;
+	  double * v;
 
 	  rc_bigint ngroup;
 
@@ -2497,6 +2498,10 @@ struct fix_qeq_gpu
 	  // dual CG support
 	  int dual_enabled;  // 0: Original, separate s & t optimization; 1: dual optimization
 	  int matvecs_s, matvecs_t; // Iteration count for each system
+
+	  reax_atom *fix_my_atoms;
+	  reax_atom *d_fix_my_atoms;
+
 };
 
 /* Handle for working with an instance of the PuReMD library */

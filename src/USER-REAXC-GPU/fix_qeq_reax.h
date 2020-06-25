@@ -140,6 +140,7 @@ class FixQEqReax : public Fix {
 
   virtual void vector_sum(double*,double,double*,double,double*,int);
   virtual void vector_add(double*, double, double*,int);
+   void intializeAtomsAndCopyToDevice();
 
   // dual CG support
   int dual_enabled;  // 0: Original, separate s & t optimization; 1: dual optimization
