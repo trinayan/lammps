@@ -17,14 +17,108 @@ extern "C"
 
 
 
+CUDA_DEVICE real Init_Charge_Matrix_Entry( single_body_parameters *sbp_i, real *workspace_Tap,
+		int i, int j, real r_ij, real gamma)
+{
+	real Tap, dr3gamij_1, dr3gamij_3, ret;
+
+	ret = 0.0;
+
+
+	Tap = workspace_Tap[7] * r_ij + workspace_Tap[6];
+	Tap = Tap * r_ij + workspace_Tap[5];
+	Tap = Tap * r_ij + workspace_Tap[4];
+	Tap = Tap * r_ij + workspace_Tap[3];
+	Tap = Tap * r_ij + workspace_Tap[2];
+	Tap = Tap * r_ij + workspace_Tap[1];
+	Tap = Tap * r_ij + workspace_Tap[0];
+
+	/* shielding */
+	dr3gamij_1 = r_ij * r_ij * r_ij
+			+ POW( gamma, -3.0 );
+	dr3gamij_3 = POW( dr3gamij_1 , 1.0 / 3.0 );
+
+	/* i == j: periodic self-interaction term
+	 * i != j: general interaction term */
+	ret = ((i == j) ? 0.5 : 1.0) * Tap * EV_to_KCALpMOL / dr3gamij_3;
+	return ret;
+}
+
+
 /* Compute the charge matrix entries and store the matrix in full format
  * using the far neighbors list (stored in full format) and according to
  * the full shell communication method */
 CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms, single_body_parameters *sbp,
-		two_body_parameters *tbp,
-		reax_list far_nbr_list, int num_atom_types,
-		int *max_cm_entries, int *realloc_cm_entries )
+		reax_list far_nbrs_list, int num_atom_types,
+		int *max_cm_entries, int *realloc_cm_entries, sparse_matrix H, int nonb_cut, int inum, double *d_Tap,  two_body_parameters *tbp, double *gamma)
 {
+	int i, j, pj;
+	int start_i, end_i;
+	int type_i, type_j;
+	int cm_top;
+	int num_cm_entries;
+	real r_ij;
+	single_body_parameters *sbp_i;
+	two_body_parameters *twbp;
+	reax_atom *atom_i, *atom_j;
+	far_neighbor_data *nbr_pj;
+	double shld;
+
+	i = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if ( i >= inum)
+	{
+		return;
+	}
+
+	cm_top = H.start[i];
+
+	atom_i = &my_atoms[i];
+	type_i = atom_i->type;
+	start_i = Cuda_Start_Index( i, &far_nbrs_list );
+	end_i = Cuda_End_Index(i, &far_nbrs_list );
+	sbp_i = &sbp[type_i];
+
+
+	/* diagonal entry in the matrix */
+
+	/*H.entries[cm_top].j = i;
+	H->val[cm_top] = Init_Charge_Matrix_Entry( sbp_i, workspace.Tap, control,
+	               i, i, 0.0, 0.0, DIAGONAL );
+	        ++cm_top;*/
+
+	/* update i-j distance - check if j is within cutoff */
+	for ( pj = start_i; pj < end_i; ++pj )
+	{
+		nbr_pj = &far_nbrs_list.select.far_nbr_list[pj];
+		j = nbr_pj->nbr;
+
+		if ( nbr_pj->d  <= nonb_cut)
+		{
+			atom_j = &my_atoms[j];
+			type_j = atom_j->type;
+
+			twbp = &tbp[ index_tbp(type_i, type_j, num_atom_types) ];
+			r_ij =  nbr_pj->d;
+
+
+			H.entries[cm_top].j = j;
+			shld = pow( gamma[type_i] * gamma[type_j], -1.5);
+
+
+			H.entries[cm_top].val = Init_Charge_Matrix_Entry(sbp_i, d_Tap,
+					i, H.entries[cm_top].j, r_ij, shld);
+
+
+			++cm_top;
+		}
+	}
+
+
+	H.end[i] = cm_top;
+	num_cm_entries = cm_top - H.start[i];
+
+	//printf("Cm top %d \n", cm_)
 
 
 }
@@ -136,26 +230,39 @@ void  CudaInitStorageForFixQeq(fix_qeq_gpu *qeq_gpu, double *Hdia_inv, double *b
 
 }
 
-void  Cuda_Calculate_H_Matrix(reax_list **lists,  reax_system *system, fix_qeq_gpu *qeq_gpu,control_params *control)
+void  Cuda_Init_Fix_Atoms(reax_system *system,fix_qeq_gpu *qeq_gpu)
+
+{
+	cuda_malloc( (void **) &qeq_gpu->d_fix_my_atoms, sizeof(reax_atom) * system->N, TRUE,
+				"Cuda_Allocate_Matrix::start" );
+	copy_host_device(qeq_gpu->fix_my_atoms, qeq_gpu->d_fix_my_atoms, sizeof(reax_atom) * system->N,
+	            hipMemcpyHostToDevice, "Sync_Atoms::system->my_atoms");
+}
+
+void  Cuda_Calculate_H_Matrix(reax_list **lists,  reax_system *system, fix_qeq_gpu *qeq_gpu,control_params *control, int inum)
 {
 
 	printf("Blocks n %d, block size %d\n", control->blocks_n, control->block_size);
 
-	hipLaunchKernelGGL(k_init_distance, dim3(control->blocks_n), dim3(control->block_size), 0, 0,  system->d_my_atoms, *(lists[FAR_NBRS]), system->N );
+	printf("Control cut %f\n", control->nonb_cut);
+
+	//TB:: Verify if to use inum or system->N in kernel call
+	hipLaunchKernelGGL(k_init_distance, dim3(control->blocks_n), dim3(control->block_size), 0, 0,  qeq_gpu->d_fix_my_atoms, *(lists[FAR_NBRS]), inum );
 	hipDeviceSynchronize();
-
-
-
-
 
 	int blocks;
 	blocks = (system->N) / DEF_BLOCK_SIZE +
 			(((system->N % DEF_BLOCK_SIZE) == 0) ? 0 : 1);
 
-	hipLaunchKernelGGL(k_init_cm_full_fs , dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  system->d_my_atoms, system->reax_param.d_sbp,
-			system->reax_param.d_tbp,
-			*(lists[FAR_NBRS]),system->reax_param.num_atom_types,system->d_max_cm_entries,system->d_realloc_cm_entries);
+	printf("Blocks %d , blocks size %d\n", blocks, DEF_BLOCK_SIZE);
+
+	printf("N %d, h n %d \n",system->N, qeq_gpu->H.n);
+
+	//TB:: Verify if to use inum or system->N  or qeq_gpu->H.n in kernel call
+	hipLaunchKernelGGL(k_init_cm_full_fs , dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  qeq_gpu->d_fix_my_atoms, system->reax_param.d_sbp,
+			*(lists[FAR_NBRS]),system->reax_param.num_atom_types,system->d_max_cm_entries,system->d_realloc_cm_entries,qeq_gpu->H, control->nonb_cut, inum, qeq_gpu->d_Tap, system->reax_param.d_tbp,qeq_gpu->gamma);
 	hipDeviceSynchronize( );
+
 
 	/*int  *d_ilist, *d_jlist, *d_numneigh, *d_firstneigh;
 	int *d_type;
@@ -212,15 +319,17 @@ void Cuda_Init_Taper(fix_qeq_gpu *qeq_gpu,double *Tap, int numTap)
 			"Cuda_Allocate_Matrix::start");
 	copy_host_device(Tap, qeq_gpu->d_Tap, sizeof(double) * numTap,
 			hipMemcpyHostToDevice, "Cuda_CG::q:get");
+
+
+
 }
 
-void  Cuda_Init_Shielding(fix_qeq_gpu *qeq_gpu,double **shld,int ntypes)
+void  Cuda_Init_Shielding(fix_qeq_gpu *qeq_gpu,double *gamma,int ntypes)
 {
-	cuda_malloc( (void **) &qeq_gpu->shld, sizeof(double)*ntypes*ntypes, TRUE,
+	cuda_malloc( (void **) &qeq_gpu->gamma, sizeof(double)*(ntypes+1), TRUE,
 			"Cuda_Allocate_Matrix::start");
-	copy_host_device(shld, qeq_gpu->shld, sizeof(double) * ntypes * ntypes,
+	copy_host_device(gamma, qeq_gpu->gamma, sizeof(double) * (ntypes+1),
 			hipMemcpyHostToDevice, "Cuda_CG::q:get");
-
 }
 
 void Cuda_Allocate_Matrix( sparse_matrix *H, int n, int m )
