@@ -2483,7 +2483,12 @@ struct fix_qeq_gpu
 	  // fictitious charges
 
 	  double *s, *t;
-	  double **s_hist, **t_hist;
+		//rvec2 *b, *x;
+
+
+	 // double **s_hist, **t_hist;
+	  rvec2 *s_hist, *t_hist;
+
 	  int nprev;
 
 

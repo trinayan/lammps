@@ -45,10 +45,12 @@ extern "C" void  CudaAllocateMatrixForFixQeq(fix_qeq_gpu *qeq_gpu,int n_cap, int
 extern "C" void  CudaInitStorageForFixQeq(fix_qeq_gpu *qeq_gpu,double *Hdia_inv, double *b_s,double *b_t,double *b_prc,double *b_prm,double *s,double *t, int NN);
 extern "C" void  Cuda_Calculate_H_Matrix(reax_list **gpu_lists,  reax_system *system,fix_qeq_gpu *qeq_gpu, control_params *control, int inum);
 extern "C" void  Cuda_Init_Taper(fix_qeq_gpu *qeq_gpu, double *Tap, int numTap);
-extern "C" void  Cuda_Init_Shielding(fix_qeq_gpu *qeq_gpu,double *shld,int ntypes);
 extern "C" void  Cuda_Allocate_Matrix( sparse_matrix *, int, int );
 extern "C" void  Cuda_Init_Sparse_Matrix_Indices( reax_system *system, sparse_matrix *H );
 extern "C" void  Cuda_Init_Fix_Atoms(reax_system *system,fix_qeq_gpu *qeq_gpu);
+extern "C" void  Cuda_Init_Matvec_Fix(int nn, fix_qeq_gpu *qeq_gpu, reax_system *system);
+extern "C" void  Cuda_Copy_Pertype_Parameters_To_Device(double *chi,double *eta,double *gamma,int ntypes,fix_qeq_gpu *qeq_gpu);
+
 
 
 using namespace LAMMPS_NS;
@@ -75,7 +77,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-				  Fix(lmp, narg, arg), pertype_option(NULL)
+						  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (lmp->citeme) lmp->citeme->add(cite_fix_qeq_reax);
 
@@ -145,8 +147,7 @@ FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
 			s_hist[i][j] = t_hist[i][j] = 0;
 
 
-	qeq_gpu = (fix_qeq_gpu *)
-      								memory->smalloc(sizeof(fix_qeq_gpu),"reax:storage");
+	qeq_gpu = (fix_qeq_gpu *)memory->smalloc(sizeof(fix_qeq_gpu),"reax:storage");
 
 
 }
@@ -216,6 +217,7 @@ void FixQEqReax::pertype_parameters(char *arg)
 			error->all(FLERR,
 					"Fix qeq/reax could not extract params from pair reax/c/gpu");
 
+		Cuda_Copy_Pertype_Parameters_To_Device(chi,eta,gamma,atom->ntypes,qeq_gpu);
 		//TB: SBP parameters updated in Sync_System for GPU
 		return;
 	}
@@ -435,13 +437,9 @@ void FixQEqReax::init_shielding()
 	{
 		for (j = 1; j <= ntypes; ++j)
 		{
-
 			shld[i][j] = pow( gamma[i] * gamma[j], -1.5);
-			printf("I %d,j%d, gamma:%f,%f\n", i, j, gamma[i],gamma[j]);
 		}
 	}
-	Cuda_Init_Shielding(qeq_gpu,gamma,ntypes);
-
 }
 
 /* ---------------------------------------------------------------------- */
@@ -598,12 +596,16 @@ void FixQEqReax::init_matvec()
 		ilist = list->ilist;
 	}
 
+
+	Cuda_Init_Matvec_Fix(nn, qeq_gpu,reaxc->system);
+
 	for (ii = 0; ii < nn; ++ii) {
 		i = ilist[ii];
 		if (atom->mask[i] & groupbit) {
 
 			/* init pre-conditioner for H and init solution vectors */
-			Hdia_inv[i] = 1. / eta[ atom->type[i] ];
+			Hdia_inv[i] = 1. / eta[ atom->type[i]];
+			printf("Eta Host %f \n",eta[ atom->type[i]]);
 			b_s[i]      = -chi[ atom->type[i] ];
 			b_t[i]      = -1.0;
 
@@ -615,6 +617,8 @@ void FixQEqReax::init_matvec()
 		}
 	}
 
+	exit(0);
+
 	pack_flag = 2;
 	comm->forward_comm_fix(this); //Dist_vector( s );
 	pack_flag = 3;
@@ -625,19 +629,19 @@ void FixQEqReax::init_matvec()
 void FixQEqReax::intializeAtomsAndCopyToDevice()
 {
 	//int *num_bonds = fix_reax->num_bonds;
-	  //int *num_hbonds = fix_reax->num_hbonds;
-	    qeq_gpu->fix_my_atoms = (reax_atom*) malloc(reaxc->system->N * sizeof(reax_atom));
-		for( int i = 0; i < reaxc->system->N; ++i ){
-		    qeq_gpu->fix_my_atoms[i].orig_id = atom->tag[i];
-		    qeq_gpu->fix_my_atoms[i].type = atom->type[i];
-		    qeq_gpu->fix_my_atoms[i].x[0] = atom->x[i][0];
-		    qeq_gpu->fix_my_atoms[i].x[1] = atom->x[i][1];
-		    qeq_gpu->fix_my_atoms[i].x[2] = atom->x[i][2];
-		    qeq_gpu->fix_my_atoms[i].q = atom->q[i];
-		   // qeq_gpu->fix_my_atoms[i].num_bonds = num_bonds[i];
-		    //qeq_gpu->fix_my_atoms[i].num_hbonds = num_hbonds[i];
-		  }
-		Cuda_Init_Fix_Atoms(reaxc->system, qeq_gpu);
+	//int *num_hbonds = fix_reax->num_hbonds;
+	qeq_gpu->fix_my_atoms = (reax_atom*) malloc(reaxc->system->N * sizeof(reax_atom));
+	for( int i = 0; i < reaxc->system->N; ++i ){
+		qeq_gpu->fix_my_atoms[i].orig_id = atom->tag[i];
+		qeq_gpu->fix_my_atoms[i].type = atom->type[i];
+		qeq_gpu->fix_my_atoms[i].x[0] = atom->x[i][0];
+		qeq_gpu->fix_my_atoms[i].x[1] = atom->x[i][1];
+		qeq_gpu->fix_my_atoms[i].x[2] = atom->x[i][2];
+		qeq_gpu->fix_my_atoms[i].q = atom->q[i];
+		// qeq_gpu->fix_my_atoms[i].num_bonds = num_bonds[i];
+		//qeq_gpu->fix_my_atoms[i].num_hbonds = num_hbonds[i];
+	}
+	Cuda_Init_Fix_Atoms(reaxc->system, qeq_gpu);
 
 }
 

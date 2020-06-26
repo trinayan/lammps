@@ -167,19 +167,19 @@ CUDA_GLOBAL void k_init_distance( reax_atom *my_atoms, reax_list far_nbrs_list, 
 
 void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_gpu)
 {
-	cuda_malloc( (void **) &qeq_gpu->s, sizeof(int) * nmax, TRUE,
+	cuda_malloc( (void **) &qeq_gpu->s, sizeof(double) * nmax, TRUE,
 			"Cuda_Allocate_Matrix::start" );
-	cuda_malloc( (void **) &qeq_gpu->t, sizeof(int) * nmax, TRUE,
+	cuda_malloc( (void **) &qeq_gpu->t, sizeof(double) * nmax, TRUE,
 			"Cuda_Allocate_Matrix::start" );
-	cuda_malloc( (void **) &qeq_gpu->Hdia_inv, sizeof(int) * nmax, TRUE,
+	cuda_malloc( (void **) &qeq_gpu->Hdia_inv, sizeof(double) * nmax, TRUE,
 			"Cuda_Allocate_Matrix::start" );
-	cuda_malloc( (void **) &qeq_gpu->b_s, sizeof(int) * nmax, TRUE,
+	cuda_malloc( (void **) &qeq_gpu->b_s, sizeof(double) * nmax, TRUE,
 			"Cuda_Allocate_Matrix::start" );
-	cuda_malloc( (void **) &qeq_gpu->b_t, sizeof(int) * nmax, TRUE,
+	cuda_malloc( (void **) &qeq_gpu->b_t, sizeof(double) * nmax, TRUE,
 			"Cuda_Allocate_Matrix::start" );
-	cuda_malloc( (void **) &qeq_gpu->b_prc, sizeof(int) * nmax, TRUE,
+	cuda_malloc( (void **) &qeq_gpu->b_prc, sizeof(double) * nmax, TRUE,
 			"Cuda_Allocate_Matrix::start" );
-	cuda_malloc( (void **) &qeq_gpu->b_prm, sizeof(int) * nmax, TRUE,
+	cuda_malloc( (void **) &qeq_gpu->b_prm, sizeof(double) * nmax, TRUE,
 			"Cuda_Allocate_Matrix::start" );
 
 	int size = nmax;
@@ -188,14 +188,18 @@ void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_
 		size*= 2;
 	}
 
-	cuda_malloc( (void **) &qeq_gpu->p, sizeof(int) * size, TRUE,
+	cuda_malloc( (void **) &qeq_gpu->p, sizeof(double) * size, TRUE,
 			"Cuda_Allocate_Matrix::start" );
-	cuda_malloc( (void **) &qeq_gpu->q, sizeof(int) * size, TRUE,
+	cuda_malloc( (void **) &qeq_gpu->q, sizeof(double) * size, TRUE,
 			"Cuda_Allocate_Matrix::start" );
-	cuda_malloc( (void **) &qeq_gpu->r, sizeof(int) * size, TRUE,
+	cuda_malloc( (void **) &qeq_gpu->r, sizeof(double) * size, TRUE,
 			"Cuda_Allocate_Matrix::start" );
-	cuda_malloc( (void **) &qeq_gpu->d, sizeof(int) * size, TRUE,
+	cuda_malloc( (void **) &qeq_gpu->d, sizeof(double) * size, TRUE,
 			"Cuda_Allocate_Matrix::start" );
+
+	cuda_malloc( (void **) &qeq_gpu->s_hist, sizeof(rvec4) * nmax, TRUE, "b" );
+	cuda_malloc( (void **) &qeq_gpu->t_hist, sizeof(rvec4) * nmax, TRUE, "x" );
+
 
 }
 void  CudaAllocateMatrixForFixQeq(fix_qeq_gpu *qeq_gpu, int n, int m)
@@ -234,9 +238,9 @@ void  Cuda_Init_Fix_Atoms(reax_system *system,fix_qeq_gpu *qeq_gpu)
 
 {
 	cuda_malloc( (void **) &qeq_gpu->d_fix_my_atoms, sizeof(reax_atom) * system->N, TRUE,
-				"Cuda_Allocate_Matrix::start" );
+			"Cuda_Allocate_Matrix::start" );
 	copy_host_device(qeq_gpu->fix_my_atoms, qeq_gpu->d_fix_my_atoms, sizeof(reax_atom) * system->N,
-	            hipMemcpyHostToDevice, "Sync_Atoms::system->my_atoms");
+			hipMemcpyHostToDevice, "Sync_Atoms::system->my_atoms");
 }
 
 void  Cuda_Calculate_H_Matrix(reax_list **lists,  reax_system *system, fix_qeq_gpu *qeq_gpu,control_params *control, int inum)
@@ -324,13 +328,6 @@ void Cuda_Init_Taper(fix_qeq_gpu *qeq_gpu,double *Tap, int numTap)
 
 }
 
-void  Cuda_Init_Shielding(fix_qeq_gpu *qeq_gpu,double *gamma,int ntypes)
-{
-	cuda_malloc( (void **) &qeq_gpu->gamma, sizeof(double)*(ntypes+1), TRUE,
-			"Cuda_Allocate_Matrix::start");
-	copy_host_device(gamma, qeq_gpu->gamma, sizeof(double) * (ntypes+1),
-			hipMemcpyHostToDevice, "Cuda_CG::q:get");
-}
 
 void Cuda_Allocate_Matrix( sparse_matrix *H, int n, int m )
 {
@@ -369,6 +366,70 @@ void Cuda_Init_Sparse_Matrix_Indices( reax_system *system, sparse_matrix *H )
 }
 
 
+CUDA_GLOBAL void k_init_matvec_fix(fix_qeq_gpu d_qeq_gpu,int nn, single_body_parameters
+		*sbp,reax_atom *my_atoms)
+{
+	int i;
+	int type_i;
+	fix_qeq_gpu *qeq_gpu;
+	qeq_gpu = &d_qeq_gpu;
+
+
+
+
+
+	i = blockIdx.x * blockDim.x + threadIdx.x;
+	if ( i >= nn)
+	{
+		return;
+	}
+	reax_atom *atom;
+	atom = &my_atoms[i];
+	type_i = atom->type;
+
+
+	qeq_gpu->Hdia_inv[i] = 1. / qeq_gpu->eta[type_i];
+	qeq_gpu->b_s[i] = -qeq_gpu->chi[type_i];
+	qeq_gpu->b_t[i] = -1.0;
+
+
+
+	qeq_gpu->t[i] = qeq_gpu->t_hist[i][2] + 3 * ( qeq_gpu->t_hist[i][0] - qeq_gpu->t_hist[i][1]);
+	/* cubic extrapolation for s & t from previous solutions */
+	qeq_gpu->s[i] = 4*(qeq_gpu->s_hist[i][0]+qeq_gpu->s_hist[i][2])-(6*qeq_gpu->s_hist[i][1]+qeq_gpu->s_hist[i][3]);
+
+
+
+}
+
+void  Cuda_Init_Matvec_Fix(int nn, fix_qeq_gpu *qeq_gpu, reax_system *system)
+{
+	int blocks;
+
+	blocks = nn / DEF_BLOCK_SIZE
+			+ (( nn % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
+
+	hipLaunchKernelGGL(k_init_matvec_fix, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0, *(qeq_gpu),nn,system->reax_param.d_sbp,qeq_gpu->d_fix_my_atoms);
+	hipDeviceSynchronize();
+	cudaCheckError();
+}
+
+void  Cuda_Copy_Pertype_Parameters_To_Device(double *chi,double *eta,double *gamma,int ntypes,fix_qeq_gpu *qeq_gpu)
+{
+	cuda_malloc( (void **) &qeq_gpu->gamma, sizeof(double)*(ntypes+1), TRUE,
+				"Cuda_Allocate_Matrix::start");
+	copy_host_device(gamma, qeq_gpu->gamma, sizeof(double) * (ntypes+1),
+				hipMemcpyHostToDevice, "Cuda_CG::q:get");
+	cuda_malloc( (void **) &qeq_gpu->chi, sizeof(double)*(ntypes+1), TRUE,
+					"Cuda_Allocate_Matrix::start");
+	copy_host_device(gamma, qeq_gpu->chi, sizeof(double) * (ntypes+1),
+					hipMemcpyHostToDevice, "Cuda_CG::q:get");
+	cuda_malloc( (void **) &qeq_gpu->eta, sizeof(double)*(ntypes+1), TRUE,
+					"Cuda_Allocate_Matrix::start");
+	copy_host_device(eta, qeq_gpu->eta, sizeof(double) * (ntypes+1),
+					hipMemcpyHostToDevice, "Cuda_CG::q:get");
+
+}
 
 
 
