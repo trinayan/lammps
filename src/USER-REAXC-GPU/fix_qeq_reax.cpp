@@ -50,6 +50,8 @@ extern "C" void  Cuda_Init_Sparse_Matrix_Indices( reax_system *system, sparse_ma
 extern "C" void  Cuda_Init_Fix_Atoms(reax_system *system,fix_qeq_gpu *qeq_gpu);
 extern "C" void  Cuda_Init_Matvec_Fix(int nn, fix_qeq_gpu *qeq_gpu, reax_system *system);
 extern "C" void  Cuda_Copy_Pertype_Parameters_To_Device(double *chi,double *eta,double *gamma,int ntypes,fix_qeq_gpu *qeq_gpu);
+extern "C" void  Cuda_Copy_For_Forward_Comm_Fix(double *h_distance , double *d_distance, int nn);
+
 
 
 
@@ -605,7 +607,6 @@ void FixQEqReax::init_matvec()
 
 			/* init pre-conditioner for H and init solution vectors */
 			Hdia_inv[i] = 1. / eta[ atom->type[i]];
-			printf("Eta Host %f \n",eta[ atom->type[i]]);
 			b_s[i]      = -chi[ atom->type[i] ];
 			b_t[i]      = -1.0;
 
@@ -617,12 +618,18 @@ void FixQEqReax::init_matvec()
 		}
 	}
 
-	exit(0);
 
+	Cuda_Copy_For_Forward_Comm_Fix(s,qeq_gpu->s,nn);
+	Cuda_Copy_For_Forward_Comm_Fix(t,qeq_gpu->t,nn);
+
+
+	//TB:: What does pack flag do
 	pack_flag = 2;
 	comm->forward_comm_fix(this); //Dist_vector( s );
 	pack_flag = 3;
 	comm->forward_comm_fix(this); //Dist_vector( t );
+
+
 }
 
 /*-----------------------------------------------------------------------*/

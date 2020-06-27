@@ -5,6 +5,7 @@
 #include "cuda_utils.h"
 #include "cuda_fix_qeq.h"
 #include "cuda_reduction.h"
+#include "basic_comm.h"
 
 #include "allocate.h"
 #include "index_utils.h"
@@ -429,6 +430,13 @@ void  Cuda_Copy_Pertype_Parameters_To_Device(double *chi,double *eta,double *gam
 	copy_host_device(eta, qeq_gpu->eta, sizeof(double) * (ntypes+1),
 					hipMemcpyHostToDevice, "Cuda_CG::q:get");
 
+}
+
+void  Cuda_Copy_For_Forward_Comm_Fix(double *h_distance , double *d_distance, int nn)
+{
+   copy_host_device(h_distance, d_distance, sizeof(real) * nn,
+            hipMemcpyDeviceToHost, "Cuda_CG::x:get" );
+    printf("Copy \n");
 }
 
 
