@@ -35,117 +35,118 @@ FixStyle(qeq/reax,FixQEqReax)
 
 namespace LAMMPS_NS {
 
-class FixQEqReax : public Fix {
- public:
-  FixQEqReax(class LAMMPS *, int, char **);
-  ~FixQEqReax();
-  int setmask();
-  virtual void post_constructor();
-  virtual void init();
-  void init_list(int,class NeighList *);
-  virtual void init_storage();
-  void setup_pre_force(int);
-  virtual void pre_force(int);
+	class FixQEqReax : public Fix {
+	public:
+		FixQEqReax(class LAMMPS *, int, char **);
+		~FixQEqReax();
+		int setmask();
+		virtual void post_constructor();
+		virtual void init();
+		void init_list(int,class NeighList *);
+		virtual void init_storage();
+		void setup_pre_force(int);
+		virtual void pre_force(int);
 
-  void setup_pre_force_respa(int, int);
-  void pre_force_respa(int, int, int);
+		void setup_pre_force_respa(int, int);
+		void pre_force_respa(int, int, int);
 
-  void min_setup_pre_force(int);
-  void min_pre_force(int);
+		void min_setup_pre_force(int);
+		void min_pre_force(int);
 
-  int matvecs;
-  double qeq_time;
-  fix_qeq_gpu *qeq_gpu;
+		int matvecs;
+		double qeq_time;
+		fix_qeq_gpu *qeq_gpu;
 
- protected:
-  int nevery,reaxflag;
-  int n, N, m_fill;
-  int n_cap, nmax, m_cap;
-  int pack_flag;
-  int nlevels_respa;
-  class NeighList *list;
-  class PairReaxCGPU *reaxc;
+	protected:
+		int nevery,reaxflag;
+		int n, N, m_fill;
+		int n_cap, nmax, m_cap;
+		int pack_flag;
+		int nlevels_respa;
+		class NeighList *list;
+		class PairReaxCGPU *reaxc;
 
-  double swa, swb;      // lower/upper Taper cutoff radius
-  double Tap[8];        // Taper function
-  double tolerance;     // tolerance for the norm of the rel residual in CG
+		double swa, swb;      // lower/upper Taper cutoff radius
+		double Tap[8];        // Taper function
+		double tolerance;     // tolerance for the norm of the rel residual in CG
 
-  double *chi,*eta,*gamma;  // qeq parameters
-  double **shld;
+		double *chi,*eta,*gamma;  // qeq parameters
+		double **shld;
 
-  bigint ngroup;
+		bigint ngroup;
 
-  // fictitious charges
+		// fictitious charges
 
-  double *s, *t;
-  double **s_hist, **t_hist;
-  int nprev;
+		double *s, *t;
+		double **s_hist, **t_hist;
+		int nprev;
 
-  typedef struct{
-    int n, m;
-    int *firstnbr;
-    int *numnbrs;
-    int *jlist;
-    double *val;
-  } sparse_matrix;
+		typedef struct{
+			int n, m;
+			int *firstnbr;
+			int *numnbrs;
+			int *jlist;
+			double *val;
+		} sparse_matrix;
 
-  sparse_matrix H;
-  double *Hdia_inv;
-  double *b_s, *b_t;
-  double *b_prc, *b_prm;
+		sparse_matrix H;
+		double *Hdia_inv;
+		double *b_s, *b_t;
+		double *b_prc, *b_prm;
 
-  //CG storage
-  double *p, *q, *r, *d;
+		//CG storage
+		double *p, *q, *r, *d;
 
-  //GMRES storage
-  //double *g,*y;
-  //double **v;
-  //double **h;
-  //double *hc, *hs;
+		//GMRES storage
+		//double *g,*y;
+		//double **v;
+		//double **h;
+		//double *hc, *hs;
 
-  char *pertype_option;  // argument to determine how per-type info is obtained
-  virtual void pertype_parameters(char*);
-  void init_shielding();
-  void init_taper();
-  virtual void allocate_storage();
-  virtual void deallocate_storage();
-  void reallocate_storage();
-  virtual void allocate_matrix();
-  void deallocate_matrix();
-  void reallocate_matrix();
+		char *pertype_option;  // argument to determine how per-type info is obtained
+		virtual void pertype_parameters(char*);
+		void init_shielding();
+		void init_taper();
+		virtual void allocate_storage();
+		virtual void deallocate_storage();
+		void reallocate_storage();
+		virtual void allocate_matrix();
+		void deallocate_matrix();
+		void reallocate_matrix();
 
-  virtual void init_matvec();
-  void init_H();
-  virtual void compute_H();
-  double calculate_H(double,double);
-  virtual void calculate_Q();
+		virtual void init_matvec();
+		void init_H();
+		virtual void compute_H();
+		double calculate_H(double,double);
+		virtual void calculate_Q();
 
-  virtual int CG(double*,double*);
-  //int GMRES(double*,double*);
-  virtual void sparse_matvec(sparse_matrix*,double*,double*);
+		virtual int CG(double*,double*);
 
-  virtual int pack_forward_comm(int, int *, double *, int, int *);
-  virtual void unpack_forward_comm(int, int, double *);
-  virtual int pack_reverse_comm(int, int, double *);
-  virtual void unpack_reverse_comm(int, int *, double *);
-  virtual double memory_usage();
-  virtual void grow_arrays(int);
-  virtual void copy_arrays(int, int, int);
-  virtual int pack_exchange(int, double *);
-  virtual int unpack_exchange(int, double *);
+		//int GMRES(double*,double*);
+		virtual void sparse_matvec(sparse_matrix*,double*,double*);
 
-  virtual double parallel_norm( double*, int );
-  virtual double parallel_dot( double*, double*, int );
-  virtual double parallel_vector_acc( double*, int );
+		virtual int pack_forward_comm(int, int *, double *, int, int *);
+		virtual void unpack_forward_comm(int, int, double *);
+		virtual int pack_reverse_comm(int, int, double *);
+		virtual void unpack_reverse_comm(int, int *, double *);
+		virtual double memory_usage();
+		virtual void grow_arrays(int);
+		virtual void copy_arrays(int, int, int);
+		virtual int pack_exchange(int, double *);
+		virtual int unpack_exchange(int, double *);
 
-  virtual void vector_sum(double*,double,double*,double,double*,int);
-  virtual void vector_add(double*, double, double*,int);
-   void intializeAtomsAndCopyToDevice();
+		virtual double parallel_norm( double*, int );
+		virtual double parallel_dot( double*, double*, int );
+		virtual double parallel_vector_acc( double*, int );
 
-  // dual CG support
-  int dual_enabled;  // 0: Original, separate s & t optimization; 1: dual optimization
-  int matvecs_s, matvecs_t; // Iteration count for each system
-};
+		virtual void vector_sum(double*,double,double*,double,double*,int);
+		virtual void vector_add(double*, double, double*,int);
+		void intializeAtomsAndCopyToDevice();
+
+		// dual CG support
+		int dual_enabled;  // 0: Original, separate s & t optimization; 1: dual optimization
+		int matvecs_s, matvecs_t; // Iteration count for each system
+	};
 
 }
 

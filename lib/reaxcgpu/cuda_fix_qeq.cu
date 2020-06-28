@@ -418,27 +418,67 @@ void  Cuda_Init_Matvec_Fix(int nn, fix_qeq_gpu *qeq_gpu, reax_system *system)
 void  Cuda_Copy_Pertype_Parameters_To_Device(double *chi,double *eta,double *gamma,int ntypes,fix_qeq_gpu *qeq_gpu)
 {
 	cuda_malloc( (void **) &qeq_gpu->gamma, sizeof(double)*(ntypes+1), TRUE,
-				"Cuda_Allocate_Matrix::start");
+			"Cuda_Allocate_Matrix::start");
 	copy_host_device(gamma, qeq_gpu->gamma, sizeof(double) * (ntypes+1),
-				hipMemcpyHostToDevice, "Cuda_CG::q:get");
+			hipMemcpyHostToDevice, "Cuda_CG::q:get");
 	cuda_malloc( (void **) &qeq_gpu->chi, sizeof(double)*(ntypes+1), TRUE,
-					"Cuda_Allocate_Matrix::start");
+			"Cuda_Allocate_Matrix::start");
 	copy_host_device(gamma, qeq_gpu->chi, sizeof(double) * (ntypes+1),
-					hipMemcpyHostToDevice, "Cuda_CG::q:get");
+			hipMemcpyHostToDevice, "Cuda_CG::q:get");
 	cuda_malloc( (void **) &qeq_gpu->eta, sizeof(double)*(ntypes+1), TRUE,
-					"Cuda_Allocate_Matrix::start");
+			"Cuda_Allocate_Matrix::start");
 	copy_host_device(eta, qeq_gpu->eta, sizeof(double) * (ntypes+1),
-					hipMemcpyHostToDevice, "Cuda_CG::q:get");
+			hipMemcpyHostToDevice, "Cuda_CG::q:get");
 
 }
 
 void  Cuda_Copy_For_Forward_Comm_Fix(double *h_distance , double *d_distance, int nn)
 {
-   copy_host_device(h_distance, d_distance, sizeof(real) * nn,
-            hipMemcpyDeviceToHost, "Cuda_CG::x:get" );
-    printf("Copy \n");
+	copy_host_device(h_distance, d_distance, sizeof(real) * nn,
+			hipMemcpyDeviceToHost, "Cuda_CG::x:get" );
+	printf("Copy \n");
 }
 
+
+
+CUDA_GLOBAL void k_init_b(reax_atom *my_atoms, double *b, double *x,double *eta, int nn)
+{
+
+	int i;
+	int type_i;
+	reax_atom *atom;
+
+
+	i = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if ( i >= nn)
+	{
+		return;
+	}
+
+	atom = &my_atoms[i];
+	type_i = atom->type;
+
+
+	b[i] = eta[type_i] * x[i];
+}
+
+
+
+void  CUDA_CG_Fix(sparse_matrix *, double *b, double *x, double *q, double *eta, reax_atom *d_fix_my_atoms, int nn, int NN)
+{
+
+	int blocks;
+
+	blocks = nn / DEF_BLOCK_SIZE
+			+ (( nn % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
+	printf("Blocks %d \n",blocks);
+
+
+	hipLaunchKernelGGL(k_init_b, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0, d_fix_my_atoms,b,x,eta,nn);
+	hipDeviceSynchronize();
+
+}
 
 
 

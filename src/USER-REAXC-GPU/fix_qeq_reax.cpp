@@ -51,6 +51,7 @@ extern "C" void  Cuda_Init_Fix_Atoms(reax_system *system,fix_qeq_gpu *qeq_gpu);
 extern "C" void  Cuda_Init_Matvec_Fix(int nn, fix_qeq_gpu *qeq_gpu, reax_system *system);
 extern "C" void  Cuda_Copy_Pertype_Parameters_To_Device(double *chi,double *eta,double *gamma,int ntypes,fix_qeq_gpu *qeq_gpu);
 extern "C" void  Cuda_Copy_For_Forward_Comm_Fix(double *h_distance , double *d_distance, int nn);
+extern "C" void  CUDA_CG_Fix(sparse_matrix *, double *b, double *x, double *q, double *eta, reax_atom *d_fix_my_atoms, int nn, int NN);
 
 
 
@@ -79,7 +80,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-						  Fix(lmp, narg, arg), pertype_option(NULL)
+										  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (lmp->citeme) lmp->citeme->add(cite_fix_qeq_reax);
 
@@ -554,8 +555,19 @@ void FixQEqReax::pre_force(int /*vflag*/)
 
 	init_matvec();
 
+	int nn, NN;
+	nn = reaxc->list->inum;
+	NN = reaxc->list->inum + reaxc->list->gnum;
+	CUDA_CG_Fix( &qeq_gpu->H, qeq_gpu->b_s, qeq_gpu->s,qeq_gpu->q,qeq_gpu->eta, qeq_gpu->d_fix_my_atoms, nn, NN);
+
+	exit(0);
+
 	matvecs_s = CG(b_s, s);       // CG on s - parallel
 	matvecs_t = CG(b_t, t);       // CG on t - parallel
+
+
+
+
 	matvecs = matvecs_s + matvecs_t;
 
 	calculate_Q();
@@ -778,6 +790,7 @@ double FixQEqReax::calculate_H( double r, double gamma)
 
 /* ---------------------------------------------------------------------- */
 
+
 int FixQEqReax::CG( double *b, double *x)
 {
 	int  i, j, imax;
@@ -798,6 +811,12 @@ int FixQEqReax::CG( double *b, double *x)
 
 	pack_flag = 1;
 	sparse_matvec( &H, x, q);
+
+
+
+
+	//Cuda_Matvec(qeq_gpu->H, qeq_gpu->s, workspace->d_workspace->q, system->N, system->total_cap );
+
 	comm->reverse_comm_fix(this); //Coll_Vector( q );
 
 	vector_sum( r , 1.,  b, -1., q, nn);
