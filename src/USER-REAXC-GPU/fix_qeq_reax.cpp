@@ -50,9 +50,9 @@ extern "C" void  Cuda_Init_Sparse_Matrix_Indices( reax_system *system, sparse_ma
 extern "C" void  Cuda_Init_Fix_Atoms(reax_system *system,fix_qeq_gpu *qeq_gpu);
 extern "C" void  Cuda_Init_Matvec_Fix(int nn, fix_qeq_gpu *qeq_gpu, reax_system *system);
 extern "C" void  Cuda_Copy_Pertype_Parameters_To_Device(double *chi,double *eta,double *gamma,int ntypes,fix_qeq_gpu *qeq_gpu);
-extern "C" void  Cuda_Copy_For_Forward_Comm_Fix(double *h_distance , double *d_distance, int nn);
+extern "C" void Cuda_Copy_From_Device_Forward_Comm_Fix(double *buf, double *x, int n);
 extern "C" void  CUDA_CG_Fix(sparse_matrix *, double *b, double *x, double *q, double *eta, reax_atom *d_fix_my_atoms, int nn, int NN);
-
+extern "C" void  Cuda_Copy_To_Device_Forward_Comm_Fix(double *buf,double *x,int n,int offset);
 
 
 
@@ -80,7 +80,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-										  Fix(lmp, narg, arg), pertype_option(NULL)
+																														  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (lmp->citeme) lmp->citeme->add(cite_fix_qeq_reax);
 
@@ -559,6 +559,8 @@ void FixQEqReax::pre_force(int /*vflag*/)
 	nn = reaxc->list->inum;
 	NN = reaxc->list->inum + reaxc->list->gnum;
 	CUDA_CG_Fix( &qeq_gpu->H, qeq_gpu->b_s, qeq_gpu->s,qeq_gpu->q,qeq_gpu->eta, qeq_gpu->d_fix_my_atoms, nn, NN);
+	comm->reverse_comm_fix(this); //Coll_Vector( q );
+
 
 	exit(0);
 
@@ -629,10 +631,6 @@ void FixQEqReax::init_matvec()
 			s[i] = 4*(s_hist[i][0]+s_hist[i][2])-(6*s_hist[i][1]+s_hist[i][3]);
 		}
 	}
-
-
-	Cuda_Copy_For_Forward_Comm_Fix(s,qeq_gpu->s,nn);
-	Cuda_Copy_For_Forward_Comm_Fix(t,qeq_gpu->t,nn);
 
 
 	//TB:: What does pack flag do
@@ -959,18 +957,48 @@ int FixQEqReax::pack_forward_comm(int n, int *list, double *buf,
 	int m;
 
 	if (pack_flag == 1)
-		for(m = 0; m < n; m++) buf[m] = d[list[m]];
+	{
+		Cuda_Copy_From_Device_Forward_Comm_Fix(buf,qeq_gpu->d,n);
+
+		/*for(m = 0; m < n; m++)
+		{
+			buf[m] = d[list[m]];
+		}*/
+	}
 	else if (pack_flag == 2)
-		for(m = 0; m < n; m++) buf[m] = s[list[m]];
+	{
+		//TB:: Ask if list[m] is always linearly increasing
+		Cuda_Copy_From_Device_Forward_Comm_Fix(buf,qeq_gpu->s,n);
+		/*for(m = 0; m < n; m++)
+		{
+			printf("List %d \n", list[m]);
+			buf[m] = s[list[m]];
+		}*/
+	}
 	else if (pack_flag == 3)
-		for(m = 0; m < n; m++) buf[m] = t[list[m]];
+	{
+		Cuda_Copy_From_Device_Forward_Comm_Fix(buf,qeq_gpu->t,n);
+		/*for(m = 0; m < n; m++)
+		{
+			buf[m] = t[list[m]];
+		}*/
+	}
 	else if (pack_flag == 4)
-		for(m = 0; m < n; m++) buf[m] = atom->q[list[m]];
+	{
+		Cuda_Copy_From_Device_Forward_Comm_Fix(buf,qeq_gpu->q,n);
+
+		/*for(m = 0; m < n; m++)
+		{
+			buf[m] = atom->q[list[m]];
+		}*/
+	}
 	else if (pack_flag == 5) {
+		printf("Not used \n");
 		m = 0;
+		exit(0);
 		for(int i = 0; i < n; i++) {
 			int j = 2 * list[i];
-			buf[m++] = d[j  ];
+			buf[m++] = d[j];
 			buf[m++] = d[j+1];
 		}
 		return m;
@@ -985,14 +1013,46 @@ void FixQEqReax::unpack_forward_comm(int n, int first, double *buf)
 	int i, m;
 
 	if (pack_flag == 1)
-		for(m = 0, i = first; m < n; m++, i++) d[i] = buf[m];
+	{
+		Cuda_Copy_To_Device_Forward_Comm_Fix(buf,qeq_gpu->d,n,first);
+
+		/*for(m = 0, i = first; m < n; m++, i++)
+		{
+			d[i] = buf[m];
+		}*/
+
+	}
 	else if (pack_flag == 2)
-		for(m = 0, i = first; m < n; m++, i++) s[i] = buf[m];
+	{
+		Cuda_Copy_To_Device_Forward_Comm_Fix(buf,qeq_gpu->s,n,first);
+
+		/*for(m = 0, i = first; m < n; m++, i++)
+		{
+			printf("I %d, m%d \n", i, m);
+			s[i] = buf[m];
+		}*/
+	}
 	else if (pack_flag == 3)
-		for(m = 0, i = first; m < n; m++, i++) t[i] = buf[m];
+	{
+		Cuda_Copy_To_Device_Forward_Comm_Fix(buf,qeq_gpu->t,n,first);
+
+		/*for(m = 0, i = first; m < n; m++, i++)
+		{
+			t[i] = buf[m];
+		}*/
+	}
 	else if (pack_flag == 4)
-		for(m = 0, i = first; m < n; m++, i++) atom->q[i] = buf[m];
+	{
+		Cuda_Copy_To_Device_Forward_Comm_Fix(buf,qeq_gpu->q,n,first);
+
+		/*for(m = 0, i = first; m < n; m++, i++)
+		{
+			atom->q[i] = buf[m];
+		}*/
+	}
 	else if (pack_flag == 5) {
+		printf("Not used \n");
+		exit(0);
 		int last = first + n;
 		m = 0;
 		for(i = first; i < last; i++) {

@@ -432,16 +432,49 @@ void  Cuda_Copy_Pertype_Parameters_To_Device(double *chi,double *eta,double *gam
 
 }
 
-void  Cuda_Copy_For_Forward_Comm_Fix(double *h_distance , double *d_distance, int nn)
+void  Cuda_Copy_From_Device_Forward_Comm_Fix(double *buf, double *x, int n)
 {
-	copy_host_device(h_distance, d_distance, sizeof(real) * nn,
+	copy_host_device(buf, x, sizeof(double) * n,
 			hipMemcpyDeviceToHost, "Cuda_CG::x:get" );
 	printf("Copy \n");
 }
 
+void  Cuda_Copy_To_Device_Forward_Comm_Fix(double *buf,double *x,int n,int offset)
+{
+	copy_host_device(buf, x+offset, sizeof(double) * n,
+			hipMemcpyHostToDevice, "Cuda_CG::x:get" );
+	printf("Copy \n");
+}
 
 
-CUDA_GLOBAL void k_init_b(reax_atom *my_atoms, double *b, double *x,double *eta, int nn)
+CUDA_GLOBAL void k_matvec_csr_fix( sparse_matrix H, real *vec, real *results,
+		int num_rows )
+{
+	int i, c, col;
+	real results_row;
+	real val;
+
+	i = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if ( i >= num_rows )
+	{
+		return;
+	}
+
+	results_row = 0;
+
+	for ( c = H.start[i]; c < H.end[i]; c++ )
+	{
+		col = H.entries [c].j;
+		val = H.entries[c].val;
+
+		results_row += val * vec[col];
+	}
+
+	results[i] = results_row;
+}
+
+CUDA_GLOBAL void k_init_q(reax_atom *my_atoms, double *q, double *x,double *eta, int nn)
 {
 
 	int i;
@@ -460,12 +493,13 @@ CUDA_GLOBAL void k_init_b(reax_atom *my_atoms, double *b, double *x,double *eta,
 	type_i = atom->type;
 
 
-	b[i] = eta[type_i] * x[i];
+	q[i] = eta[type_i] * x[i];
 }
 
 
 
-void  CUDA_CG_Fix(sparse_matrix *, double *b, double *x, double *q, double *eta, reax_atom *d_fix_my_atoms, int nn, int NN)
+
+void  CUDA_CG_Fix(sparse_matrix *H, double *b, double *x, double *q, double *eta, reax_atom *d_fix_my_atoms, int nn, int NN)
 {
 
 	int blocks;
@@ -475,8 +509,23 @@ void  CUDA_CG_Fix(sparse_matrix *, double *b, double *x, double *q, double *eta,
 	printf("Blocks %d \n",blocks);
 
 
-	hipLaunchKernelGGL(k_init_b, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0, d_fix_my_atoms,b,x,eta,nn);
+	hipLaunchKernelGGL(k_init_q, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0, d_fix_my_atoms,q,x,eta,nn);
 	hipDeviceSynchronize();
+
+	printf("nn%d,NN%d\n",nn,NN);
+	/*for (ii = nn; ii < NN; ++ii) {
+			i = ilist[ii];
+			if (atom->mask[i] & groupbit)
+				b[i] = 0;
+		}*/
+	//TB:: Not required to port above function since cuda memset has those values set to 0
+
+
+	hipLaunchKernelGGL(k_matvec_csr_fix, dim3(blocks), dim3(MATVEC_BLOCK_SIZE), sizeof(real) * MATVEC_BLOCK_SIZE , 0, *H, q, x, nn);
+	hipDeviceSynchronize();
+	cudaCheckError();
+
+	//comm->reverse_comm_fix(this); //Coll_Vector( q );
 
 }
 
