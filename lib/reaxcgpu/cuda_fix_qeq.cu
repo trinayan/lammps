@@ -526,7 +526,7 @@ void Cuda_Vector_Sum_Fix( real *res, real a, real *x, real b, real *y, int count
 	int blocks;
 
 	blocks = (count / DEF_BLOCK_SIZE)
-        				+ ((count % DEF_BLOCK_SIZE == 0) ? 0 : 1);
+        						+ ((count % DEF_BLOCK_SIZE == 0) ? 0 : 1);
 
 	hipLaunchKernelGGL(k_vector_sum, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  res, a, x, b, y, count );
 	hipDeviceSynchronize( );
@@ -539,11 +539,19 @@ void Cuda_CG_Preconditioner_Fix(real *res, real *a, real *b, int count)
 	int blocks;
 
 	blocks = (count / DEF_BLOCK_SIZE)
-	        		+ ((count % DEF_BLOCK_SIZE == 0) ? 0 : 1);
+	        				+ ((count % DEF_BLOCK_SIZE == 0) ? 0 : 1);
 
 	hipLaunchKernelGGL(k_vector_mul, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  res, a, b, count );
 	hipDeviceSynchronize( );
 	cudaCheckError( );
 
 }
+
+void  Cuda_Copy_Vector_From_Device(real *host_vector, real *device_vector, int nn)
+{
+	copy_host_device( host_vector, device_vector, sizeof(real) * nn,
+			hipMemcpyDeviceToHost, "Cuda_CG::b:get" );
+}
+
+
 }

@@ -24,6 +24,7 @@ void Cuda_Copy_To_Device_Comm_Fix(double *buf, double *x, int n, int offset);
 void  Cuda_Sparse_Matvec_Compute(sparse_matrix *H,double *x, double *q, double *eta, reax_atom *d_fix_my_atoms, int nn, int NN);
 void Cuda_Vector_Sum_Fix( real *, real, real *, real, real *, int );
 void Cuda_CG_Preconditioner_Fix( real *, real *, real *, int );
+void  Cuda_Copy_Vector_From_Device(real *host_vector, real *device_vector, int nn);
 
 #ifdef __cplusplus
 }

@@ -55,7 +55,7 @@ extern "C" void  Cuda_Copy_To_Device_Comm_Fix(double *buf,double *x,int n,int of
 extern "C" void  Cuda_Sparse_Matvec_Compute(sparse_matrix *H,double *x, double *q, double *eta, reax_atom *d_fix_my_atoms, int nn, int NN);
 extern "C" void  Cuda_Vector_Sum_Fix( real *res, real a, real *x, real b, real *y, int count);
 extern "C" void  Cuda_CG_Preconditioner_Fix( real *, real *, real *, int );
-
+extern "C" void  Cuda_Copy_Vector_From_Device(real *host_vector, real *device_vector, int nn);
 
 
 
@@ -784,7 +784,7 @@ double FixQEqReax::calculate_H( double r, double gamma)
 /* ---------------------------------------------------------------------- */
 
 
-int FixQEqReax::Cuda_CG( double *b, double *x)
+int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 {
 	int  i, j, imax;
 	double tmp, alpha, beta, b_norm;
@@ -802,7 +802,7 @@ int FixQEqReax::Cuda_CG( double *b, double *x)
 
 	imax = 200;
 
-	cuda_sparse_matvec(x, qeq_gpu->q);
+	cuda_sparse_matvec(device_x, qeq_gpu->q);
 
 
 
@@ -810,15 +810,24 @@ int FixQEqReax::Cuda_CG( double *b, double *x)
 	//pack_flag = 1;
 	//comm->reverse_comm_fix(this); //Coll_Vector( q );
 
-	Cuda_Vector_Sum_Fix(qeq_gpu->r , 1.0,  b, -1.0,
+	Cuda_Vector_Sum_Fix(qeq_gpu->r , 1.0,  device_b, -1.0,
 	            qeq_gpu->q, nn);
 	Cuda_CG_Preconditioner_Fix(qeq_gpu->d, qeq_gpu->r,
             qeq_gpu->Hdia_inv,  nn);
 
+
+	real *b;
+	memory->create(b,nn,"b_temp");
+
+
+	Cuda_Copy_Vector_From_Device(b,device_b,nn);
+	b_norm = parallel_norm( b, nn);
+
+
 	exit(0);
 
 
-	for (jj = 0; jj < nn; ++jj) {
+	/*for (jj = 0; jj < nn; ++jj) {
 		j = ilist[jj];
 		if (atom->mask[j] & groupbit)
 			d[j] = r[j] * Hdia_inv[j]; //pre-condition
@@ -858,7 +867,7 @@ int FixQEqReax::Cuda_CG( double *b, double *x)
 				"at " BIGINT_FORMAT " step",i,update->ntimestep);
 		error->warning(FLERR,str);
 	}
-
+*/
 	return i;
 
 }
