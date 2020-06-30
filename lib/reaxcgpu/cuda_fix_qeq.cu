@@ -432,14 +432,14 @@ void  Cuda_Copy_Pertype_Parameters_To_Device(double *chi,double *eta,double *gam
 
 }
 
-void  Cuda_Copy_From_Device_Forward_Comm_Fix(double *buf, double *x, int n)
+void  Cuda_Copy_From_Device_Comm_Fix(double *buf, double *x, int n, int offset)
 {
-	copy_host_device(buf, x, sizeof(double) * n,
+	copy_host_device(buf, x+offset, sizeof(double) * n,
 			hipMemcpyDeviceToHost, "Cuda_CG::x:get" );
 	printf("Copy \n");
 }
 
-void  Cuda_Copy_To_Device_Forward_Comm_Fix(double *buf,double *x,int n,int offset)
+void  Cuda_Copy_To_Device_Comm_Fix(double *buf,double *x,int n,int offset)
 {
 	copy_host_device(buf, x+offset, sizeof(double) * n,
 			hipMemcpyHostToDevice, "Cuda_CG::x:get" );
@@ -497,9 +497,7 @@ CUDA_GLOBAL void k_init_q(reax_atom *my_atoms, double *q, double *x,double *eta,
 }
 
 
-
-
-void  CUDA_CG_Fix(sparse_matrix *H, double *b, double *x, double *q, double *eta, reax_atom *d_fix_my_atoms, int nn, int NN)
+void Cuda_Sparse_Matvec_Compute(sparse_matrix *H,double *x, double *q, double *eta, reax_atom *d_fix_my_atoms, int nn, int NN)
 {
 
 	int blocks;
@@ -513,23 +511,27 @@ void  CUDA_CG_Fix(sparse_matrix *H, double *b, double *x, double *q, double *eta
 	hipDeviceSynchronize();
 
 	printf("nn%d,NN%d\n",nn,NN);
-	/*for (ii = nn; ii < NN; ++ii) {
-			i = ilist[ii];
-			if (atom->mask[i] & groupbit)
-				b[i] = 0;
-		}*/
-	//TB:: Not required to port above function since cuda memset has those values set to 0
 
 
 	hipLaunchKernelGGL(k_matvec_csr_fix, dim3(blocks), dim3(MATVEC_BLOCK_SIZE), sizeof(real) * MATVEC_BLOCK_SIZE , 0, *H, q, x, nn);
 	hipDeviceSynchronize();
 	cudaCheckError();
 
-	//comm->reverse_comm_fix(this); //Coll_Vector( q );
-
 }
 
+void Cuda_Vector_Sum_Fix( real *res, real a, real *x, real b, real *y, int count )
+{
+    //res = ax + by
+    //use the cublas here
+    int blocks;
 
+    blocks = (count / DEF_BLOCK_SIZE)
+        + ((count % DEF_BLOCK_SIZE == 0) ? 0 : 1);
+
+    hipLaunchKernelGGL(k_vector_sum, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  res, a, x, b, y, count );
+    hipDeviceSynchronize( );
+    cudaCheckError( );
+}
 
 
 

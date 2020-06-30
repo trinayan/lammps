@@ -19,8 +19,11 @@ void Cuda_Init_Sparse_Matrix_Indices( reax_system *system, sparse_matrix *H);
 void  Cuda_Init_Fix_Atoms(reax_system *system,fix_qeq_gpu *qeq_gpu);
 void  Cuda_Init_Matvec_Fix(int nn, fix_qeq_gpu *qeq_gpu, reax_system *system)
 void  Cuda_Copy_Pertype_Parameters_To_Device(double *chi,double *eta,double *gamma,int ntypes,fix_qeq_gpu *qeq_gpu);
-void Cuda_Copy_From_Device_Forward_Comm_Fix(double *buf, double *x, int n);
-void  CUDA_CG_Fix(sparse_matrix *, double *b, double *x, double *q, double *eta, reax_atom *d_fix_my_atoms, int nn, int NN);
+void Cuda_Copy_From_Device_Comm_Fix(double *buf, double *x, int n, int offset);
+void Cuda_Copy_To_Device_Comm_Fix(double *buf, double *x, int n, int offset);
+void  Cuda_Sparse_Matvec_Compute(sparse_matrix *H,double *x, double *q, double *eta, reax_atom *d_fix_my_atoms, int nn, int NN);
+void Cuda_Vector_Sum_Fix( real *, real, real *, real, real *, int );
+
 #ifdef __cplusplus
 }
 #endif

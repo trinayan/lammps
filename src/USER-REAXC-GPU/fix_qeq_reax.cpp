@@ -50,9 +50,11 @@ extern "C" void  Cuda_Init_Sparse_Matrix_Indices( reax_system *system, sparse_ma
 extern "C" void  Cuda_Init_Fix_Atoms(reax_system *system,fix_qeq_gpu *qeq_gpu);
 extern "C" void  Cuda_Init_Matvec_Fix(int nn, fix_qeq_gpu *qeq_gpu, reax_system *system);
 extern "C" void  Cuda_Copy_Pertype_Parameters_To_Device(double *chi,double *eta,double *gamma,int ntypes,fix_qeq_gpu *qeq_gpu);
-extern "C" void Cuda_Copy_From_Device_Forward_Comm_Fix(double *buf, double *x, int n);
-extern "C" void  CUDA_CG_Fix(sparse_matrix *, double *b, double *x, double *q, double *eta, reax_atom *d_fix_my_atoms, int nn, int NN);
-extern "C" void  Cuda_Copy_To_Device_Forward_Comm_Fix(double *buf,double *x,int n,int offset);
+extern "C" void Cuda_Copy_From_Device_Comm_Fix(double *buf, double *x, int n, int offset);
+extern "C" void  Cuda_Copy_To_Device_Comm_Fix(double *buf,double *x,int n,int offset);
+extern "C" void  Cuda_Sparse_Matvec_Compute(sparse_matrix *H,double *x, double *q, double *eta, reax_atom *d_fix_my_atoms, int nn, int NN);
+extern "C" void  Cuda_Vector_Sum_Fix( real *res, real a, real *x, real b, real *y, int count);
+
 
 
 
@@ -80,7 +82,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-																														  Fix(lmp, narg, arg), pertype_option(NULL)
+																																												  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (lmp->citeme) lmp->citeme->add(cite_fix_qeq_reax);
 
@@ -555,17 +557,9 @@ void FixQEqReax::pre_force(int /*vflag*/)
 
 	init_matvec();
 
-	int nn, NN;
-	nn = reaxc->list->inum;
-	NN = reaxc->list->inum + reaxc->list->gnum;
-	CUDA_CG_Fix( &qeq_gpu->H, qeq_gpu->b_s, qeq_gpu->s,qeq_gpu->q,qeq_gpu->eta, qeq_gpu->d_fix_my_atoms, nn, NN);
-	comm->reverse_comm_fix(this); //Coll_Vector( q );
 
-
-	exit(0);
-
-	matvecs_s = CG(b_s, s);       // CG on s - parallel
-	matvecs_t = CG(b_t, t);       // CG on t - parallel
+	matvecs_s = Cuda_CG(qeq_gpu->b_s, qeq_gpu->s);       // CG on s - parallel
+	matvecs_t = Cuda_CG(qeq_gpu->b_t, qeq_gpu->t);       // CG on t - parallel
 
 
 
@@ -789,6 +783,85 @@ double FixQEqReax::calculate_H( double r, double gamma)
 /* ---------------------------------------------------------------------- */
 
 
+int FixQEqReax::Cuda_CG( double *b, double *x)
+{
+	int  i, j, imax;
+	double tmp, alpha, beta, b_norm;
+	double sig_old, sig_new;
+
+	int nn, jj;
+	int *ilist;
+	if (reaxc) {
+		nn = reaxc->list->inum;
+		ilist = reaxc->list->ilist;
+	} else {
+		nn = list->inum;
+		ilist = list->ilist;
+	}
+
+	imax = 200;
+
+	cuda_sparse_matvec(x, qeq_gpu->q);
+
+
+
+	//TB:: Fix this later
+	//pack_flag = 1;
+	//comm->reverse_comm_fix(this); //Coll_Vector( q );
+
+	Cuda_Vector_Sum_Fix(qeq_gpu->r , 1.0,  b, -1.0,
+	            qeq_gpu->q, nn);
+
+	exit(0);
+
+
+	for (jj = 0; jj < nn; ++jj) {
+		j = ilist[jj];
+		if (atom->mask[j] & groupbit)
+			d[j] = r[j] * Hdia_inv[j]; //pre-condition
+	}
+
+	b_norm = parallel_norm( b, nn);
+	sig_new = parallel_dot( r, d, nn);
+
+	for (i = 1; i < imax && sqrt(sig_new) / b_norm > tolerance; ++i) {
+		comm->forward_comm_fix(this); //Dist_vector( d );
+		sparse_matvec( &H, d, q );
+		comm->reverse_comm_fix(this); //Coll_vector( q );
+
+		tmp = parallel_dot( d, q, nn);
+		alpha = sig_new / tmp;
+
+		vector_add( x, alpha, d, nn );
+		vector_add( r, -alpha, q, nn );
+
+		// pre-conditioning
+		for (jj = 0; jj < nn; ++jj) {
+			j = ilist[jj];
+			if (atom->mask[j] & groupbit)
+				p[j] = r[j] * Hdia_inv[j];
+		}
+
+		sig_old = sig_new;
+		sig_new = parallel_dot( r, p, nn);
+
+		beta = sig_new / sig_old;
+		vector_sum( d, 1., p, beta, d, nn );
+	}
+
+	if (i >= imax && comm->me == 0) {
+		char str[128];
+		sprintf(str,"Fix qeq/reax CG convergence failed after %d iterations "
+				"at " BIGINT_FORMAT " step",i,update->ntimestep);
+		error->warning(FLERR,str);
+	}
+
+	return i;
+
+}
+
+
+
 int FixQEqReax::CG( double *b, double *x)
 {
 	int  i, j, imax;
@@ -865,6 +938,27 @@ int FixQEqReax::CG( double *b, double *x)
 
 
 /* ---------------------------------------------------------------------- */
+void FixQEqReax::cuda_sparse_matvec(double *x, double *q)
+{
+	int i, j, itr_j;
+	int nn, NN, ii;
+	int *ilist;
+
+	if (reaxc) {
+		nn = reaxc->list->inum;
+		NN = reaxc->list->inum + reaxc->list->gnum;
+		ilist = reaxc->list->ilist;
+	} else {
+		nn = list->inum;
+		NN = list->inum + list->gnum;
+		ilist = list->ilist;
+	}
+
+	Cuda_Sparse_Matvec_Compute(&qeq_gpu->H, x, q ,qeq_gpu->eta, qeq_gpu->d_fix_my_atoms, nn, NN);
+}
+
+
+
 
 void FixQEqReax::sparse_matvec( sparse_matrix *A, double *x, double *b)
 {
@@ -958,7 +1052,7 @@ int FixQEqReax::pack_forward_comm(int n, int *list, double *buf,
 
 	if (pack_flag == 1)
 	{
-		Cuda_Copy_From_Device_Forward_Comm_Fix(buf,qeq_gpu->d,n);
+		Cuda_Copy_From_Device_Comm_Fix(buf,qeq_gpu->d,n,0);
 
 		/*for(m = 0; m < n; m++)
 		{
@@ -968,7 +1062,7 @@ int FixQEqReax::pack_forward_comm(int n, int *list, double *buf,
 	else if (pack_flag == 2)
 	{
 		//TB:: Ask if list[m] is always linearly increasing
-		Cuda_Copy_From_Device_Forward_Comm_Fix(buf,qeq_gpu->s,n);
+		Cuda_Copy_From_Device_Comm_Fix(buf,qeq_gpu->s,n,0);
 		/*for(m = 0; m < n; m++)
 		{
 			printf("List %d \n", list[m]);
@@ -977,7 +1071,7 @@ int FixQEqReax::pack_forward_comm(int n, int *list, double *buf,
 	}
 	else if (pack_flag == 3)
 	{
-		Cuda_Copy_From_Device_Forward_Comm_Fix(buf,qeq_gpu->t,n);
+		Cuda_Copy_From_Device_Comm_Fix(buf,qeq_gpu->t,n,0);
 		/*for(m = 0; m < n; m++)
 		{
 			buf[m] = t[list[m]];
@@ -985,8 +1079,9 @@ int FixQEqReax::pack_forward_comm(int n, int *list, double *buf,
 	}
 	else if (pack_flag == 4)
 	{
-		Cuda_Copy_From_Device_Forward_Comm_Fix(buf,qeq_gpu->q,n);
+		Cuda_Copy_From_Device_Comm_Fix(buf,qeq_gpu->q,n,0);
 
+		//TB:: Find out where atom->q is used
 		/*for(m = 0; m < n; m++)
 		{
 			buf[m] = atom->q[list[m]];
@@ -1014,7 +1109,7 @@ void FixQEqReax::unpack_forward_comm(int n, int first, double *buf)
 
 	if (pack_flag == 1)
 	{
-		Cuda_Copy_To_Device_Forward_Comm_Fix(buf,qeq_gpu->d,n,first);
+		Cuda_Copy_To_Device_Comm_Fix(buf,qeq_gpu->d,n,first);
 
 		/*for(m = 0, i = first; m < n; m++, i++)
 		{
@@ -1024,7 +1119,7 @@ void FixQEqReax::unpack_forward_comm(int n, int first, double *buf)
 	}
 	else if (pack_flag == 2)
 	{
-		Cuda_Copy_To_Device_Forward_Comm_Fix(buf,qeq_gpu->s,n,first);
+		Cuda_Copy_To_Device_Comm_Fix(buf,qeq_gpu->s,n,first);
 
 		/*for(m = 0, i = first; m < n; m++, i++)
 		{
@@ -1034,7 +1129,7 @@ void FixQEqReax::unpack_forward_comm(int n, int first, double *buf)
 	}
 	else if (pack_flag == 3)
 	{
-		Cuda_Copy_To_Device_Forward_Comm_Fix(buf,qeq_gpu->t,n,first);
+		Cuda_Copy_To_Device_Comm_Fix(buf,qeq_gpu->t,n,first);
 
 		/*for(m = 0, i = first; m < n; m++, i++)
 		{
@@ -1043,7 +1138,7 @@ void FixQEqReax::unpack_forward_comm(int n, int first, double *buf)
 	}
 	else if (pack_flag == 4)
 	{
-		Cuda_Copy_To_Device_Forward_Comm_Fix(buf,qeq_gpu->q,n,first);
+		Cuda_Copy_To_Device_Comm_Fix(buf,qeq_gpu->q,n,first);
 
 		/*for(m = 0, i = first; m < n; m++, i++)
 		{
@@ -1076,9 +1171,18 @@ int FixQEqReax::pack_reverse_comm(int n, int first, double *buf)
 			buf[m++] = q[indxI  ];
 			buf[m++] = q[indxI+1];
 		}
+		printf("Not used \n");
+		exit(0);
 		return m;
-	} else {
-		for (m = 0, i = first; m < n; m++, i++) buf[m] = q[i];
+	}
+	else
+	{
+		/*for (m = 0, i = first; m < n; m++, i++)
+		{
+			buf[m] = q[i];
+
+		}*/
+		Cuda_Copy_From_Device_Comm_Fix(buf,qeq_gpu->q,n,first);
 		return n;
 	}
 }
@@ -1094,8 +1198,19 @@ void FixQEqReax::unpack_reverse_comm(int n, int *list, double *buf)
 			q[indxI  ] += buf[m++];
 			q[indxI+1] += buf[m++];
 		}
-	} else {
-		for (int m = 0; m < n; m++) q[list[m]] += buf[m];
+		printf("Not used \n");
+		exit(0);
+	}
+	else
+	{
+		printf("Not implemented \n");
+		for (int m = 0; m < n; m++)
+		{
+			printf("List m %d \n", list[m]);
+			q[list[m]] += buf[m];
+		}
+		exit(0);
+
 	}
 }
 

@@ -121,9 +121,12 @@ namespace LAMMPS_NS {
 		virtual void calculate_Q();
 
 		virtual int CG(double*,double*);
+		virtual int Cuda_CG( double *, double *);
 
 		//int GMRES(double*,double*);
 		virtual void sparse_matvec(sparse_matrix*,double*,double*);
+		virtual void cuda_sparse_matvec(double *,double*);
+
 
 		virtual int pack_forward_comm(int, int *, double *, int, int *);
 		virtual void unpack_forward_comm(int, int, double *);
