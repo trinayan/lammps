@@ -521,18 +521,29 @@ void Cuda_Sparse_Matvec_Compute(sparse_matrix *H,double *x, double *q, double *e
 
 void Cuda_Vector_Sum_Fix( real *res, real a, real *x, real b, real *y, int count )
 {
-    //res = ax + by
-    //use the cublas here
-    int blocks;
+	//res = ax + by
+	//use the cublas here
+	int blocks;
 
-    blocks = (count / DEF_BLOCK_SIZE)
-        + ((count % DEF_BLOCK_SIZE == 0) ? 0 : 1);
+	blocks = (count / DEF_BLOCK_SIZE)
+        				+ ((count % DEF_BLOCK_SIZE == 0) ? 0 : 1);
 
-    hipLaunchKernelGGL(k_vector_sum, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  res, a, x, b, y, count );
-    hipDeviceSynchronize( );
-    cudaCheckError( );
+	hipLaunchKernelGGL(k_vector_sum, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  res, a, x, b, y, count );
+	hipDeviceSynchronize( );
+	cudaCheckError( );
 }
 
+void Cuda_CG_Preconditioner_Fix(real *res, real *a, real *b, int count)
+{
 
+	int blocks;
 
+	blocks = (count / DEF_BLOCK_SIZE)
+	        		+ ((count % DEF_BLOCK_SIZE == 0) ? 0 : 1);
+
+	hipLaunchKernelGGL(k_vector_mul, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  res, a, b, count );
+	hipDeviceSynchronize( );
+	cudaCheckError( );
+
+}
 }

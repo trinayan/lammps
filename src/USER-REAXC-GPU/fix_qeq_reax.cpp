@@ -54,6 +54,7 @@ extern "C" void Cuda_Copy_From_Device_Comm_Fix(double *buf, double *x, int n, in
 extern "C" void  Cuda_Copy_To_Device_Comm_Fix(double *buf,double *x,int n,int offset);
 extern "C" void  Cuda_Sparse_Matvec_Compute(sparse_matrix *H,double *x, double *q, double *eta, reax_atom *d_fix_my_atoms, int nn, int NN);
 extern "C" void  Cuda_Vector_Sum_Fix( real *res, real a, real *x, real b, real *y, int count);
+extern "C" void  Cuda_CG_Preconditioner_Fix( real *, real *, real *, int );
 
 
 
@@ -811,6 +812,8 @@ int FixQEqReax::Cuda_CG( double *b, double *x)
 
 	Cuda_Vector_Sum_Fix(qeq_gpu->r , 1.0,  b, -1.0,
 	            qeq_gpu->q, nn);
+	Cuda_CG_Preconditioner_Fix(qeq_gpu->d, qeq_gpu->r,
+            qeq_gpu->Hdia_inv,  nn);
 
 	exit(0);
 
