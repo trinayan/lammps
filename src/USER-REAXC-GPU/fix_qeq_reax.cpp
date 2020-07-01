@@ -83,7 +83,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-																																												  Fix(lmp, narg, arg), pertype_option(NULL)
+																																																  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (lmp->citeme) lmp->citeme->add(cite_fix_qeq_reax);
 
@@ -806,59 +806,57 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 
 
 
-	//TB:: Fix this later
-	//pack_flag = 1;
-	//comm->reverse_comm_fix(this); //Coll_Vector( q );
+	pack_flag = 1;
+	comm->reverse_comm_fix(this); //Coll_Vector( q );
 
 	Cuda_Vector_Sum_Fix(qeq_gpu->r , 1.0,  device_b, -1.0,
-	            qeq_gpu->q, nn);
+			qeq_gpu->q, nn);
 	Cuda_CG_Preconditioner_Fix(qeq_gpu->d, qeq_gpu->r,
-            qeq_gpu->Hdia_inv,  nn);
+			qeq_gpu->Hdia_inv,  nn);
 
 
-	real *b;
+	real *b,*r,*d,*q,*p;
 	memory->create(b,nn,"b_temp");
+	memory->create(r,nn,"r_temp");
+	memory->create(d,nn,"d_temp");
+	memory->create(q,nn,"d_temp");
+	memory->create(p,nn,"d_temp");
+
 
 
 	Cuda_Copy_Vector_From_Device(b,device_b,nn);
 	b_norm = parallel_norm( b, nn);
 
+	Cuda_Copy_Vector_From_Device(r,qeq_gpu->r,nn);
+	Cuda_Copy_Vector_From_Device(d,qeq_gpu->d,nn);
+	sig_new = parallel_dot(r,d,nn);
 
-	exit(0);
-
-
-	/*for (jj = 0; jj < nn; ++jj) {
-		j = ilist[jj];
-		if (atom->mask[j] & groupbit)
-			d[j] = r[j] * Hdia_inv[j]; //pre-condition
-	}
-
-	b_norm = parallel_norm( b, nn);
-	sig_new = parallel_dot( r, d, nn);
 
 	for (i = 1; i < imax && sqrt(sig_new) / b_norm > tolerance; ++i) {
 		comm->forward_comm_fix(this); //Dist_vector( d );
-		sparse_matvec( &H, d, q );
+		cuda_sparse_matvec(qeq_gpu->d, qeq_gpu->q);
 		comm->reverse_comm_fix(this); //Coll_vector( q );
 
+		Cuda_Copy_Vector_From_Device(d,qeq_gpu->d,nn);
+		Cuda_Copy_Vector_From_Device(q,qeq_gpu->q,nn);
 		tmp = parallel_dot( d, q, nn);
 		alpha = sig_new / tmp;
 
-		vector_add( x, alpha, d, nn );
-		vector_add( r, -alpha, q, nn );
+		Cuda_Vector_Sum_Fix(device_x , alpha,  qeq_gpu->d, 1.0, device_x, nn);
+		Cuda_Vector_Sum_Fix(qeq_gpu->r, -alpha, qeq_gpu->q, 1.0,qeq_gpu->r,nn);
 
-		// pre-conditioning
-		for (jj = 0; jj < nn; ++jj) {
-			j = ilist[jj];
-			if (atom->mask[j] & groupbit)
-				p[j] = r[j] * Hdia_inv[j];
-		}
+		Cuda_CG_Preconditioner_Fix(qeq_gpu->p,qeq_gpu->r,qeq_gpu->Hdia_inv,nn);
 
 		sig_old = sig_new;
+
+		Cuda_Copy_Vector_From_Device(r,qeq_gpu->r,nn);
+		Cuda_Copy_Vector_From_Device(p,qeq_gpu->p,nn);
+
 		sig_new = parallel_dot( r, p, nn);
 
 		beta = sig_new / sig_old;
-		vector_sum( d, 1., p, beta, d, nn );
+
+		Cuda_Vector_Sum_Fix(qeq_gpu->d, 1.,qeq_gpu->p,beta,qeq_gpu->d,nn);
 	}
 
 	if (i >= imax && comm->me == 0) {
@@ -867,9 +865,7 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 				"at " BIGINT_FORMAT " step",i,update->ntimestep);
 		error->warning(FLERR,str);
 	}
-*/
 	return i;
-
 }
 
 
@@ -1215,14 +1211,15 @@ void FixQEqReax::unpack_reverse_comm(int n, int *list, double *buf)
 	}
 	else
 	{
-		printf("Not implemented \n");
+		//printf("Not implemented \n");
+		//TB: TODO: Maybe move this calcuiton also to device.
 		for (int m = 0; m < n; m++)
 		{
-			printf("List m %d \n", list[m]);
 			q[list[m]] += buf[m];
-		}
-		exit(0);
+			printf("List m %d,%d \n", q[list[m]],buf[m]);
 
+		}
+		Cuda_Copy_To_Device_Comm_Fix(q,qeq_gpu->q,n,0);
 	}
 }
 

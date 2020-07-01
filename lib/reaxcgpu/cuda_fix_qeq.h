@@ -26,6 +26,7 @@ void Cuda_Vector_Sum_Fix( real *, real, real *, real, real *, int );
 void Cuda_CG_Preconditioner_Fix( real *, real *, real *, int );
 void  Cuda_Copy_Vector_From_Device(real *host_vector, real *device_vector, int nn);
 
+
 #ifdef __cplusplus
 }
 #endif
