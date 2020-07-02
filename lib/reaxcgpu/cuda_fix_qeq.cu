@@ -525,8 +525,7 @@ void Cuda_Vector_Sum_Fix( real *res, real a, real *x, real b, real *y, int count
 	//use the cublas here
 	int blocks;
 
-	blocks = (count / DEF_BLOCK_SIZE)
-        						+ ((count % DEF_BLOCK_SIZE == 0) ? 0 : 1);
+	blocks = (count / DEF_BLOCK_SIZE)+ ((count % DEF_BLOCK_SIZE == 0) ? 0 : 1);
 
 	hipLaunchKernelGGL(k_vector_sum, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  res, a, x, b, y, count );
 	hipDeviceSynchronize( );
@@ -538,8 +537,8 @@ void Cuda_CG_Preconditioner_Fix(real *res, real *a, real *b, int count)
 
 	int blocks;
 
-	blocks = (count / DEF_BLOCK_SIZE)
-	        				+ ((count % DEF_BLOCK_SIZE == 0) ? 0 : 1);
+	blocks = (count / DEF_BLOCK_SIZE) + ((count % DEF_BLOCK_SIZE == 0) ? 0 : 1);
+
 
 	hipLaunchKernelGGL(k_vector_mul, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  res, a, b, count );
 	hipDeviceSynchronize( );
@@ -553,5 +552,116 @@ void  Cuda_Copy_Vector_From_Device(real *host_vector, real *device_vector, int n
 			hipMemcpyDeviceToHost, "Cuda_CG::b:get" );
 }
 
+
+void  Cuda_Parallel_Vector_Acc(int nn,fix_qeq_gpu *qeq_gpu, MPI_Comm world, int blocks_pow_2)
+{
+	int blocks;
+	real *output;
+	//cuda malloc this
+	cuda_malloc((void **) &output, sizeof(real)*(nn), TRUE,
+			"Cuda_Allocate_Matrix::start");
+	double my_acc, res;
+
+
+	blocks = nn / DEF_BLOCK_SIZE
+			+ (( nn % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
+
+
+	printf("Blocks pow 2 %d \n", blocks_pow_2);
+
+	hipLaunchKernelGGL(k_reduction, dim3(blocks), dim3(DEF_BLOCK_SIZE), sizeof(real) * DEF_BLOCK_SIZE , 0,   qeq_gpu->s, output, nn );
+	hipDeviceSynchronize();
+	cudaCheckError( );
+
+	print
+	hipLaunchKernelGGL(k_reduction, dim3(1), dim3(blocks_pow_2), sizeof(real) * DEF_BLOCK_SIZE , 0,  qeq_gpu->s, output+nn, blocks);
+	hipDeviceSynchronize();
+	cudaCheckError( );
+
+	copy_host_device( &my_acc, output + nn,
+			sizeof(real), hipMemcpyDeviceToHost, "charges:x" );
+
+	double s_sum = MPI_Allreduce( &my_acc, &res, 1, MPI_DOUBLE, MPI_SUM, world);
+
+
+	my_acc = res = 0.0;
+    cuda_memset( output, 0, sizeof(real) * nn, "cuda_charges_x:q" );
+
+	hipLaunchKernelGGL(k_reduction, dim3(blocks), dim3(DEF_BLOCK_SIZE), sizeof(real) * DEF_BLOCK_SIZE , 0,   qeq_gpu->t, output, nn );
+	hipDeviceSynchronize();
+	cudaCheckError( );
+
+	hipLaunchKernelGGL(k_reduction, dim3(1), dim3(blocks_pow_2), sizeof(real) * DEF_BLOCK_SIZE , 0,  qeq_gpu->t, output+nn, blocks);
+	hipDeviceSynchronize();
+	cudaCheckError( );
+
+	copy_host_device( &my_acc, output + nn,
+			sizeof(real), hipMemcpyDeviceToHost, "charges:x" );
+
+	double t_sum = MPI_Allreduce( &my_acc, &res, 1, MPI_DOUBLE, MPI_SUM, world);
+
+
+	printf("T sum %f, S Sum %s \n", t_sum, s_sum);
+
+
+
+
+	/*hipLaunchKernelGGL(k_reduction, dim3(blocks), dim3(DEF_BLOCK_SIZE), sizeof(real) * DEF_BLOCK_SIZE , 0,   qeq_gpu->s, output, nn );
+	hipDeviceSynchronize();
+	cudaCheckError( );
+
+	hipLaunchKernelGGL(k_reduction, dim3(1), dim3(blocks_pow_2), sizeof(real) * DEF_BLOCK_SIZE , 0,  qeq_gpu->s, output+nn, blocks);
+	hipDeviceSynchronize();
+	cudaCheckError( );
+
+	copy_host_device( &my_acc, output + nn,
+			sizeof(real), hipMemcpyDeviceToHost, "charges:x" );*/
+}
+
+
+void  Cuda_Calculate_Q(int nn,fix_qeq_gpu *qeq_gpu, int charges,MPI_Comm world, int blocks_pow_2)
+{
+
+	int i, k;
+	double u, s_sum, t_sum;
+
+
+
+	Cuda_Parallel_Vector_Acc(nn,qeq_gpu,world,blocks_pow_2);
+
+
+
+
+	/*real u;//, s_sum, t_sum;
+	    rvec2 my_sum, all_sum;
+	    real *q;
+
+	    my_sum[0] = 0.0;
+	    my_sum[1] = 0.0;
+	    q = (real *) workspace->host_scratch;
+	    memset( q, 0, system->N * sizeof(real) );
+
+	    cuda_charges_x( system, control, workspace, my_sum );
+
+	#if defined(DEBUG_FOCUS)
+	    fprintf( stderr, "Device: my_sum[0]: %f, my_sum[1]: %f\n",
+	            my_sum[0], my_sum[1] );
+	#endif
+
+	    MPI_Allreduce( &my_sum, &all_sum, 2, MPI_DOUBLE, MPI_SUM, mpi_data->world );
+
+	    u = all_sum[0] / all_sum[1];
+
+	#if defined(DEBUG_FOCUS)
+	    fprintf( stderr, "Device: u: %f \n", u );
+	#endif
+
+	    cuda_charges_st( system, workspace, q, u );
+
+	    Dist( system, mpi_data, q, REAL_PTR_TYPE, MPI_DOUBLE );
+
+	    cuda_charges_updateq( system, workspace, q );*/
+
+}
 
 }

@@ -119,6 +119,8 @@ namespace LAMMPS_NS {
 		virtual void compute_H();
 		double calculate_H(double,double);
 		virtual void calculate_Q();
+		virtual void cuda_calculate_Q();
+
 
 		virtual int CG(double*,double*);
 		virtual int Cuda_CG( double *, double *);

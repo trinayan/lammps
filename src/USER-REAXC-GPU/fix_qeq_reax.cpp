@@ -56,6 +56,7 @@ extern "C" void  Cuda_Sparse_Matvec_Compute(sparse_matrix *H,double *x, double *
 extern "C" void  Cuda_Vector_Sum_Fix( real *res, real a, real *x, real b, real *y, int count);
 extern "C" void  Cuda_CG_Preconditioner_Fix( real *, real *, real *, int );
 extern "C" void  Cuda_Copy_Vector_From_Device(real *host_vector, real *device_vector, int nn);
+extern "C" void  Cuda_Calculate_Q(int nn,fix_qeq_gpu *qeq_gpu,  MPI_Comm world, int blocks_pow_2);
 
 
 
@@ -83,7 +84,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-																																																  Fix(lmp, narg, arg), pertype_option(NULL)
+																																																		  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (lmp->citeme) lmp->citeme->add(cite_fix_qeq_reax);
 
@@ -562,12 +563,12 @@ void FixQEqReax::pre_force(int /*vflag*/)
 	matvecs_s = Cuda_CG(qeq_gpu->b_s, qeq_gpu->s);       // CG on s - parallel
 	matvecs_t = Cuda_CG(qeq_gpu->b_t, qeq_gpu->t);       // CG on t - parallel
 
-
-
-
 	matvecs = matvecs_s + matvecs_t;
 
-	calculate_Q();
+	printf("Matvecs %d \n", matvecs);
+
+	cuda_calculate_Q();
+
 
 	if (comm->me == 0) {
 		t_end = MPI_Wtime();
@@ -627,8 +628,6 @@ void FixQEqReax::init_matvec()
 		}
 	}
 
-
-	//TB:: What does pack flag do
 	pack_flag = 2;
 	comm->forward_comm_fix(this); //Dist_vector( s );
 	pack_flag = 3;
@@ -1010,6 +1009,53 @@ void FixQEqReax::sparse_matvec( sparse_matrix *A, double *x, double *b)
 }
 
 /* ---------------------------------------------------------------------- */
+
+void FixQEqReax::cuda_calculate_Q()
+{
+	int i, k;
+	double u, s_sum, t_sum;
+	double *q = atom->q;
+
+	int nn, ii;
+	int *ilist;
+
+	if (reaxc) {
+		nn = reaxc->list->inum;
+		ilist = reaxc->list->ilist;
+	} else {
+		nn = list->inum;
+		ilist = list->ilist;
+	}
+
+	Cuda_Calculate_Q(nn,qeq_gpu,world, reaxc->control->blocks_pow_2);
+
+	exit(0);
+	s_sum = parallel_vector_acc( s, nn);
+	t_sum = parallel_vector_acc( t, nn);
+	u = s_sum / t_sum;
+
+	for (ii = 0; ii < nn; ++ii) {
+		i = ilist[ii];
+		if (atom->mask[i] & groupbit) {
+			q[i] = s[i] - u * t[i];
+
+			/* backup s & t */
+			for (k = nprev-1; k > 0; --k) {
+				s_hist[i][k] = s_hist[i][k-1];
+				t_hist[i][k] = t_hist[i][k-1];
+			}
+			s_hist[i][0] = s[i];
+			t_hist[i][0] = t[i];
+		}
+	}
+
+	pack_flag = 4;
+	comm->forward_comm_fix(this); //Dist_vector( atom->q );
+
+}
+
+
+
 
 void FixQEqReax::calculate_Q()
 {
