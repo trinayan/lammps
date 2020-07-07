@@ -43,7 +43,7 @@
 extern "C" void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_gpu);
 extern "C" void  CudaAllocateMatrixForFixQeq(fix_qeq_gpu *qeq_gpu,int n_cap, int m_cap);
 extern "C" void  CudaInitStorageForFixQeq(fix_qeq_gpu *qeq_gpu,double *Hdia_inv, double *b_s,double *b_t,double *b_prc,double *b_prm,double *s,double *t, int NN);
-extern "C" void  Cuda_Calculate_H_Matrix(reax_list **gpu_lists,  reax_system *system,fix_qeq_gpu *qeq_gpu, control_params *control, int inum);
+extern "C" void  Cuda_Calculate_H_Matrix(reax_list **gpu_lists,  reax_system *system,fix_qeq_gpu *qeq_gpu, control_params *control, int inum, int SMALL);
 extern "C" void  Cuda_Init_Taper(fix_qeq_gpu *qeq_gpu, double *Tap, int numTap);
 extern "C" void  Cuda_Allocate_Matrix( sparse_matrix *, int, int );
 extern "C" void  Cuda_Init_Sparse_Matrix_Indices( reax_system *system,fix_qeq_gpu *qeq_gpu, int n);
@@ -86,7 +86,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-																																																				  Fix(lmp, narg, arg), pertype_option(NULL)
+																																																														  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (lmp->citeme) lmp->citeme->add(cite_fix_qeq_reax);
 
@@ -690,9 +690,8 @@ void FixQEqReax::compute_H()
 	intializeAtomsAndCopyToDevice();
 	Cuda_Allocate_Matrix(&qeq_gpu->H, reaxc->system->total_cap, reaxc->system->total_cm_entries);
 	Cuda_Estimate_CMEntries_Storages(reaxc->system, reaxc->control,reaxc->gpu_lists, qeq_gpu, inum);
-	//Cuda_Estimate_CMEntries_Storages( reaxc->system, reaxc->control,reaxc->gpu_lists);
 	Cuda_Init_Sparse_Matrix_Indices( reaxc->system, qeq_gpu, inum);
-	Cuda_Calculate_H_Matrix(reaxc->gpu_lists, reaxc->system,qeq_gpu,reaxc->control,inum);
+	Cuda_Calculate_H_Matrix(reaxc->gpu_lists, reaxc->system,qeq_gpu,reaxc->control,inum,SMALL);
 
 
 
@@ -706,6 +705,9 @@ void FixQEqReax::compute_H()
 
 	printf("Atom nmax %d, n local %d  \n", atom->nmax,atom->nlocal);
 
+	printf("Swb %f, SMALL %f\n", swb, SMALL);
+
+
 	m_fill = 0;
 	r_sqr = 0;
 	for (ii = 0; ii < inum; ii++) {
@@ -717,22 +719,40 @@ void FixQEqReax::compute_H()
 			for (jj = 0; jj < jnum; jj++) {
 				j = jlist[jj];
 
+
 				j &= NEIGHMASK;
 				dx = x[j][0] - x[i][0];
 				dy = x[j][1] - x[i][1];
 				dz = x[j][2] - x[i][2];
 				r_sqr = SQR(dx) + SQR(dy) + SQR(dz);
 
+
 				flag = 0;
 				if (r_sqr <= SQR(swb)) {
-					if (j < n) flag = 1;
-					else if (tag[i] < tag[j]) flag = 1;
+					if (j < n)
+					{
+						flag = 1;
+
+					}
+					else if (tag[i] < tag[j])
+					{
+						flag = 1;
+					}
 					else if (tag[i] == tag[j]) {
-						if (dz > SMALL) flag = 1;
+						if (dz > SMALL)
+						{
+							flag = 1;
+						}
 						else if (fabs(dz) < SMALL) {
-							if (dy > SMALL) flag = 1;
-							else if (fabs(dy) < SMALL && dx > SMALL)
+							if (dy > SMALL)
+							{
 								flag = 1;
+
+							}
+							else if (fabs(dy) < SMALL && dx > SMALL)
+							{
+								flag = 1;
+							}
 						}
 					}
 				}
@@ -747,7 +767,7 @@ void FixQEqReax::compute_H()
 			H.numnbrs[i] = m_fill - H.firstnbr[i];
 		}
 
-		printf("Index : %d, H first number %d , m fill : %d, NumNbrs:%d \n",i,  H.firstnbr[i],m_fill,H.numnbrs[i]);
+		//printf("Index : %d, H first number %d , m fill : %d, NumNbrs:%d,  \n",i,  H.firstnbr[i],m_fill,H.numnbrs[i]);
 
 	}
 
