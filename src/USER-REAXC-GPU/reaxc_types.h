@@ -2507,6 +2507,10 @@ struct fix_qeq_gpu
 	reax_atom *fix_my_atoms;
 	reax_atom *d_fix_my_atoms;
 
+	int *d_cm_entries;
+	/* max. num. matrix entries per row (GPU) */
+	int *d_max_cm_entries;
+
 };
 
 /* Handle for working with an instance of the PuReMD library */

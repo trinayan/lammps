@@ -237,6 +237,7 @@ CUDA_GLOBAL void k_reduction( const real *input, real *per_block_results,
     if ( i < n )
     {
         x = input[i];
+        printf("X %d is %f \n",i, x);
     }
     else
     {
@@ -258,6 +259,8 @@ CUDA_GLOBAL void k_reduction( const real *input, real *per_block_results,
     if ( threadIdx.x == 0 )
     {
         per_block_results[blockIdx.x] = sdata[0];
+        printf("per block X is %f \n", per_block_results[blockIdx.x]);
+
     }
 #endif
 }

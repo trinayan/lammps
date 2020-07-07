@@ -25,9 +25,9 @@ void  Cuda_Sparse_Matvec_Compute(sparse_matrix *H,double *x, double *q, double *
 void Cuda_Vector_Sum_Fix( real *, real, real *, real, real *, int );
 void Cuda_CG_Preconditioner_Fix( real *, real *, real *, int );
 void  Cuda_Copy_Vector_From_Device(real *host_vector, real *device_vector, int nn);
-void Cuda_Calculate_Q(int nn,fix_qeq_gpu *qeq_gpu, MPI_Comm world,int blocks_pow_2);
-void  Cuda_Parallel_Vector_Acc(int nn,double *x, MPI_Comm world);
-
+void Cuda_Calculate_Q(int nn,fix_qeq_gpu *qeq_gpu,int blocks);
+void  Cuda_Parallel_Vector_Acc(int nn,double *x);
+void  Cuda_UpdateQ_And_Copy_To_Device_Comm_Fix(double *buf,fix_qeq_gpu *qeq_gpu,int n);
 
 #ifdef __cplusplus
 }

@@ -46,7 +46,7 @@ extern "C" void  CudaInitStorageForFixQeq(fix_qeq_gpu *qeq_gpu,double *Hdia_inv,
 extern "C" void  Cuda_Calculate_H_Matrix(reax_list **gpu_lists,  reax_system *system,fix_qeq_gpu *qeq_gpu, control_params *control, int inum);
 extern "C" void  Cuda_Init_Taper(fix_qeq_gpu *qeq_gpu, double *Tap, int numTap);
 extern "C" void  Cuda_Allocate_Matrix( sparse_matrix *, int, int );
-extern "C" void  Cuda_Init_Sparse_Matrix_Indices( reax_system *system, sparse_matrix *H );
+extern "C" void  Cuda_Init_Sparse_Matrix_Indices( reax_system *system,fix_qeq_gpu *qeq_gpu, int n);
 extern "C" void  Cuda_Init_Fix_Atoms(reax_system *system,fix_qeq_gpu *qeq_gpu);
 extern "C" void  Cuda_Init_Matvec_Fix(int nn, fix_qeq_gpu *qeq_gpu, reax_system *system);
 extern "C" void  Cuda_Copy_Pertype_Parameters_To_Device(double *chi,double *eta,double *gamma,int ntypes,fix_qeq_gpu *qeq_gpu);
@@ -56,7 +56,9 @@ extern "C" void  Cuda_Sparse_Matvec_Compute(sparse_matrix *H,double *x, double *
 extern "C" void  Cuda_Vector_Sum_Fix( real *res, real a, real *x, real b, real *y, int count);
 extern "C" void  Cuda_CG_Preconditioner_Fix( real *, real *, real *, int );
 extern "C" void  Cuda_Copy_Vector_From_Device(real *host_vector, real *device_vector, int nn);
-extern "C" void  Cuda_Calculate_Q(int nn,fix_qeq_gpu *qeq_gpu,  MPI_Comm world, int blocks_pow_2);
+extern "C" void  Cuda_Calculate_Q(int nn,fix_qeq_gpu *qeq_gpu, int blocks_pow_2);
+extern "C" void  Cuda_UpdateQ_And_Copy_To_Device_Comm_Fix(double *buf,fix_qeq_gpu *qeq_gpu,int n);
+extern "C" void Cuda_Estimate_CMEntries_Storages( reax_system *system, control_params *control, reax_list **lists, fix_qeq_gpu *qeq_gpu,int nn);
 
 
 
@@ -84,7 +86,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-																																																		  Fix(lmp, narg, arg), pertype_option(NULL)
+																																																				  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (lmp->citeme) lmp->citeme->add(cite_fix_qeq_reax);
 
@@ -685,20 +687,22 @@ void FixQEqReax::compute_H()
 
 	printf("Ttoal cap, total cm , n %d,%d,%d\n", reaxc->system->total_cap, reaxc->system->total_cm_entries,reaxc->system->N);
 
-	Cuda_Allocate_Matrix(&qeq_gpu->H, reaxc->system->total_cap, reaxc->system->total_cm_entries );
-	Cuda_Init_Sparse_Matrix_Indices( reaxc->system, &qeq_gpu->H);
 	intializeAtomsAndCopyToDevice();
+	Cuda_Allocate_Matrix(&qeq_gpu->H, reaxc->system->total_cap, reaxc->system->total_cm_entries);
+	Cuda_Estimate_CMEntries_Storages(reaxc->system, reaxc->control,reaxc->gpu_lists, qeq_gpu, inum);
+	//Cuda_Estimate_CMEntries_Storages( reaxc->system, reaxc->control,reaxc->gpu_lists);
+	Cuda_Init_Sparse_Matrix_Indices( reaxc->system, qeq_gpu, inum);
 	Cuda_Calculate_H_Matrix(reaxc->gpu_lists, reaxc->system,qeq_gpu,reaxc->control,inum);
 
 
 
-	printf("System N %d \n", reaxc->system->N);
+	printf("System N %d, m %d \n", reaxc->system->N,n);
 
 
 
 	// fill in the H matrix
 
-	/*printf("I num %d \n", inum);
+	printf("I num %d \n", inum);
 
 	printf("Atom nmax %d, n local %d  \n", atom->nmax,atom->nlocal);
 
@@ -706,17 +710,10 @@ void FixQEqReax::compute_H()
 	r_sqr = 0;
 	for (ii = 0; ii < inum; ii++) {
 		i = ilist[ii];
-		int typee = reaxc->system->my_atoms[i].type;
-		if(typee == 0)
-		{
-			printf("i%d,Type i %d, \n\n",i,type[i]);
-		}
 		if (mask[i] & groupbit) {
 			jlist = firstneigh[i];
 			jnum = numneigh[i];
 			H.firstnbr[i] = m_fill;
-
-
 			for (jj = 0; jj < jnum; jj++) {
 				j = jlist[jj];
 
@@ -749,6 +746,9 @@ void FixQEqReax::compute_H()
 			}
 			H.numnbrs[i] = m_fill - H.firstnbr[i];
 		}
+
+		printf("Index : %d, H first number %d , m fill : %d, NumNbrs:%d \n",i,  H.firstnbr[i],m_fill,H.numnbrs[i]);
+
 	}
 
 	if (m_fill >= H.m) {
@@ -757,7 +757,9 @@ void FixQEqReax::compute_H()
 				m_fill, H.m);
 		error->warning(FLERR,str);
 		error->all(FLERR,"Fix qeq/reax has insufficient QEq matrix size");
-	}*/
+	}
+
+	exit(0);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -807,6 +809,7 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 
 	pack_flag = 1;
 	comm->reverse_comm_fix(this); //Coll_Vector( q );
+
 
 	Cuda_Vector_Sum_Fix(qeq_gpu->r , 1.0,  device_b, -1.0,
 			qeq_gpu->q, nn);
@@ -1027,7 +1030,8 @@ void FixQEqReax::cuda_calculate_Q()
 		ilist = list->ilist;
 	}
 
-	Cuda_Calculate_Q(nn,qeq_gpu,world, reaxc->control->blocks_pow_2);
+
+	Cuda_Calculate_Q(nn,qeq_gpu,reaxc->control->blocks);
 
 	exit(0);
 	s_sum = parallel_vector_acc( s, nn);
@@ -1236,6 +1240,7 @@ int FixQEqReax::pack_reverse_comm(int n, int first, double *buf)
 			buf[m] = q[i];
 
 		}*/
+
 		Cuda_Copy_From_Device_Comm_Fix(buf,qeq_gpu->q,n,first);
 		return n;
 	}
@@ -1257,15 +1262,11 @@ void FixQEqReax::unpack_reverse_comm(int n, int *list, double *buf)
 	}
 	else
 	{
-		//printf("Not implemented \n");
-		//TB: TODO: Maybe move this calcuiton also to device.
-		for (int m = 0; m < n; m++)
+		/*for (int m = 0; m < n; m++)
 		{
 			q[list[m]] += buf[m];
-			printf("List m %d,%d \n", q[list[m]],buf[m]);
-
-		}
-		Cuda_Copy_To_Device_Comm_Fix(q,qeq_gpu->q,n,0);
+		}*/
+		Cuda_UpdateQ_And_Copy_To_Device_Comm_Fix(buf,qeq_gpu,n);
 	}
 }
 
