@@ -778,7 +778,6 @@ void FixQEqReax::compute_H()
 		error->all(FLERR,"Fix qeq/reax has insufficient QEq matrix size");
 	}
 
-	exit(0);
 }
 
 /* ---------------------------------------------------------------------- */

@@ -703,6 +703,8 @@ int FixQEqReax::CG( double *b, double *x)
   b_norm = parallel_norm( b, nn);
   sig_new = parallel_dot( r, d, nn);
 
+  printf("B norm %f, sig new %f \n", b_norm, sig_new);
+
   for (i = 1; i < imax && sqrt(sig_new) / b_norm > tolerance; ++i) {
     comm->forward_comm_fix(this); //Dist_vector( d );
     sparse_matvec( &H, d, q );
@@ -777,8 +779,12 @@ void FixQEqReax::sparse_matvec( sparse_matrix *A, double *x, double *b)
         b[i] += A->val[itr_j] * x[j];
         b[j] += A->val[itr_j] * x[i];
       }
+
+      printf("B[%d], B[%d],ival:%f, jval:%f\n", i, j,b[i], b[j]); 
     }
   }
+
+  exit(0);
 
 }
 

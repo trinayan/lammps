@@ -627,7 +627,7 @@ CUDA_GLOBAL void k_matvec_csr_fix( sparse_matrix H, real *vec, real *results,
 		int num_rows )
 {
 	int i, c, col;
-	real results_row;
+	rvec2 results_row;
 	real val;
 
 	i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -637,17 +637,22 @@ CUDA_GLOBAL void k_matvec_csr_fix( sparse_matrix H, real *vec, real *results,
 		return;
 	}
 
-	results_row = 0;
+	results_row[0] = 0.0;
+	results_row[1] = 0.0;
 
 	for ( c = H.start[i]; c < H.end[i]; c++ )
 	{
-		col = H.entries [c].j;
+		col = H.entries[c].j;
 		val = H.entries[c].val;
 
-		results_row += val * vec[col];
+		results_row[0] += val * vec [col];
+		results_row[1] += val * vec [i];
 	}
 
-	results[i] = results_row;
+	printf("I%d, j %d,val%f, val%f\n",i,col,results_row[0],results_row[1]);
+	results[i] = results_row[0];
+	results[col] = results_row[1];
+
 }
 
 CUDA_GLOBAL void k_init_q(reax_atom *my_atoms, double *q, double *x,double *eta, int nn)
@@ -691,9 +696,11 @@ void Cuda_Sparse_Matvec_Compute(sparse_matrix *H,double *x, double *q, double *e
 	printf("nn%d,NN%d\n",nn,NN);
 
 
-	hipLaunchKernelGGL(k_matvec_csr_fix, dim3(blocks), dim3(MATVEC_BLOCK_SIZE), sizeof(real) * MATVEC_BLOCK_SIZE , 0, *H, q, x, nn);
+	hipLaunchKernelGGL(k_matvec_csr_fix, dim3(blocks), dim3(MATVEC_BLOCK_SIZE), sizeof(real) * MATVEC_BLOCK_SIZE , 0, *H, x, q, nn);
 	hipDeviceSynchronize();
 	cudaCheckError();
+
+	exit(0);
 
 }
 
