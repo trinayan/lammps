@@ -18,7 +18,7 @@ extern "C"
 
 
 
-CUDA_DEVICE real Init_Charge_Matrix_Entry( single_body_parameters *sbp_i, real *workspace_Tap,
+CUDA_DEVICE real Init_Charge_Matrix_Entry(real *workspace_Tap,
 		int i, int j, real r_ij, real gamma)
 {
 	real Tap, dr3gamij_1, dr3gamij_3, ret;
@@ -49,9 +49,8 @@ CUDA_DEVICE real Init_Charge_Matrix_Entry( single_body_parameters *sbp_i, real *
 /* Compute the charge matrix entries and store the matrix in full format
  * using the far neighbors list (stored in full format) and according to
  * the full shell communication method */
-CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms, single_body_parameters *sbp,
-		reax_list far_nbrs_list, int num_atom_types,
-		int *max_cm_entries, int *realloc_cm_entries, sparse_matrix H, int nonb_cut, int inum, double *d_Tap,  two_body_parameters *tbp, double *gamma, int small)
+CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms,
+		reax_list far_nbrs_list, sparse_matrix H, int nonb_cut, int inum, double *d_Tap, double *gamma, int small)
 {
 	int i, j, pj;
 	int start_i, end_i;
@@ -59,7 +58,6 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms, single_body_parameters 
 	int cm_top;
 	int num_cm_entries;
 	real r_ij;
-	single_body_parameters *sbp_i;
 	two_body_parameters *twbp;
 	reax_atom *atom_i, *atom_j;
 	far_neighbor_data *nbr_pj;
@@ -83,7 +81,6 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms, single_body_parameters 
 	type_i = atom_i->type;
 	start_i = Cuda_Start_Index( i, &far_nbrs_list );
 	end_i = Cuda_End_Index(i, &far_nbrs_list );
-	sbp_i = &sbp[type_i];
 
 	/* update i-j distance - check if j is within cutoff */
 	for ( pj = start_i; pj < end_i; ++pj )
@@ -136,18 +133,14 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms, single_body_parameters 
 		if (flag == 1)
 		{
 			type_j = atom_j->type;
-
-			twbp = &tbp[ index_tbp(type_i, type_j, num_atom_types) ];
 			r_ij =  nbr_pj->d;
-
 
 			H.entries[cm_top].j = j;
 			shld = pow( gamma[type_i] * gamma[type_j], -1.5);
 
 
-			H.entries[cm_top].val = Init_Charge_Matrix_Entry(sbp_i, d_Tap,
+			H.entries[cm_top].val = Init_Charge_Matrix_Entry(d_Tap,
 					i, H.entries[cm_top].j, r_ij, shld);
-
 
 			++cm_top;
 		}
@@ -306,9 +299,9 @@ void  Cuda_Calculate_H_Matrix(reax_list **lists,  reax_system *system, fix_qeq_g
 	printf("N %d, h n %d \n",system->N, qeq_gpu->H.n);
 
 	//TB:: Verify if to use inum or system->N  or qeq_gpu->H.n in kernel call
-	hipLaunchKernelGGL(k_init_cm_full_fs , dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  qeq_gpu->d_fix_my_atoms, system->reax_param.d_sbp,
-			*(lists[FAR_NBRS]),system->reax_param.num_atom_types,qeq_gpu->d_cm_entries,system->d_realloc_cm_entries,qeq_gpu->H, control->nonb_cut, inum, qeq_gpu->d_Tap, system->reax_param.d_tbp,qeq_gpu->gamma,small);
-	hipDeviceSynchronize( );
+	hipLaunchKernelGGL(k_init_cm_full_fs , dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  qeq_gpu->d_fix_my_atoms,
+			*(lists[FAR_NBRS]),qeq_gpu->H, control->nonb_cut, inum, qeq_gpu->d_Tap,qeq_gpu->gamma,small);
+	hipDeviceSynchronize();
 
 
 	/*int  *d_ilist, *d_jlist, *d_numneigh, *d_firstneigh;

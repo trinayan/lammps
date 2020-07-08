@@ -760,7 +760,6 @@ void FixQEqReax::compute_H()
 				if (flag) {
 					H.jlist[m_fill] = j;
 					H.val[m_fill] = calculate_H( sqrt(r_sqr), shld[type[i]][type[j]]);
-					//printf("Type i %d, j %d \n, CPU Gamma %f \n", type[i],type[j], shld[type[i]][type[j]]);
 					m_fill++;
 				}
 			}
