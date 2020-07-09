@@ -824,13 +824,14 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 	cuda_sparse_matvec(device_x, qeq_gpu->q);
 
 
-
 	pack_flag = 1;
 	comm->reverse_comm_fix(this); //Coll_Vector( q );
 
 
 	Cuda_Vector_Sum_Fix(qeq_gpu->r , 1.0,  device_b, -1.0,
 			qeq_gpu->q, nn);
+
+
 	Cuda_CG_Preconditioner_Fix(qeq_gpu->d, qeq_gpu->r,
 			qeq_gpu->Hdia_inv,  nn);
 

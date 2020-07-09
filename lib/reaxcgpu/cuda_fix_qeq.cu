@@ -537,10 +537,6 @@ CUDA_GLOBAL void k_init_matvec_fix(fix_qeq_gpu d_qeq_gpu,int nn, single_body_par
 	qeq_gpu->t[i] = qeq_gpu->t_hist[i][2] + 3 * ( qeq_gpu->t_hist[i][0] - qeq_gpu->t_hist[i][1]);
 	/* cubic extrapolation for s & t from previous solutions */
 	qeq_gpu->s[i] = 4*(qeq_gpu->s_hist[i][0]+qeq_gpu->s_hist[i][2])-(6*qeq_gpu->s_hist[i][1]+qeq_gpu->s_hist[i][3]);
-
-
-
-	printf("K int matvec %f, %f \n", qeq_gpu->t[i],qeq_gpu->s[i]);
 }
 
 void  Cuda_Init_Matvec_Fix(int nn, fix_qeq_gpu *qeq_gpu, reax_system *system)
@@ -563,7 +559,7 @@ void  Cuda_Copy_Pertype_Parameters_To_Device(double *chi,double *eta,double *gam
 			hipMemcpyHostToDevice, "Cuda_CG::q:get");
 	cuda_malloc( (void **) &qeq_gpu->chi, sizeof(double)*(ntypes+1), TRUE,
 			"Cuda_Allocate_Matrix::start");
-	copy_host_device(gamma, qeq_gpu->chi, sizeof(double) * (ntypes+1),
+	copy_host_device(chi, qeq_gpu->chi, sizeof(double) * (ntypes+1),
 			hipMemcpyHostToDevice, "Cuda_CG::q:get");
 	cuda_malloc( (void **) &qeq_gpu->eta, sizeof(double)*(ntypes+1), TRUE,
 			"Cuda_Allocate_Matrix::start");
@@ -649,7 +645,6 @@ CUDA_GLOBAL void k_matvec_csr_fix( sparse_matrix H, real *vec, real *results,
 		results_row[1] += val * vec [i];
 	}
 
-	printf("I%d, j %d,val%f, val%f\n",i,col,results_row[0],results_row[1]);
 	results[i] = results_row[0];
 	results[col] = results_row[1];
 
@@ -699,9 +694,6 @@ void Cuda_Sparse_Matvec_Compute(sparse_matrix *H,double *x, double *q, double *e
 	hipLaunchKernelGGL(k_matvec_csr_fix, dim3(blocks), dim3(MATVEC_BLOCK_SIZE), sizeof(real) * MATVEC_BLOCK_SIZE , 0, *H, x, q, nn);
 	hipDeviceSynchronize();
 	cudaCheckError();
-
-	exit(0);
-
 }
 
 void Cuda_Vector_Sum_Fix( real *res, real a, real *x, real b, real *y, int count )

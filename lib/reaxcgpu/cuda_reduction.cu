@@ -799,6 +799,7 @@ CUDA_GLOBAL void k_vector_sum( real* dest, real c, real* v, real d, real* y,
     }
 
     dest[i] = c * v[i] + d * y[i];
+
 }
 
 
