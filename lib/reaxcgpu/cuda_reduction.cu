@@ -800,6 +800,8 @@ CUDA_GLOBAL void k_vector_sum( real* dest, real c, real* v, real d, real* y,
 
     dest[i] = c * v[i] + d * y[i];
 
+    printf("Index: %d, Dest %f, c %f, v %f, y %f\n",i, dest[i], c,v[i], y[i]);
+
 }
 
 
@@ -815,6 +817,7 @@ CUDA_GLOBAL void k_vector_mul( real* dest, real* v, real* y, int n )
     }
 
     dest[i] = v[i] * y[i];
+
 }
 
 

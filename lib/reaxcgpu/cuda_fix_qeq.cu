@@ -572,14 +572,14 @@ void  Cuda_Copy_From_Device_Comm_Fix(double *buf, double *x, int n, int offset)
 {
 	copy_host_device(buf, x+offset, sizeof(double) * n,
 			hipMemcpyDeviceToHost, "Cuda_CG::x:get" );
-	printf("Copy from device  fix \n");
+	//printf("Copy from device  fix \n");
 }
 
 void  Cuda_Copy_To_Device_Comm_Fix(double *buf,double *x,int n,int offset)
 {
 	copy_host_device(buf, x+offset, sizeof(double) * n,
 			hipMemcpyHostToDevice, "Cuda_CG::x:get" );
-	printf("Copy to device fix \n");
+	//printf("Copy to device fix \n");
 }
 
 
@@ -596,6 +596,8 @@ CUDA_GLOBAL void k_update_q(double *temp_buf, double *q, int nn)
 
 
 	q[i] = q[i] +  temp_buf[i];
+
+	//printf("m: %d %f\n",i, q[i]);
 
 }
 
@@ -619,11 +621,57 @@ void  Cuda_UpdateQ_And_Copy_To_Device_Comm_Fix(double *buf,fix_qeq_gpu *qeq_gpu,
 
 }
 
+/*CUDA_GLOBAL void k_matvec_csr_fix( sparse_matrix H, real *vec, real *results,
+		int num_rows )
+{
+	rvec2 rvals;
+	int thread_id = blockDim.x * blockIdx.x + threadIdx.x;
+
+	if ( thread_id >= num_rows )
+	{
+		return;
+	}
+
+	int warp_id = thread_id / MATVEC_KER_THREADS_PER_ROW;
+	int lane = thread_id & (MATVEC_KER_THREADS_PER_ROW - 1);
+	int row_start;
+	int row_end;
+	// one warp per row
+	int row = warp_id;
+
+	rvals[0] = 0;
+	rvals[1] = 0;
+
+	if ( row < num_rows )
+	{
+		row_start = H.start[row];
+		row_end = H.end[row];
+
+		for( int jj = row_start + lane; jj < row_end; jj += MATVEC_KER_THREADS_PER_ROW )
+		{
+			rvals[0] += H.entries[jj].val * vec [ H.entries[jj].j ];
+			rvals[1] += H.entries[jj].val * vec [thread_id];
+		}
+	}
+
+	for ( int s = MATVEC_KER_THREADS_PER_ROW >> 1; s >= 1; s /= 2 )
+	{
+		rvals[0] += __shfl( rvals[0], s);
+		rvals[1] += __shfl( rvals[1], s);
+	}
+
+	if ( lane == 0 && row < num_rows )
+	{
+		results[thread_id] = rvals[0];
+		results[ro] = rvals[1];
+	}
+
+}*/
+
 CUDA_GLOBAL void k_matvec_csr_fix( sparse_matrix H, real *vec, real *results,
 		int num_rows )
 {
 	int i, c, col;
-	rvec2 results_row;
 	real val;
 
 	i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -633,24 +681,34 @@ CUDA_GLOBAL void k_matvec_csr_fix( sparse_matrix H, real *vec, real *results,
 		return;
 	}
 
-	results_row[0] = 0.0;
-	results_row[1] = 0.0;
 
 	for ( c = H.start[i]; c < H.end[i]; c++ )
 	{
 		col = H.entries[c].j;
 		val = H.entries[c].val;
 
-		results_row[0] += val * vec [col];
-		results_row[1] += val * vec [i];
+		//printf("Before :%d,%d,%f,%f,%f,%f,%f\n",i,col, results[i], results[col], val, vec[col], vec[i]);
+
+		//results[i] += val * vec [col];
+		atomicAdd(&results[i],val * vec [col]);
+		__syncthreads();
+		atomicAdd(&results[col],val * vec [i]);
+		__syncthreads( );
+
+
+		//results[col] += val * vec [i];
+
+		//printf("After: %d,%d,%f,%f,%f,%f,%f\n",i,col, results[i], results[col], val, vec[col], vec[i]);
 	}
 
-	results[i] = results_row[0];
-	results[col] = results_row[1];
+	printf("i%d,col%d, val1:%f,val2:%f\n",i,col,results[i],results[col]);
+
+	printf("\n\n");
+
 
 }
 
-CUDA_GLOBAL void k_init_q(reax_atom *my_atoms, double *q, double *x,double *eta, int nn)
+CUDA_GLOBAL void k_init_q(reax_atom *my_atoms, double *q, double *x,double *eta, int nn, int NN)
 {
 
 	int i;
@@ -660,18 +718,28 @@ CUDA_GLOBAL void k_init_q(reax_atom *my_atoms, double *q, double *x,double *eta,
 
 	i = blockIdx.x * blockDim.x + threadIdx.x;
 
-	if ( i >= nn)
+	if ( i >= NN)
 	{
 		return;
 	}
 
-	atom = &my_atoms[i];
-	type_i = atom->type;
+	if (i < nn ) {
+		atom = &my_atoms[i];
+		type_i = atom->type;
 
 
-	q[i] = eta[type_i] * x[i];
+		q[i] = eta[type_i] * x[i];
 
-	printf("Eta:% f, x: %f, Q: %f \n", eta[type_i],x[i],q[i]);
+		printf("i %d, eta %f, x %f, q%f\n ", i, eta[type_i],x[i],q[i]);
+	}
+	else
+	{
+		q[i] = 0.0;
+
+	}
+
+
+
 }
 
 
@@ -680,15 +748,21 @@ void Cuda_Sparse_Matvec_Compute(sparse_matrix *H,double *x, double *q, double *e
 
 	int blocks;
 
-	blocks = nn / DEF_BLOCK_SIZE
-			+ (( nn % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
+	blocks = NN / DEF_BLOCK_SIZE
+			+ (( NN % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
 	printf("Blocks %d \n",blocks);
 
 
-	hipLaunchKernelGGL(k_init_q, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0, d_fix_my_atoms,q,x,eta,nn);
+	hipLaunchKernelGGL(k_init_q, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0, d_fix_my_atoms,q,x,eta,nn,NN);
 	hipDeviceSynchronize();
 
 	printf("nn%d,NN%d\n",nn,NN);
+
+
+
+	blocks = nn / DEF_BLOCK_SIZE
+			+ (( nn % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
+	printf("Blocks %d \n",blocks);
 
 
 	hipLaunchKernelGGL(k_matvec_csr_fix, dim3(blocks), dim3(MATVEC_BLOCK_SIZE), sizeof(real) * MATVEC_BLOCK_SIZE , 0, *H, x, q, nn);
@@ -705,8 +779,8 @@ void Cuda_Vector_Sum_Fix( real *res, real a, real *x, real b, real *y, int count
 	blocks = (count / DEF_BLOCK_SIZE)+ ((count % DEF_BLOCK_SIZE == 0) ? 0 : 1);
 
 	hipLaunchKernelGGL(k_vector_sum, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  res, a, x, b, y, count );
-	hipDeviceSynchronize( );
-	cudaCheckError( );
+	hipDeviceSynchronize();
+	cudaCheckError();
 }
 
 void Cuda_CG_Preconditioner_Fix(real *res, real *a, real *b, int count)

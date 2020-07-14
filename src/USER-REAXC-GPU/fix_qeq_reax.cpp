@@ -86,7 +86,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-																																																														  Fix(lmp, narg, arg), pertype_option(NULL)
+																																																																												  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (lmp->citeme) lmp->citeme->add(cite_fix_qeq_reax);
 
@@ -285,6 +285,7 @@ void FixQEqReax::allocate_storage()
 	// dual CG support
 	int size = nmax;
 	if (dual_enabled) size*= 2;
+
 
 	memory->create(p,size,"qeq:p");
 	memory->create(q,size,"qeq:q");
@@ -831,6 +832,8 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 	Cuda_Vector_Sum_Fix(qeq_gpu->r , 1.0,  device_b, -1.0,
 			qeq_gpu->q, nn);
 
+	printf("\n\n");
+
 
 	Cuda_CG_Preconditioner_Fix(qeq_gpu->d, qeq_gpu->r,
 			qeq_gpu->Hdia_inv,  nn);
@@ -850,21 +853,55 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 
 	Cuda_Copy_Vector_From_Device(r,qeq_gpu->r,nn);
 	Cuda_Copy_Vector_From_Device(d,qeq_gpu->d,nn);
+
+
+
+
 	sig_new = parallel_dot(r,d,nn);
+
+	printf("b NORM %f, sig new %f \n", b_norm, sig_new);
 
 
 	for (i = 1; i < imax && sqrt(sig_new) / b_norm > tolerance; ++i) {
+		printf("\n\n");
+		printf("Packing forward comm on d\n");
 		comm->forward_comm_fix(this); //Dist_vector( d );
+		printf("\n\n");
 		cuda_sparse_matvec(qeq_gpu->d, qeq_gpu->q);
 		comm->reverse_comm_fix(this); //Coll_vector( q );
 
 		Cuda_Copy_Vector_From_Device(d,qeq_gpu->d,nn);
+
+		printf("\n\n");
+		for(int i = 0; i < nn; i++)
+		{
+			printf("D[%d]=%f\n", i,d[i]);
+		}
+
+		printf("\n\n");
+
 		Cuda_Copy_Vector_From_Device(q,qeq_gpu->q,nn);
+
+		for(int i = 0; i < nn; i++)
+		{
+			printf("Q[%d]=%f\n", i,q[i]);
+		}
+
+
 		tmp = parallel_dot( d, q, nn);
+
+		printf("Tmp %f \n", tmp);
 		alpha = sig_new / tmp;
 
+		printf("Device x vector sum \n");
 		Cuda_Vector_Sum_Fix(device_x , alpha,  qeq_gpu->d, 1.0, device_x, nn);
+		printf("\n\n");
+
+
+		printf("Device r vector sum \n");
 		Cuda_Vector_Sum_Fix(qeq_gpu->r, -alpha, qeq_gpu->q, 1.0,qeq_gpu->r,nn);
+		printf("\n\n");
+
 
 		Cuda_CG_Preconditioner_Fix(qeq_gpu->p,qeq_gpu->r,qeq_gpu->Hdia_inv,nn);
 
@@ -877,8 +914,17 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 
 		beta = sig_new / sig_old;
 
+		printf("Device d vector sum \n");
 		Cuda_Vector_Sum_Fix(qeq_gpu->d, 1.,qeq_gpu->p,beta,qeq_gpu->d,nn);
+		printf("\n\n");
+
+
+		printf("i:%d,beta %f, sig new %f, alpha %f\n",i, beta, sig_new, alpha);
+
+
 	}
+
+
 
 	if (i >= imax && comm->me == 0) {
 		char str[128];
@@ -886,6 +932,8 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 				"at " BIGINT_FORMAT " step",i,update->ntimestep);
 		error->warning(FLERR,str);
 	}
+
+	printf("I is %d \n", i);
 	return i;
 }
 
@@ -1131,6 +1179,14 @@ int FixQEqReax::pack_forward_comm(int n, int *list, double *buf,
 	{
 		Cuda_Copy_From_Device_Comm_Fix(buf,qeq_gpu->d,n,0);
 
+		/*printf("Copying from device \n");
+		for(m = 0; m < n; m++)
+		{
+			printf("%f\n", buf[m]);
+		}
+
+		printf("\n\n");*/
+
 		/*for(m = 0; m < n; m++)
 		{
 			buf[m] = d[list[m]];
@@ -1187,6 +1243,15 @@ void FixQEqReax::unpack_forward_comm(int n, int first, double *buf)
 	if (pack_flag == 1)
 	{
 		Cuda_Copy_To_Device_Comm_Fix(buf,qeq_gpu->d,n,first);
+
+		/*printf("Copying to device \n");
+
+		for(m = 0; m < n; m++)
+		{
+			printf("%f\n", buf[m]);
+		}
+
+		printf("\n\n");*/
 
 		/*for(m = 0, i = first; m < n; m++, i++)
 		{
@@ -1254,13 +1319,16 @@ int FixQEqReax::pack_reverse_comm(int n, int first, double *buf)
 	}
 	else
 	{
-		/*for (m = 0, i = first; m < n; m++, i++)
-		{
-			buf[m] = q[i];
-
-		}*/
-
+		//printf("Copying q from device \n");
 		Cuda_Copy_From_Device_Comm_Fix(buf,qeq_gpu->q,n,first);
+		for (m = 0, i = first; m < n; m++, i++)
+		{
+			//printf("Buf m %f\n", buf[m]);
+			//buf[m] = q[i];
+
+		}
+		//printf("\n\n");
+
 		return n;
 	}
 }
@@ -1285,7 +1353,11 @@ void FixQEqReax::unpack_reverse_comm(int n, int *list, double *buf)
 		{
 			q[list[m]] += buf[m];
 		}*/
+		//printf("Copying q to device \n");
+
 		Cuda_UpdateQ_And_Copy_To_Device_Comm_Fix(buf,qeq_gpu,n);
+
+		//printf("\n\n");
 	}
 }
 
@@ -1472,6 +1544,9 @@ void FixQEqReax::vector_add( double* dest, double c, double* v, int k)
 	for (--k; k>=0; --k) {
 		kk = ilist[k];
 		if (atom->mask[kk] & groupbit)
+		{
 			dest[kk] += c * v[kk];
+
+		}
 	}
 }
