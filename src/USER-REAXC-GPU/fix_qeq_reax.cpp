@@ -60,6 +60,7 @@ extern "C" float  Cuda_Calculate_Local_S_Sum(int nn,fix_qeq_gpu *qeq_gpu);
 extern "C" float  Cuda_Calculate_Local_T_Sum(int nn,fix_qeq_gpu *qeq_gpu);
 extern "C" void  Cuda_UpdateQ_And_Copy_To_Device_Comm_Fix(double *buf,fix_qeq_gpu *qeq_gpu,int n);
 extern "C" void Cuda_Estimate_CMEntries_Storages( reax_system *system, control_params *control, reax_list **lists, fix_qeq_gpu *qeq_gpu,int nn);
+extern "C" void  Cuda_Update_Q_And_Backup_ST(int nn, fix_qeq_gpu *qeq_gpu, double u);
 
 
 
@@ -1105,23 +1106,8 @@ void FixQEqReax::cuda_calculate_Q()
 	u = s_sum / t_sum;
 
 
-   //Cuda_Update_Q_And_Backup_ST(nn,qeq_gpu,u);
+   Cuda_Update_Q_And_Backup_ST(nn,qeq_gpu,u);
 
-
-	for (ii = 0; ii < nn; ++ii) {
-		i = ilist[ii];
-		if (atom->mask[i] & groupbit) {
-			q[i] = s[i] - u * t[i];
-
-			/* backup s & t */
-			for (k = nprev-1; k > 0; --k) {
-				s_hist[i][k] = s_hist[i][k-1];
-				t_hist[i][k] = t_hist[i][k-1];
-			}
-			s_hist[i][0] = s[i];
-			t_hist[i][0] = t[i];
-		}
-	}
 
 	pack_flag = 4;
 	comm->forward_comm_fix(this); //Dist_vector( atom->q );

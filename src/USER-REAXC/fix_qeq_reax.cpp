@@ -858,14 +858,20 @@ void FixQEqReax::calculate_Q()
 	t_sum = parallel_vector_acc( t, nn);
 
 	printf("%f,%f\n",s_sum,t_sum);
-	exit(0);
 
 	u = s_sum / t_sum;
+
+	printf("U %f \n", u);
+
 
 	for (ii = 0; ii < nn; ++ii) {
 		i = ilist[ii];
 		if (atom->mask[i] & groupbit) {
 			q[i] = s[i] - u * t[i];
+
+			printf("S[%d] %f,T[%d] %f,Q[%d] %f \n",i, s[i],i,t[i],i,q[i]);
+
+
 
 			/* backup s & t */
 			for (k = nprev-1; k > 0; --k) {
@@ -877,6 +883,7 @@ void FixQEqReax::calculate_Q()
 		}
 	}
 
+	exit(0);
 	pack_flag = 4;
 	comm->forward_comm_fix(this); //Dist_vector( atom->q );
 }

@@ -936,48 +936,51 @@ float  Cuda_Calculate_Local_T_Sum(int nn,fix_qeq_gpu *qeq_gpu)
 	return my_acc;
 }
 
-float  Cuda_Calculate_Q(int nn,fix_qeq_gpu *qeq_gpu, int charges,int control_blocks)
+CUDA_GLOBAL void k_update_q_and_backup_st(double *q, double *s, double *t, reax_atom *my_atoms,rvec4 *s_hist, rvec4 *t_hist, double u, int nn)
 {
 
-	int i, k;
-	double u, s_sum, t_sum;
+	int i;
+	int type_i;
 
 
-	return Cuda_Parallel_Vector_Acc(nn,qeq_gpu,control_blocks);
+	i = blockIdx.x * blockDim.x + threadIdx.x;
+
+	reax_atom *atom;
+	atom = &my_atoms[i];
 
 
+	if ( i >= nn)
+	{
+		return;
+	}
+
+	q[i]  = atom->q = s[i] - u*t[i];
+
+	printf("S[%d] %f,T[%d] %f,Q[%d] %f \n",i, s[i],i,t[i],i,q[i]);
 
 
-	/*real u;//, s_sum, t_sum;
-	    rvec2 my_sum, all_sum;
-	    real *q;
+	s_hist[i][3] = s_hist[i][2];
+	s_hist[i][2] = s_hist[i][1];
+	s_hist[i][1] = s_hist[i][0];
+	s_hist[i][0] = s[i];
 
-	    my_sum[0] = 0.0;
-	    my_sum[1] = 0.0;
-	    q = (real *) workspace->host_scratch;
-	    memset( q, 0, system->N * sizeof(real) );
 
-	    cuda_charges_x( system, control, workspace, my_sum );
-
-	#if defined(DEBUG_FOCUS)
-	    fprintf( stderr, "Device: my_sum[0]: %f, my_sum[1]: %f\n",
-	            my_sum[0], my_sum[1] );
-	#endif
-
-	    MPI_Allreduce( &my_sum, &all_sum, 2, MPI_DOUBLE, MPI_SUM, mpi_data->world );
-
-	    u = all_sum[0] / all_sum[1];
-
-	#if defined(DEBUG_FOCUS)
-	    fprintf( stderr, "Device: u: %f \n", u );
-	#endif
-
-	    cuda_charges_st( system, workspace, q, u );
-
-	    Dist( system, mpi_data, q, REAL_PTR_TYPE, MPI_DOUBLE );
-
-	    cuda_charges_updateq( system, workspace, q );*/
-
+	t_hist[i][3] = t_hist[i][2];
+	t_hist[i][2] = t_hist[i][1];
+	t_hist[i][1] = t_hist[i][0];
+	t_hist[i][0] = t[i];
 }
 
+void  Cuda_Update_Q_And_Backup_ST(int nn, fix_qeq_gpu *qeq_gpu, double u)
+{
+	int blocks;
+	blocks = nn / DEF_BLOCK_SIZE
+			+ (( nn % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
+
+	hipLaunchKernelGGL(k_update_q_and_backup_st, dim3(blocks), dim3(DEF_BLOCK_SIZE), 0, 0,   qeq_gpu->q,qeq_gpu->s,qeq_gpu->t,qeq_gpu->d_fix_my_atoms,qeq_gpu->s_hist,qeq_gpu->t_hist,u, nn );
+	hipDeviceSynchronize();
+	cudaCheckError( );
+
+
+}
 }
