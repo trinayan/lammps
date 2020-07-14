@@ -56,7 +56,8 @@ extern "C" void  Cuda_Sparse_Matvec_Compute(sparse_matrix *H,double *x, double *
 extern "C" void  Cuda_Vector_Sum_Fix( real *res, real a, real *x, real b, real *y, int count);
 extern "C" void  Cuda_CG_Preconditioner_Fix( real *, real *, real *, int );
 extern "C" void  Cuda_Copy_Vector_From_Device(real *host_vector, real *device_vector, int nn);
-extern "C" void  Cuda_Calculate_Q(int nn,fix_qeq_gpu *qeq_gpu, int blocks_pow_2);
+extern "C" float  Cuda_Calculate_Local_S_Sum(int nn,fix_qeq_gpu *qeq_gpu);
+extern "C" float  Cuda_Calculate_Local_T_Sum(int nn,fix_qeq_gpu *qeq_gpu);
 extern "C" void  Cuda_UpdateQ_And_Copy_To_Device_Comm_Fix(double *buf,fix_qeq_gpu *qeq_gpu,int n);
 extern "C" void Cuda_Estimate_CMEntries_Storages( reax_system *system, control_params *control, reax_list **lists, fix_qeq_gpu *qeq_gpu,int nn);
 
@@ -1083,7 +1084,7 @@ void FixQEqReax::sparse_matvec( sparse_matrix *A, double *x, double *b)
 void FixQEqReax::cuda_calculate_Q()
 {
 	int i, k;
-	double u, s_sum, t_sum;
+	double u;
 	double *q = atom->q;
 
 	int nn, ii;
@@ -1098,12 +1099,14 @@ void FixQEqReax::cuda_calculate_Q()
 	}
 
 
-	Cuda_Calculate_Q(nn,qeq_gpu,reaxc->control->blocks);
+	double s_sum = Cuda_Calculate_Local_S_Sum(nn,qeq_gpu);
+	double t_sum = Cuda_Calculate_Local_T_Sum(nn,qeq_gpu);
 
-	exit(0);
-	s_sum = parallel_vector_acc( s, nn);
-	t_sum = parallel_vector_acc( t, nn);
 	u = s_sum / t_sum;
+
+
+   //Cuda_Update_Q_And_Backup_ST(nn,qeq_gpu,u);
+
 
 	for (ii = 0; ii < nn; ++ii) {
 		i = ilist[ii];

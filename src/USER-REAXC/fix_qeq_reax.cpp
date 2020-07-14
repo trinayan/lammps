@@ -509,7 +509,6 @@ void FixQEqReax::pre_force(int /*vflag*/)
 
 	printf("Matvecs %d \n", matvecs);
 
-	exit(0);
 
 	calculate_Q();
 
@@ -857,6 +856,10 @@ void FixQEqReax::calculate_Q()
 
 	s_sum = parallel_vector_acc( s, nn);
 	t_sum = parallel_vector_acc( t, nn);
+
+	printf("%f,%f\n",s_sum,t_sum);
+	exit(0);
+
 	u = s_sum / t_sum;
 
 	for (ii = 0; ii < nn; ++ii) {
@@ -1137,11 +1140,16 @@ double FixQEqReax::parallel_vector_acc( double *v, int n)
 	res = 0.0;
 	for (ii = 0; ii < n; ++ii) {
 		i = ilist[ii];
+		printf("v %f \n", v[i]);
 		if (atom->mask[i] & groupbit)
 			my_acc += v[i];
 	}
 
+	printf("my acc %f \n", my_acc);
 	MPI_Allreduce( &my_acc, &res, 1, MPI_DOUBLE, MPI_SUM, world);
+
+	printf("res %f \n", res);
+
 
 	return res;
 }
