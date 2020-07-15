@@ -61,6 +61,8 @@ extern "C" float  Cuda_Calculate_Local_T_Sum(int nn,fix_qeq_gpu *qeq_gpu);
 extern "C" void  Cuda_UpdateQ_And_Copy_To_Device_Comm_Fix(double *buf,fix_qeq_gpu *qeq_gpu,int n);
 extern "C" void Cuda_Estimate_CMEntries_Storages( reax_system *system, control_params *control, reax_list **lists, fix_qeq_gpu *qeq_gpu,int nn);
 extern "C" void  Cuda_Update_Q_And_Backup_ST(int nn, fix_qeq_gpu *qeq_gpu, double u);
+extern "C" void  CudaFreeFixQeqParams(fix_qeq_gpu *qeq_gpu);
+extern "C" void  CudaFreeHMatrix(fix_qeq_gpu *qeq_gpu);
 
 
 
@@ -315,7 +317,8 @@ void FixQEqReax::deallocate_storage()
 	memory->destroy( r );
 	memory->destroy( d );
 
-	//TB::Add GPU free here
+	CudaFreeFixQeqParams(qeq_gpu);
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -387,6 +390,8 @@ void FixQEqReax::deallocate_matrix()
 	memory->destroy( H.numnbrs );
 	memory->destroy( H.jlist );
 	memory->destroy( H.val );
+
+	CudaFreeHMatrix(qeq_gpu);
 
 	//TB:: Implement deallocation of device side H matrix
 }
@@ -1106,7 +1111,7 @@ void FixQEqReax::cuda_calculate_Q()
 	u = s_sum / t_sum;
 
 
-   Cuda_Update_Q_And_Backup_ST(nn,qeq_gpu,u);
+    Cuda_Update_Q_And_Backup_ST(nn,qeq_gpu,u);
 
 
 	pack_flag = 4;

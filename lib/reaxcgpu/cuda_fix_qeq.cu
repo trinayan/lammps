@@ -983,4 +983,32 @@ void  Cuda_Update_Q_And_Backup_ST(int nn, fix_qeq_gpu *qeq_gpu, double u)
 
 
 }
+
+void  CudaFreeFixQeqParams(fix_qeq_gpu *qeq_gpu)
+{
+	hipFree(qeq_gpu->s);
+	hipFree(qeq_gpu->t);
+
+	hipFree(qeq_gpu->Hdia_inv);
+	hipFree(qeq_gpu->b_s );
+	hipFree(qeq_gpu->b_t);
+	hipFree(qeq_gpu->b_prc);
+	hipFree(qeq_gpu-> b_prm);
+
+
+	hipFree(qeq_gpu->p);
+	hipFree(qeq_gpu->q);
+	hipFree(qeq_gpu->r);
+	hipFree(qeq_gpu->d);
+}
+
+void CudaFreeHMatrix(fix_qeq_gpu *qeq_gpu)
+{
+  hipFree(&qeq_gpu->H.start);
+  hipFree(&qeq_gpu->H.end);
+  hipFree(&qeq_gpu->H.entries);
+
+}
+
+
 }
