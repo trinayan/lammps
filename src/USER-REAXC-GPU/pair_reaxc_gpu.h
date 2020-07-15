@@ -79,10 +79,10 @@ class PairReaxCGPU : public Pair {
   void create_compute();
   void create_fix();
   void update_and_copy_reax_atoms_to_device();
+  int update_and_write_reax_lists_to_device();
   void get_distance(rvec, rvec, double *, rvec *);
   void set_far_nbr(far_neighbor_data *, int, double, rvec);
   int estimate_reax_lists();
-  int write_reax_lists();
   void read_reax_forces(int);
 
   int nmax;

@@ -258,14 +258,14 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
 
 	//Cuda_Estimate_Neighbors( system ); //TB:: Commented out
 
-	printf("Total cap %d, total far nbrs:%d \n", system->total_cap, system->total_far_nbrs);
+	/*printf("Total cap %d, total far nbrs:%d \n", system->total_cap, system->total_far_nbrs);
 
 	Cuda_Make_List(system->total_cap, system->total_far_nbrs,
 			TYP_FAR_NEIGHBOR, lists[FAR_NBRS]);
 
 	printf("Number %d, num:%d \n", (cpu_lists+FAR_NBRS)->num_intrs,lists[FAR_NBRS]->num_intrs);
 
-	printf("Size of cpu list %d \n", sizeof(cpu_lists));
+	printf("Size of cpu list %d \n", sizeof(cpu_lists));*/
 
 
 	/*copy_host_device( (cpu_lists+FAR_NBRS)->index, lists[FAR_NBRS]->index,
@@ -275,9 +275,9 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
 
    copy_host_device( (cpu_lists+FAR_NBRS)->end_index, lists[FAR_NBRS]->end_index,
 		   system->total_cap * sizeof(int),
-                      hipMemcpyHostToDevice, "Output_Sync_Lists::far_neighbor_list" );*/
+                      hipMemcpyHostToDevice, "Output_Sync_Lists::far_neighbor_list" );
 
-	Cuda_Write_Reax_Lists(system,  lists, cpu_lists);
+	Cuda_Write_Reax_Lists(system,  lists, cpu_lists);*/
 
 
 	//TB:: Verify if requried to use this. Note using this corrupts lists

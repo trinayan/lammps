@@ -83,6 +83,9 @@ extern "C" void  Cuda_Allocate_Atoms(reax_system *system);
 
 extern "C" void Cuda_Update_Atoms_On_Device(reax_system *system);
 
+extern "C" void Cuda_Make_List( int n, int num_intrs, int type, reax_list *l);
+
+
 using namespace LAMMPS_NS;
 
 static const char cite_pair_reax_c[] =
@@ -519,8 +522,7 @@ void PairReaxCGPU::setup( )
     Cuda_Allocate_Atoms(system);
     update_and_copy_reax_atoms_to_device();
 
-    int num_nbrs = estimate_reax_lists();
-
+    int num_nbrs = estimate_reax_lists(); //TB:: Should this be moved to GPU?
     system->total_far_nbrs = num_nbrs;
 
     printf("Num nbrs %d \n", num_nbrs);   
@@ -529,28 +531,16 @@ void PairReaxCGPU::setup( )
                   (cpu_lists+FAR_NBRS)))
       error->one(FLERR,"Pair reax/c problem in far neighbor list");
     (cpu_lists+FAR_NBRS)->error_ptr=error;
+    Cuda_Make_List(system->total_cap, system->total_far_nbrs,
+    			TYP_FAR_NEIGHBOR, gpu_lists[FAR_NBRS]);
+    update_and_write_reax_lists_to_device();
 
-    write_reax_lists();
     Initialize( system, control, data, workspace, &cpu_lists, out_control,
                    mpi_data, world );
 
-
-
-    printf("Number in CPU %d \n", (cpu_lists+FAR_NBRS)->num_intrs);
-
-
-    printf("Control tabulate %d \n", control->tabulate);
     Cuda_Initialize(system, control, data, workspace, gpu_lists,cpu_lists, out_control,
                 mpi_data);
 
-
-    /*if (control->tabulate) {
-        char msg[MAX_STR];
-
-    	if (Init_Lookup_Tables( system, control, workspace, mpi_data, msg ) == FAILURE) {
-    	    control->error_ptr->one(FLERR,"Lookup table could not be created");
-    	    }
-    }*/
 
     for( int k = 0; k < system->N; ++k )
     {
@@ -632,11 +622,7 @@ void PairReaxCGPU::compute(int eflag, int vflag)
 
 
   Cuda_Reset(system, control, data, workspace, gpu_lists);
-  workspace->realloc.num_far = write_reax_lists();
-  printf("Num far %d \n", workspace->realloc.num_far);
- Cuda_Write_Reax_Lists(system,  gpu_lists, cpu_lists);
-
-
+  workspace->realloc.num_far = update_and_write_reax_lists_to_device();
 
   // timing for filling in the reax lists
   if (comm->me == 0) {
@@ -822,7 +808,7 @@ int PairReaxCGPU::estimate_reax_lists()
 
 /* ---------------------------------------------------------------------- */
 
-int PairReaxCGPU::write_reax_lists()
+int PairReaxCGPU::update_and_write_reax_lists_to_device()
 {
 
   int itr_i, itr_j, i, j;
@@ -875,6 +861,9 @@ int PairReaxCGPU::write_reax_lists()
   }
 
   free( dist );
+
+  Cuda_Write_Reax_Lists(system,  gpu_lists, cpu_lists);
+
 
   return num_nbrs;
 }
