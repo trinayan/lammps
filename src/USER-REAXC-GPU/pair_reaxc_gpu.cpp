@@ -79,6 +79,10 @@ extern "C" int Cuda_Compute_Forces( reax_system *system, control_params *control
         simulation_data *data, storage *workspace, reax_list **lists,
         output_controls *out_control, mpi_datatypes *mpi_data );
 
+extern "C" void  Cuda_Allocate_Atoms(reax_system *system);
+
+extern "C" void Cuda_Update_Atoms_On_Device(reax_system *system);
+
 using namespace LAMMPS_NS;
 
 static const char cite_pair_reax_c[] =
@@ -511,8 +515,9 @@ void PairReaxCGPU::setup( )
 
     // initialize my data structures
 
-    PreAllocate_Space( system, control, workspace );
-    write_reax_atoms();
+    PreAllocate_Space( system, control, workspace);
+    Cuda_Allocate_Atoms(system);
+    update_and_copy_reax_atoms_to_device();
 
     int num_nbrs = estimate_reax_lists();
 
@@ -520,7 +525,6 @@ void PairReaxCGPU::setup( )
 
     printf("Num nbrs %d \n", num_nbrs);   
   
-  //TB::Commented  
    if(!Make_List(system->total_cap, num_nbrs, TYP_FAR_NEIGHBOR,
                   (cpu_lists+FAR_NBRS)))
       error->one(FLERR,"Pair reax/c problem in far neighbor list");
@@ -558,8 +562,9 @@ void PairReaxCGPU::setup( )
   {
 
     // fill in reax datastructures
+	    update_and_copy_reax_atoms_to_device();
 
-    write_reax_atoms();
+
 
     // reset the bond list info for new atoms
     printf("Initial setup done. far numbers gpu %d \n", gpu_lists[FAR_NBRS]->num_intrs);
@@ -725,7 +730,7 @@ void PairReaxCGPU::compute(int eflag, int vflag)
 
 /* ---------------------------------------------------------------------- */
 
-void PairReaxCGPU::write_reax_atoms()
+void PairReaxCGPU::update_and_copy_reax_atoms_to_device()
 {
   int *num_bonds = fix_reax->num_bonds;
   int *num_hbonds = fix_reax->num_hbonds;
@@ -743,6 +748,8 @@ void PairReaxCGPU::write_reax_atoms()
     system->my_atoms[i].num_bonds = num_bonds[i];
     system->my_atoms[i].num_hbonds = num_hbonds[i];
   }
+
+  Cuda_Update_Atoms_On_Device(system);
 }
 
 /* ---------------------------------------------------------------------- */

@@ -78,7 +78,7 @@ class PairReaxCGPU : public Pair {
   void setup();
   void create_compute();
   void create_fix();
-  void write_reax_atoms();
+  void update_and_copy_reax_atoms_to_device();
   void get_distance(rvec, rvec, double *, rvec *);
   void set_far_nbr(far_neighbor_data *, int, double, rvec);
   int estimate_reax_lists();

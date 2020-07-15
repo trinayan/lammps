@@ -164,6 +164,19 @@ void Cuda_Allocate_Grid_Cell_Atoms( reax_system *system, int cap )
 }
 
 
+void Cuda_Allocate_Atoms(reax_system *system)
+{
+	cuda_malloc( (void **) &system->d_my_atoms,
+			system->total_cap * sizeof(reax_atom),
+			TRUE, "system:d_my_atoms" );
+}
+
+void Cuda_Update_Atoms_On_Device(reax_system *system)
+{
+	copy_host_device( system->my_atoms, system->d_my_atoms, sizeof(reax_atom) * system->N,
+	            hipMemcpyHostToDevice, "Sync_Atoms::system->my_atoms" );
+}
+
 void Cuda_Allocate_System( reax_system *system )
 {
 	/* atoms */

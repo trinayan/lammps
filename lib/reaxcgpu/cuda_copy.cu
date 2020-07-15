@@ -62,6 +62,8 @@ void Sync_Atoms( reax_system *sys )
             sys->my_rank, sys->n, sys->N, sys->total_cap );
 #endif
 
+    printf("Not implemented \n");
+    exit(0);
     copy_host_device( sys->my_atoms, sys->d_my_atoms, sizeof(reax_atom) * sys->N,
             hipMemcpyHostToDevice, "Sync_Atoms::system->my_atoms" );
     //TODO METIN FIX, coredump on his machine
@@ -71,8 +73,6 @@ void Sync_Atoms( reax_system *sys )
 /* Copy atomic system info from host to device */
 void Sync_System( reax_system *sys )
 {
-    Sync_Atoms( sys );
-
     copy_host_device( &sys->my_box, sys->d_my_box, sizeof(simulation_box),
             hipMemcpyHostToDevice, "Sync_System::system->my_box" );
 
