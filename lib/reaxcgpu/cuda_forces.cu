@@ -368,10 +368,6 @@ CUDA_GLOBAL void k_estimate_storages( reax_atom *my_atoms,
 
 	hbonds[i] = num_hbonds;
 	max_hbonds[i] = MAX( (int)(num_hbonds * SAFE_ZONE), MIN_HBONDS );
-
-	cm_entries[i] = num_cm_entries;
-	max_cm_entries[i] = MAX( (int)(num_cm_entries * SAFE_ZONE), MIN_CM_ENTRIES );
-
 }
 
 

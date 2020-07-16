@@ -174,16 +174,12 @@ void Cuda_Allocate_Atoms(reax_system *system)
 void Cuda_Update_Atoms_On_Device(reax_system *system)
 {
 	copy_host_device( system->my_atoms, system->d_my_atoms, sizeof(reax_atom) * system->N,
-	            hipMemcpyHostToDevice, "Sync_Atoms::system->my_atoms" );
+			hipMemcpyHostToDevice, "Sync_Atoms::system->my_atoms" );
 }
 
 void Cuda_Allocate_System( reax_system *system )
 {
-	/* atoms */
-	printf("Total cap %d \n", system->total_cap);
-	cuda_malloc( (void **) &system->d_my_atoms,
-			system->total_cap * sizeof(reax_atom),
-			TRUE, "system:d_my_atoms" );
+
 	cuda_malloc( (void **) &system->d_numH, sizeof(int), TRUE, "system:d_numH" );
 
 	/* list management */
@@ -392,82 +388,27 @@ void Cuda_Allocate_Workspace( reax_system *system, control_params *control,
 	cuda_malloc( (void **) &workspace->vlpex, total_real, TRUE, "vlpex" );
 	cuda_malloc( (void **) &workspace->bond_mark, total_real, TRUE, "bond_mark" );
 
-	/* charge matrix storage */
-	//TB:: Moved to CudAllocateStorageForFixQEq
-	/*if ( control->cm_solver_pre_comp_type == DIAG_PC )
-	{
-		cuda_malloc( (void **) &workspace->Hdia_inv, total_cap * sizeof(real), TRUE, "Hdia_inv" );
-	}
-	cuda_malloc( (void **) &workspace->b_s, total_cap * sizeof(real), TRUE, "b_s" );
-	cuda_malloc( (void **) &workspace->b_t, total_cap * sizeof(real), TRUE, "b_t" );
-	cuda_malloc( (void **) &workspace->b_prc, total_cap * sizeof(real), TRUE, "b_prc" );
-	cuda_malloc( (void **) &workspace->b_prm, total_cap * sizeof(real), TRUE, "b_prm" );
-	cuda_malloc( (void **) &workspace->s, total_cap * sizeof(real), TRUE, "s" );
-	cuda_malloc( (void **) &workspace->t, total_cap * sizeof(real), TRUE, "t" );*/
-	if ( control->cm_solver_pre_comp_type == ICHOLT_PC ||
-			control->cm_solver_pre_comp_type == ILUT_PAR_PC )
-	{
-		cuda_malloc( (void **) &workspace->droptol, total_cap * sizeof(real), TRUE, "droptol" );
-	}
+
+	/* GMRES storage */
+	cuda_malloc( (void **) &workspace->y, (RESTART+1)*sizeof(real), TRUE, "y" );
+	cuda_malloc( (void **) &workspace->z, (RESTART+1)*sizeof(real), TRUE, "z" );
+	cuda_malloc( (void **) &workspace->g, (RESTART+1)*sizeof(real), TRUE, "g" );
+	cuda_malloc( (void **) &workspace->h, (RESTART+1)*(RESTART+1)*sizeof(real), TRUE, "h" );
+	cuda_malloc( (void **) &workspace->hs, (RESTART+1)*sizeof(real), TRUE, "hs" );
+	cuda_malloc( (void **) &workspace->hc, (RESTART+1)*sizeof(real), TRUE, "hc" );
+	cuda_malloc( (void **) &workspace->v, (RESTART+1)*(RESTART+1)*sizeof(real), TRUE, "v" );
+
+
+
 	cuda_malloc( (void **) &workspace->b, total_cap * sizeof(rvec2), TRUE, "b" );
 	cuda_malloc( (void **) &workspace->x, total_cap * sizeof(rvec2), TRUE, "x" );
 
-	switch ( control->cm_solver_type )
-	{
-	case GMRES_S:
-	case GMRES_H_S:
-		cuda_malloc( (void **) &workspace->y, (RESTART+1)*sizeof(real), TRUE, "y" );
-		cuda_malloc( (void **) &workspace->z, (RESTART+1)*sizeof(real), TRUE, "z" );
-		cuda_malloc( (void **) &workspace->g, (RESTART+1)*sizeof(real), TRUE, "g" );
-		cuda_malloc( (void **) &workspace->h, (RESTART+1)*(RESTART+1)*sizeof(real), TRUE, "h" );
-		cuda_malloc( (void **) &workspace->hs, (RESTART+1)*sizeof(real), TRUE, "hs" );
-		cuda_malloc( (void **) &workspace->hc, (RESTART+1)*sizeof(real), TRUE, "hc" );
-		cuda_malloc( (void **) &workspace->v, (RESTART+1)*(RESTART+1)*sizeof(real), TRUE, "v" );
-		break;
 
-	case SDM_S:
-		break;
-
-	case CG_S:
-		//TB:: Moved to CudaAllocateStorageForFixQEq
-		/*cuda_malloc( (void **) &workspace->r, total_cap * sizeof(real), TRUE, "r" );
-		cuda_malloc( (void **) &workspace->d, total_cap * sizeof(real), TRUE, "d" );
-		cuda_malloc( (void **) &workspace->q, total_cap * sizeof(real), TRUE, "q" );
-		cuda_malloc( (void **) &workspace->p, total_cap * sizeof(real), TRUE, "p" );*/
-		cuda_malloc( (void **) &workspace->r2, total_cap * sizeof(rvec2), TRUE, "r2" );
-		cuda_malloc( (void **) &workspace->d2, total_cap * sizeof(rvec2), TRUE, "d2" );
-		cuda_malloc( (void **) &workspace->q2, total_cap * sizeof(rvec2), TRUE, "q2" );
-		cuda_malloc( (void **) &workspace->p2, total_cap * sizeof(rvec2), TRUE, "p2" );
-		break;
-
-	default:
-		fprintf( stderr, "Unrecognized QEq solver selection. Terminating...\n" );
-		exit( INVALID_INPUT );
-		break;
-	}
 
 	/* integrator storage */
 	cuda_malloc( (void **) &workspace->v_const, local_rvec, TRUE, "v_const" );
 
-	/* storage for analysis */
-	if( control->molecular_analysis || control->diffusion_coef )
-	{
-		cuda_malloc( (void **) &workspace->mark, local_cap * sizeof(int), TRUE, "mark" );
-		cuda_malloc( (void **) &workspace->old_mark, local_cap * sizeof(int), TRUE, "old_mark" );
-	}
-	else
-	{
-		workspace->mark = workspace->old_mark = NULL;
-	}
 
-	if( control->diffusion_coef )
-	{
-		cuda_malloc( (void **) &workspace->x_old, local_cap * sizeof(rvec), TRUE, "x_old" );
-	}
-	else
-	{
-		workspace->x_old = NULL;
-	}
 
 	/* force related storage */
 	cuda_malloc( (void **) &workspace->f, total_cap * sizeof(rvec), TRUE, "f" );
@@ -475,8 +416,6 @@ void Cuda_Allocate_Workspace( reax_system *system, control_params *control,
 
 	/* Taper params */
 	cuda_malloc( (void **) &workspace->Tap, 8 * sizeof(real), TRUE, "Tap" );
-
-
 }
 
 
@@ -514,80 +453,21 @@ void Cuda_Deallocate_Workspace( control_params *control, storage *workspace )
 	cuda_free( workspace->vlpex, "vlpex" );
 	cuda_free( workspace->bond_mark, "bond_mark" );
 
-	/* charge matrix storage */
-	if ( control->cm_solver_pre_comp_type == DIAG_PC )
-	{
-		cuda_free( workspace->Hdia_inv, "Hdia_inv" );
-	}
-	cuda_free( workspace->b_s, "b_s" );
-	cuda_free( workspace->b_t, "b_t" );
-	cuda_free( workspace->b_prc, "b_prc" );
-	cuda_free( workspace->b_prm, "b_prm" );
-	cuda_free( workspace->s, "s" );
-	cuda_free( workspace->t, "t" );
-	if ( control->cm_solver_pre_comp_type == ICHOLT_PC ||
-			control->cm_solver_pre_comp_type == ILUT_PAR_PC )
-	{
-		cuda_free( workspace->droptol, "droptol" );
-	}
+	cuda_free( workspace->y, "y" );
+	cuda_free( workspace->z, "z" );
+	cuda_free( workspace->g, "g" );
+	cuda_free( workspace->h, "h" );
+	cuda_free( workspace->hs, "hs" );
+	cuda_free( workspace->hc, "hc" );
+	cuda_free( workspace->v, "v" );
+
 	cuda_free( workspace->b, "b" );
 	cuda_free( workspace->x, "x" );
 
-	switch ( control->cm_solver_type )
-	{
-	case GMRES_S:
-	case GMRES_H_S:
-		cuda_free( workspace->y, "y" );
-		cuda_free( workspace->z, "z" );
-		cuda_free( workspace->g, "g" );
-		cuda_free( workspace->h, "h" );
-		cuda_free( workspace->hs, "hs" );
-		cuda_free( workspace->hc, "hc" );
-		cuda_free( workspace->v, "v" );
-		break;
-
-	case SDM_S:
-		break;
-
-	case CG_S:
-		cuda_free( workspace->r, "r" );
-		cuda_free( workspace->d, "d" );
-		cuda_free( workspace->q, "q" );
-		cuda_free( workspace->p, "p" );
-		cuda_free( workspace->r2, "r2" );
-		cuda_free( workspace->d2, "d2" );
-		cuda_free( workspace->q2, "q2" );
-		cuda_free( workspace->p2, "p2" );
-		break;
-
-	default:
-		fprintf( stderr, "Unrecognized QEq solver selection. Terminating...\n" );
-		exit( INVALID_INPUT );
-		break;
-	}
 
 	/* integrator storage */
 	cuda_free( workspace->v_const, "v_const" );
 
-	/* storage for analysis */
-	if( control->molecular_analysis || control->diffusion_coef )
-	{
-		cuda_free( workspace->mark, "mark" );
-		cuda_free( workspace->old_mark, "old_mark" );
-	}
-	else
-	{
-		workspace->mark = workspace->old_mark = NULL;
-	}
-
-	if( control->diffusion_coef )
-	{
-		cuda_free( workspace->x_old, "x_old" );
-	}
-	else
-	{
-		workspace->x_old = NULL;
-	}
 
 	/* force related storage */
 	cuda_free( workspace->f, "f" );
@@ -595,6 +475,8 @@ void Cuda_Deallocate_Workspace( control_params *control, storage *workspace )
 
 	/* Taper params */
 	cuda_free( workspace->Tap, "Tap" );
+
+
 }
 
 

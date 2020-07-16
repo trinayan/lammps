@@ -392,7 +392,7 @@ void Cuda_Deallocate_Matrix( sparse_matrix *H )
 CUDA_GLOBAL void k_estimate_cm_entries_storage(reax_atom *my_atoms,
 		control_params *control, reax_list far_nbrs,
 		int n, int total_cap,
-		int *cm_entries)
+		int *cm_entries, int *max_cm_entries)
 {
 	int i, j, pj;
 	int start_i, end_i;
@@ -468,6 +468,9 @@ CUDA_GLOBAL void k_estimate_cm_entries_storage(reax_atom *my_atoms,
 
 
 	cm_entries[i] = num_cm_entries;
+    max_cm_entries[i] = MAX( (int)(num_cm_entries * SAFE_ZONE), MIN_CM_ENTRIES );
+
+
 
 	printf("Cm etnries index %d,  %d \n", i, cm_entries[i]);
 }
@@ -478,6 +481,8 @@ void Cuda_Estimate_CMEntries_Storages( reax_system *system, control_params *cont
 
 	cuda_malloc( (void **) &qeq_gpu->d_cm_entries,
 			system->total_cap * sizeof(int), TRUE, "system:d_cm_entries" );
+	cuda_malloc( (void **) &qeq_gpu->d_max_cm_entries,
+				system->total_cap * sizeof(int), TRUE, "system:d_cm_entries" );
 
 
 	blocks = nn / DEF_BLOCK_SIZE +
@@ -488,9 +493,19 @@ void Cuda_Estimate_CMEntries_Storages( reax_system *system, control_params *cont
 	hipLaunchKernelGGL(k_estimate_cm_entries_storage, dim3(blocks), dim3(DEF_BLOCK_SIZE), 0, 0,  qeq_gpu->d_fix_my_atoms,
 			(control_params *)control->d_control_params,
 			*(lists[FAR_NBRS]),system->n, nn,
-			qeq_gpu->d_cm_entries);
+			qeq_gpu->d_cm_entries,qeq_gpu->d_max_cm_entries);
 	hipDeviceSynchronize();
 	cudaCheckError();
+
+	Cuda_Reduction_Sum(qeq_gpu->d_max_cm_entries, system->d_total_cm_entries, nn);
+	copy_host_device( &system->total_cm_entries, system->d_total_cm_entries, sizeof(int),
+					hipMemcpyDeviceToHost, "Cuda_Estimate_Storages::d_total_cm_entries" );
+
+	printf("Total cm entries %d \n", system->total_cm_entries);
+
+	exit(0);
+
+
 }
 
 void Cuda_Init_Sparse_Matrix_Indices( reax_system *system, fix_qeq_gpu *qeq_gpu, int n)
