@@ -45,4 +45,4 @@ Thumbs.db
 /lmp
 /src/USER-REAXC-GPU/lmp_reaxcgpu
 src/USER-REAXC-GPU/lmp_reaxcgpu
-src/USER-REAXC/lmp_mpi
+/src/USER-REAXC/lmp_mpi

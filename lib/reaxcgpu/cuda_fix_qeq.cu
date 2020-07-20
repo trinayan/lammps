@@ -502,10 +502,6 @@ void Cuda_Estimate_CMEntries_Storages( reax_system *system, control_params *cont
 					hipMemcpyDeviceToHost, "Cuda_Estimate_Storages::d_total_cm_entries" );
 
 	printf("Total cm entries %d \n", system->total_cm_entries);
-
-	exit(0);
-
-
 }
 
 void Cuda_Init_Sparse_Matrix_Indices( reax_system *system, fix_qeq_gpu *qeq_gpu, int n)

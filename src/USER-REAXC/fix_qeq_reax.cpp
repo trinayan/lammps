@@ -883,7 +883,6 @@ void FixQEqReax::calculate_Q()
 		}
 	}
 
-	exit(0);
 	pack_flag = 4;
 	comm->forward_comm_fix(this); //Dist_vector( atom->q );
 }

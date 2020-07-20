@@ -212,6 +212,10 @@ void Init_Forces_noQEq( reax_system *system, control_params *control,
     start_i = Start_Index(i, far_nbrs);
     end_i   = End_Index(i, far_nbrs);
     btop_i = End_Index( i, bonds );
+
+    //printf("%d,%d,%d\n", start_i, end_i, btop_i);
+
+
     sbp_i = &(system->reax_param.sbp[type_i]);
 
     if (i < system->n) {
@@ -226,6 +230,8 @@ void Init_Forces_noQEq( reax_system *system, control_params *control,
     ihb_top = -1;
     if (local && control->hbond_cut > 0) {
       ihb = sbp_i->p_hbond;
+		printf("Ihb %d \n", ihb);
+
       if (ihb == 1)
         ihb_top = End_Index( atom_i->Hindex, hbonds );
       else ihb_top = -1;
@@ -308,6 +314,10 @@ void Init_Forces_noQEq( reax_system *system, control_params *control,
 
   workspace->realloc.num_bonds = num_bonds;
   workspace->realloc.num_hbonds = num_hbonds;
+
+  printf("%d,%d\n", num_bonds, num_hbonds);
+
+  exit(0);
 
   Validate_Lists( system, workspace, lists, data->step,
                   system->n, system->N, system->numH);

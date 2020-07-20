@@ -1536,7 +1536,8 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 		reax_list far_nbrs_list, reax_list bonds_list, reax_list hbonds_list,int n, int N, int num_atom_types, int renbr,
 		int *max_cm_entries, int *realloc_cm_entries,
 		int *max_bonds, int *realloc_bonds,
-		int *max_hbonds, int *realloc_hbonds)
+		int *max_hbonds, int *realloc_hbonds,
+		real *num_bonds_per_atom, real *num_hbonds_per_atom)
 
 {
 
@@ -1546,6 +1547,10 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 	//int Htop, btop_i, ihb, jhb, ihb_top;
 	int ihb, jhb, ihb_top, jhb_top;
 	int btop_i, num_bonds, num_hbonds;
+
+	num_bonds = 0;
+	num_hbonds = 0;
+	btop_i = 0;
 
 	int local, flag, flag2, flag3;
 	real r_ij, cutoff;
@@ -1568,7 +1573,9 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 	end_i = Cuda_End_Index( i, &far_nbrs_list );
 	btop_i = Cuda_End_Index( i, &bonds_list );
 
-	printf("Start %d, end %d, btop %d \n", start_i, end_i, btop_i);
+	// printf("%d,%d,%d\n", start_i, end_i, btop_i);
+
+
 
 	sbp_i = &sbp[type_i];
 
@@ -1586,6 +1593,7 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 	ihb_top = -1;
 	if (local && control->hbond_cut > 0) {
 		ihb = sbp_i->p_hbond;
+		printf("Ihb %d \n", ihb);
 		if (ihb == 1)
 			ihb_top = Cuda_End_Index( atom_i->Hindex, &hbonds_list);
 		else ihb_top = -1;
@@ -1674,6 +1682,10 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 
 
 
+	num_bonds_per_atom[i] = num_bonds;
+	num_hbonds_per_atom[i] = num_hbonds;
+
+
 }
 
 
@@ -1724,6 +1736,25 @@ int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 			hipMemcpyHostToDevice, "Bond mark initialization");
 
 
+	real *num_bonds_per_atom;
+	real *num_hbonds_per_atom;
+
+	cuda_malloc( (void **) &num_bonds_per_atom, sizeof(real)*system->n, TRUE,
+			"Cuda_Allocate_Bonds");
+	cuda_malloc( (void **) &num_hbonds_per_atom, sizeof(real)*system->n, TRUE,
+			"Cuda_Allocate_Bonds");
+
+	real *total_num_bonds_per_atoms;
+	cuda_malloc( (void **) &total_num_bonds_per_atoms, sizeof(real)*system->n, TRUE,
+			"Cuda_Allocate_Bonds");
+
+	real *total_num_hbonds_per_atoms;
+	cuda_malloc( (void **) &total_num_hbonds_per_atoms, sizeof(real)*system->n, TRUE,
+			"Cuda_Allocate_Bonds");
+
+
+
+
 	hipLaunchKernelGGL(k_init_forces_no_qeq, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  system->d_my_atoms, system->reax_param.d_sbp,
 			system->reax_param.d_tbp, *(workspace->d_workspace),
 			(control_params *)control->d_control_params,
@@ -1733,23 +1764,42 @@ int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 			(((data->step-data->prev_steps) % control->reneighbor) == 0),
 			system->d_max_cm_entries, system->d_realloc_cm_entries,
 			system->d_max_bonds, system->d_realloc_bonds,
-			system->d_max_hbonds, system->d_realloc_hbonds );
+			system->d_max_hbonds, system->d_realloc_hbonds,
+			num_bonds_per_atom, num_hbonds_per_atom);
 	hipDeviceSynchronize( );
-	cudaCheckError( );
+	cudaCheckError();
+
+
+	hipLaunchKernelGGL(k_reduction, dim3(blocks), dim3(DEF_BLOCK_SIZE), sizeof(real) * DEF_BLOCK_SIZE , 0,  num_bonds_per_atom,  total_num_bonds_per_atoms, system->N);
+	hipDeviceSynchronize( );
+	cudaCheckError();
+
+
+	double my_acc;
+
+	copy_host_device( &my_acc, total_num_bonds_per_atoms,
+			sizeof(double), hipMemcpyDeviceToHost, "charges:x" );
+
+	workspace->realloc.num_bonds = my_acc;
+
+	my_acc = 0;
+
+	hipLaunchKernelGGL(k_reduction, dim3(blocks), dim3(DEF_BLOCK_SIZE), sizeof(real) * DEF_BLOCK_SIZE , 0,  num_hbonds_per_atom,  total_num_hbonds_per_atoms, system->N);
+	hipDeviceSynchronize();
+	cudaCheckError();
+
+	copy_host_device( &my_acc, total_num_hbonds_per_atoms,
+			sizeof(double), hipMemcpyDeviceToHost, "charges:x" );
+
+	workspace->realloc.num_hbonds = my_acc;
 
 
 
 
+	printf("%d,%d\n", workspace->realloc.num_bonds , workspace->realloc.num_hbonds);
 
-
-	//exit(0);
-
-
-
-
-
-
-	//return FAILURE;
+  //TB:: Above result does not match num bonds equal to CPU version. check back later and debug
+	return 1;
 }
 
 
@@ -2173,6 +2223,7 @@ int Cuda_Compute_Forces( reax_system *system, control_params *control,
 {
 
 	Cuda_Init_Forces_No_Charges(system, control, data, workspace,lists, out_control);
+	exit(0);
 	Cuda_Compute_Bonded_Forces(system, control, data, workspace, lists, out_control);
 
 	Cuda_Compute_NonBonded_Forces(system, control, data, workspace, lists, out_control,mpi_data);

@@ -73,12 +73,6 @@ void Sync_Atoms( reax_system *sys )
 /* Copy atomic system info from host to device */
 void Sync_System( reax_system *sys )
 {
-    copy_host_device( &sys->my_box, sys->d_my_box, sizeof(simulation_box),
-            hipMemcpyHostToDevice, "Sync_System::system->my_box" );
-
-    copy_host_device( &sys->my_ext_box, sys->d_my_ext_box,
-            sizeof(simulation_box), hipMemcpyHostToDevice,
-            "Sync_System::system->my_ext_box" );
 
     copy_host_device( sys->reax_param.sbp, sys->reax_param.d_sbp,
             sizeof(single_body_parameters) * sys->reax_param.num_atom_types,

@@ -72,6 +72,8 @@ int Cuda_Init_System( reax_system *system, control_params *control,
 	system->Hcap = (int)(MAX( system->numH * saferzone, mincap ));
 
 	Cuda_Allocate_System(system);
+    Sync_System( system );
+
 
 	return SUCCESS;
 }
