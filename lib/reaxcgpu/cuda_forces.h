@@ -36,6 +36,9 @@ void Cuda_Compute_NonBonded_Forces( reax_system *, control_params *,
         simulation_data *, storage *, reax_list **, output_controls *,
         mpi_datatypes * );
 
+void Cuda_Validate_Lists( reax_system *system, storage * /*workspace*/, reax_list **lists,
+                     int step, int /*n*/, int N, int numH );
+
 int Cuda_Compute_Forces( reax_system*, control_params*, simulation_data*,
         storage*, reax_list**, output_controls*, mpi_datatypes* );
 CUDA_GLOBAL void k_init_end_index( int * intr_cnt, int *indices, int *end_indices, int N );

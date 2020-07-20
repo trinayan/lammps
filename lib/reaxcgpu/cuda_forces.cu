@@ -167,6 +167,8 @@ CUDA_GLOBAL void k_init_hbond_indices( reax_atom * atoms, single_body_parameters
 		my_hbonds = hbonds[i];
 		indices[hindex] = max_hbonds[i];
 		end_indices[hindex] = indices[hindex] + hbonds[i];
+		printf("Index %d, Start Indices %d, End Indices %d \n", hindex, indices[hindex],end_indices[hindex]);
+
 	}
 	else
 	{
@@ -1530,6 +1532,66 @@ int Cuda_Init_Forces( reax_system *system, control_params *control,
 	return ret;
 }
 
+CUDA_GLOBAL void k_validate_lists(reax_atom *my_atoms,reax_list bonds_list, reax_list hbonds_list, int N, int numH, int *validation_failed, int saferzone)
+{
+	int i;
+
+	i = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if ( i >= N )
+	{
+		return;
+	}
+
+	int comp;
+
+
+	my_atoms[i].num_bonds =   MAX(Cuda_Num_Entries(i,&bonds_list)*2, MIN_BONDS);
+
+	if ( i < N-1)
+	{
+		comp = Cuda_Start_Index(i+1,&bonds_list);
+	}
+	else
+	{
+		comp = bonds_list.num_intrs;
+	}
+
+	int end_index = Cuda_End_Index(i, &bonds_list);
+
+
+	if (end_index > comp) {
+		validation_failed[0] = 1;
+	}
+
+	/* hbonds list */
+	if (numH > 0) {
+
+		int Hindex =  my_atoms[i].Hindex;
+		if (Hindex > -1)
+		{
+
+			my_atoms[i].num_hbonds = (int)(MAX(Cuda_Num_Entries(Hindex, &hbonds_list)*saferzone, MIN_HBONDS ));
+
+
+			if (Hindex < numH-1)
+			{
+				comp = Cuda_Start_Index(Hindex+1, &hbonds_list);
+			}
+			else
+			{
+				comp = hbonds_list.num_intrs;
+			}
+
+			int end_index = Cuda_End_Index(Hindex, &hbonds_list);
+
+			if(end_index > comp) {
+				printf(" Hindex %d, Start index %d, End index %d \n",Hindex, comp, end_index);
+				validation_failed[0] = 1;
+			}
+		}
+	}
+}
 
 CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_parameters *sbp,
 		two_body_parameters *tbp, storage workspace, control_params *control,
@@ -1593,7 +1655,6 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 	ihb_top = -1;
 	if (local && control->hbond_cut > 0) {
 		ihb = sbp_i->p_hbond;
-		printf("Ihb %d \n", ihb);
 		if (ihb == 1)
 			ihb_top = Cuda_End_Index( atom_i->Hindex, &hbonds_list);
 		else ihb_top = -1;
@@ -1682,9 +1743,48 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 
 
 
+
 	num_bonds_per_atom[i] = num_bonds;
 	num_hbonds_per_atom[i] = num_hbonds;
 
+
+}
+
+
+
+
+
+
+void Cuda_Validate_Lists( reax_system *system, storage * /*workspace*/, reax_list **lists,
+		int step, int /*n*/, int N, int numH )
+{
+	int i, comp, Hindex;
+	double saferzone = system->saferzone;
+
+
+	int blocks = 0;
+	blocks = (system->N) / DEF_BLOCK_SIZE +
+			(((system->N % DEF_BLOCK_SIZE) == 0) ? 0 : 1);
+
+	int *d_validation_failed;
+
+	cuda_malloc((void **) &d_validation_failed, sizeof(int), TRUE,
+			"Cuda_Allocate_Bonds");
+
+	hipLaunchKernelGGL(k_validate_lists, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,system->d_my_atoms,
+			*(lists[BONDS]),
+			*(lists[HBONDS]), system->N,
+			numH, d_validation_failed, saferzone);
+	hipDeviceSynchronize( );
+	cudaCheckError();
+
+
+	int validation_failed = 0;;
+
+    copy_host_device(&validation_failed, d_validation_failed,
+				sizeof(int), hipMemcpyDeviceToHost, "charges:x" );
+
+    printf("Validation %d\n", validation_failed);
 
 }
 
@@ -1798,7 +1898,9 @@ int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 
 	printf("%d,%d\n", workspace->realloc.num_bonds , workspace->realloc.num_hbonds);
 
-  //TB:: Above result does not match num bonds equal to CPU version. check back later and debug
+	//TB:: Above result does not match num bonds equal to CPU version. check back later and debug
+	Cuda_Validate_Lists( system, workspace, lists, data->step,
+			system->n, system->N, system->numH);
 	return 1;
 }
 

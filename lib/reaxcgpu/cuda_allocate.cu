@@ -268,6 +268,7 @@ static int Cuda_Reallocate_System( reax_system *system, storage *workspace,
 	temp = (int *) workspace->scratch;
 	temp_atom = (reax_atom*) workspace->scratch;
 
+
 	/* free the existing storage for atoms, leave other info allocated */
 	copy_device( temp_atom, system->d_my_atoms, old_total_cap * sizeof(reax_atom),
 			"Cuda_Reallocate_System::temp" );

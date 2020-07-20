@@ -123,7 +123,6 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
 			TRUE, TRUE, TRUE, data->step );
 
 	if (control->hbond_cut > 0) {
-		printf("hbonds %d \n",system->total_hbonds);
 		Cuda_Make_List( system->total_cap, system->total_hbonds, TYP_HBOND, lists[HBONDS]);
 		Cuda_Init_HBond_Indices( system, workspace, lists );
 	}
