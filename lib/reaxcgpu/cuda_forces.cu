@@ -161,22 +161,15 @@ CUDA_GLOBAL void k_init_hbond_indices( reax_atom * atoms, single_body_parameters
 
 	hindex = atoms[i].Hindex;
 
-	if ( sbp[ atoms[i].type ].p_hbond == H_ATOM ||
-			sbp[ atoms[i].type ].p_hbond == H_BONDING_ATOM )
+
+	if (hindex > -1)
 	{
 		my_hbonds = hbonds[i];
 		indices[hindex] = max_hbonds[i];
 		end_indices[hindex] = indices[hindex] + hbonds[i];
-		printf("Index %d, Start Indices %d, End Indices %d \n", hindex, indices[hindex],end_indices[hindex]);
+		atoms[i].num_hbonds = my_hbonds;
+	}
 
-	}
-	else
-	{
-		my_hbonds = 0;
-		indices[hindex] = 0;
-		end_indices[hindex] = 0;
-	}
-	atoms[i].num_hbonds = my_hbonds;
 }
 
 
@@ -1586,7 +1579,6 @@ CUDA_GLOBAL void k_validate_lists(reax_atom *my_atoms,reax_list bonds_list, reax
 			int end_index = Cuda_End_Index(Hindex, &hbonds_list);
 
 			if(end_index > comp) {
-				printf(" Hindex %d, Start index %d, End index %d \n",Hindex, comp, end_index);
 				validation_failed[0] = 1;
 			}
 		}
@@ -1781,11 +1773,16 @@ void Cuda_Validate_Lists( reax_system *system, storage * /*workspace*/, reax_lis
 
 	int validation_failed = 0;;
 
-    copy_host_device(&validation_failed, d_validation_failed,
-				sizeof(int), hipMemcpyDeviceToHost, "charges:x" );
+	copy_host_device(&validation_failed, d_validation_failed,
+			sizeof(int), hipMemcpyDeviceToHost, "charges:x" );
 
-    printf("Validation %d\n", validation_failed);
 
+	if(validation_failed)
+	{
+		printf("Lists Validation failed exiting \n");
+		exit(0);
+
+	}
 }
 
 
@@ -1893,12 +1890,10 @@ int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 
 	workspace->realloc.num_hbonds = my_acc;
 
-
-
-
 	printf("%d,%d\n", workspace->realloc.num_bonds , workspace->realloc.num_hbonds);
 
 	//TB:: Above result does not match num bonds equal to CPU version. check back later and debug
+
 	Cuda_Validate_Lists( system, workspace, lists, data->step,
 			system->n, system->N, system->numH);
 	return 1;
