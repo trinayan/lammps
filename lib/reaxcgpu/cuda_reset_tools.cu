@@ -59,19 +59,22 @@ void Cuda_Reset_Atoms( reax_system* system, control_params *control,
 
     hindex = (int *) workspace->scratch;
 
-    blocks = system->N / DEF_BLOCK_SIZE
-        + ((system->N % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
+    blocks = system->n / DEF_BLOCK_SIZE
+        + ((system->n % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
 
-    hipLaunchKernelGGL(k_reset_hindex, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  system->d_my_atoms, system->reax_param.d_sbp, hindex, system->N );
+    hipLaunchKernelGGL(k_reset_hindex, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  system->d_my_atoms, system->reax_param.d_sbp, hindex, system->n );
     hipDeviceSynchronize( );
     cudaCheckError( );
 
-    Cuda_Reduction_Sum( hindex, system->d_numH, system->N );
+    Cuda_Reduction_Sum( hindex, system->d_numH, system->n);
 
     copy_host_device( &system->numH, system->d_numH, sizeof(int), 
             hipMemcpyDeviceToHost, "Cuda_Reset_Atoms::d_numH" );
 
     system->Hcap = MAX( (int)(system->numH * SAFER_ZONE), MIN_CAP );
+
+    printf("Num  H %d, %d \n", system->numH, system->Hcap);
+
 }
 
 
@@ -94,6 +97,7 @@ void Cuda_Reset( reax_system *system, control_params *control,
     fprintf( stderr, "p%d @ step%d: reset done\n", system->my_rank, data->step );
     MPI_Barrier( MPI_COMM_WORLD );
 #endif
+
 }
 
 

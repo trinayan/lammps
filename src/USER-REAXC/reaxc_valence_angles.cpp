@@ -403,7 +403,12 @@ void Valence_Angles( reax_system *system, control_params *control,
 
       Set_End_Index(pi, num_thb_intrs, thb_intrs );
     }
+
+    printf("i%d,%f,%f,%f\n", i, workspace->f[i][0],  workspace->f[i][1], workspace->f[i][2]);
+
   }
+
+  exit(0);
 
   if (num_thb_intrs >= thb_intrs->num_intrs * DANGER_ZONE) {
     workspace->realloc.num_3body = num_thb_intrs;

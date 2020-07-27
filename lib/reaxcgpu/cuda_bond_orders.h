@@ -46,6 +46,11 @@ CUDA_DEVICE static inline int Cuda_BOp( reax_list bonds, real bo_cut,
     j = nbr_pj->nbr;
     r2 = SQR( nbr_pj->d );
 
+    if(i == 9)
+     {
+   	 // printf("%d\n", btop_i);
+     }
+
     if ( sbp_i->r_s > 0.0 && sbp_j->r_s > 0.0 )
     {
         C12 = twbp->p_bo1 * POW( nbr_pj->d / twbp->r_s, twbp->p_bo2 );

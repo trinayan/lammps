@@ -167,7 +167,12 @@ CUDA_GLOBAL void k_init_hbond_indices( reax_atom * atoms, single_body_parameters
 		my_hbonds = hbonds[i];
 		indices[hindex] = max_hbonds[i];
 		end_indices[hindex] = indices[hindex] + hbonds[i];
+
+		//printf("%d,%d,%d\n", i, indices[hindex], end_indices[hindex]);
 		atoms[i].num_hbonds = my_hbonds;
+
+		printf(" Hindex:%d ,Start Index %d, End index %d\n",hindex ,indices[hindex], end_indices[hindex]);
+
 	}
 
 }
@@ -199,7 +204,7 @@ CUDA_GLOBAL void k_estimate_storages( reax_atom *my_atoms,
 
 	i = blockIdx.x * blockDim.x + threadIdx.x;
 
-	if ( i >= total_cap )
+	if ( i >= N )
 	{
 		return;
 	}
@@ -349,6 +354,12 @@ CUDA_GLOBAL void k_estimate_storages( reax_atom *my_atoms,
 					/* initially BO values are the uncorrected ones, page 1 */
 					BO = BO_s + BO_pi + BO_pi2;
 
+
+					if(i == 0)
+					{
+						//printf("%f,%f,%f,%f,%f,%f\n", BO,BO_s, BO_pi, BO_pi2, sbp_i->r_pi_pi, sbp_j->r_pi_pi );
+					}
+
 					if ( BO >= control->bo_cut )
 					{
 						++num_bonds;
@@ -358,9 +369,13 @@ CUDA_GLOBAL void k_estimate_storages( reax_atom *my_atoms,
 		}
 	}
 
+
+
 	bonds[i] = num_bonds;
 	max_bonds[i] = MAX( (int)(num_bonds * 2), MIN_BONDS );
 
+
+	//
 	hbonds[i] = num_hbonds;
 	max_hbonds[i] = MAX( (int)(num_hbonds * SAFE_ZONE), MIN_HBONDS );
 }
@@ -1282,8 +1297,8 @@ void Cuda_Init_HBond_Indices( reax_system *system, storage *workspace,
 	temp = (int *) workspace->scratch;
 
 	/* init Hindices */
-	blocks = system->N / DEF_BLOCK_SIZE +
-			((system->N % DEF_BLOCK_SIZE == 0) ? 0 : 1);
+	blocks = system->n / DEF_BLOCK_SIZE +
+			((system->n % DEF_BLOCK_SIZE == 0) ? 0 : 1);
 
 	hipLaunchKernelGGL(k_setup_hindex, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  system->d_my_atoms, system->N );
 	hipDeviceSynchronize( );
@@ -1293,9 +1308,10 @@ void Cuda_Init_HBond_Indices( reax_system *system, storage *workspace,
 	Cuda_Scan_Excl_Sum( system->d_max_hbonds, temp, system->total_cap );
 
 	hipLaunchKernelGGL(k_init_hbond_indices, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  system->d_my_atoms, system->reax_param.d_sbp, system->d_hbonds, temp,
-			hbonds->index, hbonds->end_index, system->N );
+			hbonds->index, hbonds->end_index, system->n );
 	hipDeviceSynchronize( );
 	cudaCheckError( );
+
 }
 
 
@@ -1306,6 +1322,7 @@ void Cuda_Init_Bond_Indices( reax_system *system, reax_list **lists )
 {
 	int blocks;
 	reax_list *bonds = lists[BONDS];
+
 
 	/* init indices */
 	Cuda_Scan_Excl_Sum( system->d_max_bonds, bonds->index, system->total_cap );
@@ -1347,6 +1364,9 @@ void Cuda_Estimate_Storages( reax_system *system, control_params *control,
 	blocks = system->total_cap / ST_BLOCK_SIZE +
 			(((system->total_cap % ST_BLOCK_SIZE == 0)) ? 0 : 1);
 
+
+	printf("%d,%d,%d\n",system->n, system->N, system->total_cap);
+
 	hipLaunchKernelGGL(k_estimate_storages, dim3(blocks), dim3(ST_BLOCK_SIZE ), 0, 0,  system->d_my_atoms, system->reax_param.d_sbp, system->reax_param.d_tbp,
 			(control_params *)control->d_control_params,
 			*(lists[FAR_NBRS]), system->reax_param.num_atom_types,
@@ -1363,6 +1383,7 @@ void Cuda_Estimate_Storages( reax_system *system, control_params *control,
 				system->total_cap );
 		copy_host_device( &system->total_bonds, system->d_total_bonds, sizeof(int),
 				hipMemcpyDeviceToHost, "Cuda_Estimate_Storages::d_total_bonds" );
+
 	}
 
 	if ( system->numH > 0 && control->hbond_cut > 0.0 )
@@ -1585,6 +1606,47 @@ CUDA_GLOBAL void k_validate_lists(reax_atom *my_atoms,reax_list bonds_list, reax
 	}
 }
 
+
+
+void Cuda_Validate_Lists( reax_system *system, storage * /*workspace*/, reax_list **lists,
+		int step, int /*n*/, int N, int numH )
+{
+	int i, comp, Hindex;
+	double saferzone = system->saferzone;
+
+
+	int blocks = 0;
+	blocks = (system->N) / DEF_BLOCK_SIZE +
+			(((system->N % DEF_BLOCK_SIZE) == 0) ? 0 : 1);
+
+	int *d_validation_failed;
+
+	cuda_malloc((void **) &d_validation_failed, sizeof(int), TRUE,
+			"Cuda_Allocate_Bonds");
+
+	hipLaunchKernelGGL(k_validate_lists, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,system->d_my_atoms,
+			*(lists[BONDS]),
+			*(lists[HBONDS]), system->N,
+			numH, d_validation_failed, saferzone);
+	hipDeviceSynchronize( );
+	cudaCheckError();
+
+
+	int validation_failed = 0;;
+
+	copy_host_device(&validation_failed, d_validation_failed,
+			sizeof(int), hipMemcpyDeviceToHost, "charges:x" );
+
+
+	if(validation_failed)
+	{
+		printf("Lists Validation failed exiting \n");
+		exit(0);
+
+	}
+}
+
+
 CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_parameters *sbp,
 		two_body_parameters *tbp, storage workspace, control_params *control,
 		reax_list far_nbrs_list, reax_list bonds_list, reax_list hbonds_list,int n, int N, int num_atom_types, int renbr,
@@ -1627,6 +1689,11 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 	end_i = Cuda_End_Index( i, &far_nbrs_list );
 	btop_i = Cuda_End_Index( i, &bonds_list );
 
+
+	if(i == 9)
+	{
+		printf("%d\n", btop_i);
+	}
 	// printf("%d,%d,%d\n", start_i, end_i, btop_i);
 
 
@@ -1712,6 +1779,7 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 
 
 
+
 			if (nbr_pj->d <= control->bond_cut && Cuda_BOp(bonds_list, control->bo_cut,
 					i, btop_i, nbr_pj, sbp_i, sbp_j, twbp, workspace.dDeltap_self,
 					workspace.total_bond_order)) {
@@ -1741,51 +1809,6 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 
 
 }
-
-
-
-
-
-
-void Cuda_Validate_Lists( reax_system *system, storage * /*workspace*/, reax_list **lists,
-		int step, int /*n*/, int N, int numH )
-{
-	int i, comp, Hindex;
-	double saferzone = system->saferzone;
-
-
-	int blocks = 0;
-	blocks = (system->N) / DEF_BLOCK_SIZE +
-			(((system->N % DEF_BLOCK_SIZE) == 0) ? 0 : 1);
-
-	int *d_validation_failed;
-
-	cuda_malloc((void **) &d_validation_failed, sizeof(int), TRUE,
-			"Cuda_Allocate_Bonds");
-
-	hipLaunchKernelGGL(k_validate_lists, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,system->d_my_atoms,
-			*(lists[BONDS]),
-			*(lists[HBONDS]), system->N,
-			numH, d_validation_failed, saferzone);
-	hipDeviceSynchronize( );
-	cudaCheckError();
-
-
-	int validation_failed = 0;;
-
-	copy_host_device(&validation_failed, d_validation_failed,
-			sizeof(int), hipMemcpyDeviceToHost, "charges:x" );
-
-
-	if(validation_failed)
-	{
-		printf("Lists Validation failed exiting \n");
-		exit(0);
-
-	}
-}
-
-
 int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 		simulation_data *data, storage *workspace,
 		reax_list **lists, output_controls *out_control )
@@ -1867,6 +1890,8 @@ int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 	cudaCheckError();
 
 
+	exit(0);
+
 	hipLaunchKernelGGL(k_reduction, dim3(blocks), dim3(DEF_BLOCK_SIZE), sizeof(real) * DEF_BLOCK_SIZE , 0,  num_bonds_per_atom,  total_num_bonds_per_atoms, system->N);
 	hipDeviceSynchronize( );
 	cudaCheckError();
@@ -1934,12 +1959,17 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 		hipDeviceSynchronize( );
 		cudaCheckError( );
 
+		exit(0);
+
+
+
 		hipLaunchKernelGGL(Cuda_Calculate_BO, dim3(control->blocks_n), dim3(control->block_size ), 0, 0,  system->d_my_atoms, system->reax_param.d_gp, system->reax_param.d_sbp,
 				system->reax_param.d_tbp, *(workspace->d_workspace),
 				*(lists[BONDS]),
 				system->reax_param.num_atom_types, system->N );
 		hipDeviceSynchronize( );
 		cudaCheckError( );
+
 
 		hipLaunchKernelGGL(Cuda_Update_Uncorrected_BO, dim3(control->blocks_n), dim3(control->block_size ), 0, 0,  *(workspace->d_workspace), *(lists[BONDS]), system->N );
 		hipDeviceSynchronize( );
@@ -1949,6 +1979,7 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 				*(workspace->d_workspace), system->N );
 		hipDeviceSynchronize( );
 		cudaCheckError( );
+
 
 #if defined(DEBUG_FOCUS)
 		t_elapsed = Get_Timing_Info( t_start );
@@ -1970,7 +2001,9 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 				*(workspace->d_workspace), *(lists[BONDS]),
 				system->n, system->reax_param.num_atom_types, spad );
 		hipDeviceSynchronize( );
-		cudaCheckError( );
+		cudaCheckError();
+
+
 
 		/* reduction for E_BE */
 		if ( update_energy == TRUE )
@@ -2041,6 +2074,7 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 
 		compute_bonded_part1 = TRUE;
 	}
+
 
 	/* 4. Valence Angles Interactions */
 #if defined(DEBUG_FOCUS)
@@ -2116,6 +2150,7 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 		hipDeviceSynchronize( );
 		cudaCheckError( );
 
+
 #if defined(DEBUG_FOCUS)
 		t_elapsed = Get_Timing_Info( t_start );
 
@@ -2139,6 +2174,8 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 				spad, spad + 2 * system->n, (rvec *) (spad + 4 * system->n) );
 		hipDeviceSynchronize( );
 		cudaCheckError( );
+
+
 
 		/* reduction for E_Tor */
 		if ( update_energy == TRUE )
@@ -2173,6 +2210,8 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 				system->N );
 		hipDeviceSynchronize( );
 		cudaCheckError( );
+
+
 
 #if defined(DEBUG_FOCUS)
 		t_elapsed = Get_Timing_Info( t_start );
@@ -2320,10 +2359,13 @@ int Cuda_Compute_Forces( reax_system *system, control_params *control,
 {
 
 	Cuda_Init_Forces_No_Charges(system, control, data, workspace,lists, out_control);
-	exit(0);
+
 	Cuda_Compute_Bonded_Forces(system, control, data, workspace, lists, out_control);
 
+	exit(0);
+
 	Cuda_Compute_NonBonded_Forces(system, control, data, workspace, lists, out_control,mpi_data);
+
 
 
 }

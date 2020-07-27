@@ -72,7 +72,10 @@ int Cuda_Init_System( reax_system *system, control_params *control,
 	system->Hcap = (int)(MAX( system->numH * saferzone, mincap ));
 
 	Cuda_Allocate_System(system);
-    Sync_System( system );
+	Sync_System( system );
+
+	/* estimate numH and Hcap */
+	Cuda_Reset_Atoms( system, control, workspace );
 
 
 	return SUCCESS;
@@ -122,6 +125,7 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
 	Cuda_Estimate_Storages( system, control, lists,
 			TRUE, TRUE, TRUE, data->step );
 
+
 	if (control->hbond_cut > 0) {
 		Cuda_Make_List( system->total_cap, system->total_hbonds, TYP_HBOND, lists[HBONDS]);
 		Cuda_Init_HBond_Indices( system, workspace, lists );
@@ -129,6 +133,8 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
 
 
 	/* bonds list */
+
+	printf("total bonds %d, %d \n",system->total_bonds,system->total_hbonds);
 	Cuda_Make_List( system->total_cap, system->total_bonds, TYP_BOND, lists[BONDS]);
 	Cuda_Init_Bond_Indices( system, lists );
 

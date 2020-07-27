@@ -189,7 +189,7 @@ typedef LAMMPS_NS::bigint rc_bigint;
 /* ??? */
 #define MAX_BONDS (30)
 /* ??? */
-#define MIN_BONDS (15)
+#define MIN_BONDS (25)
 /* ??? */
 #define MIN_HBONDS (25)
 /* ??? */

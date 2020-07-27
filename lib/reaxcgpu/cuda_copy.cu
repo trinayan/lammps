@@ -50,6 +50,14 @@ void Sync_Grid( grid *host, grid *device )
 }
 
 
+void Output_Sync_Forces(storage *workspace, int total_cap)
+{
+	copy_host_device(workspace->f, workspace->d_workspace->f,
+			   total_cap * sizeof(rvec), hipMemcpyDeviceToHost,
+	            "Output_Sync_Atoms::my_atoms" );
+
+}
+
 /* Copy atom info from host to device */
 void Sync_Atoms( reax_system *sys )
 {
@@ -62,8 +70,6 @@ void Sync_Atoms( reax_system *sys )
             sys->my_rank, sys->n, sys->N, sys->total_cap );
 #endif
 
-    printf("Not implemented \n");
-    exit(0);
     copy_host_device( sys->my_atoms, sys->d_my_atoms, sizeof(reax_atom) * sys->N,
             hipMemcpyHostToDevice, "Sync_Atoms::system->my_atoms" );
     //TODO METIN FIX, coredump on his machine
@@ -74,6 +80,7 @@ void Sync_Atoms( reax_system *sys )
 void Sync_System( reax_system *sys )
 {
 
+	Sync_Atoms(sys);
     copy_host_device( sys->reax_param.sbp, sys->reax_param.d_sbp,
             sizeof(single_body_parameters) * sys->reax_param.num_atom_types,
             hipMemcpyHostToDevice, "Sync_System::system->sbp" );

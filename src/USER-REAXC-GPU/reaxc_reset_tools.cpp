@@ -164,8 +164,11 @@ void Reset_Neighbor_Lists( reax_system *system, control_params *control,
         Set_Start_Index( Hindex, total_hbonds, hbonds );
         Set_End_Index( Hindex, total_hbonds, hbonds );
         total_hbonds += system->my_atoms[i].num_hbonds;
+
       }
     }
+
+
 
     /* is reallocation needed? */
     if (total_hbonds >= hbonds->num_intrs * 0.90/*DANGER_ZONE*/) {

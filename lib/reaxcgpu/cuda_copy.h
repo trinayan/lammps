@@ -20,6 +20,9 @@ void Output_Sync_Lists( reax_list *host, reax_list *device, int type );
 
 void Output_Sync_Atoms( reax_system * );
 
+void Output_Sync_Forces(storage *workspace, int total_cap);
+
+
 void Output_Sync_Simulation_Data( simulation_data *, simulation_data * );
 
 #ifdef __cplusplus

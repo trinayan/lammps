@@ -83,7 +83,7 @@ class PairReaxCGPU : public Pair {
   void get_distance(rvec, rvec, double *, rvec *);
   void set_far_nbr(far_neighbor_data *, int, double, rvec);
   int estimate_reax_lists();
-  void read_reax_forces(int);
+  void read_reax_forces_from_device(int);
 
   int nmax;
   void FindBond();

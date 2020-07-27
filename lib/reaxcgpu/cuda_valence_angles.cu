@@ -551,7 +551,11 @@ CUDA_GLOBAL void Cuda_Valence_Angles_PostProcess( reax_atom *atoms,
 
         //rvec_Add( atoms[i].f, sym_index_bond->va_f );
         rvec_Add( workspace->f[i], sym_index_bond->va_f );
+
+
     }
+
+    printf("i%d,%f,%f,%f\n", i, workspace->f[i][0],  workspace->f[i][1], workspace->f[i][2]);
 }
 
 
