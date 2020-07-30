@@ -146,7 +146,6 @@ void Reset_Neighbor_Lists( reax_system *system, control_params *control,
 
 
 		printf("total bonds  reset %d \n",total_bonds);
-		exit(0);
 
 		/* is reallocation needed? */
 		if (total_bonds >= bonds->num_intrs * DANGER_ZONE) {
@@ -172,9 +171,12 @@ void Reset_Neighbor_Lists( reax_system *system, control_params *control,
 				Set_End_Index( Hindex, total_hbonds, hbonds );
 				total_hbonds += system->my_atoms[i].num_hbonds;
 
-				printf("%d,%d,%d\n",Hindex, Start_Index(Hindex,hbonds),End_Index(Hindex,hbonds));
 			}
+			//printf("%d,%d,%d\n",Hindex, Start_Index(Hindex,hbonds),End_Index(Hindex,hbonds));
+
 		}
+
+		//exit(0);
 
 
 		/* is reallocation needed? */

@@ -196,7 +196,6 @@ int  Init_Lists( reax_system *system, control_params *control,
 	}
 
 	printf("total bonds %d, %d \n",total_bonds,total_hbonds);
-	exit(0);
 
 	bond_cap = (int)(MAX( total_bonds*safezone, mincap*MIN_BONDS ));
 

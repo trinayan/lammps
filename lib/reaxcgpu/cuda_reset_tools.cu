@@ -62,7 +62,7 @@ void Cuda_Reset_Atoms( reax_system* system, control_params *control,
     blocks = system->n / DEF_BLOCK_SIZE
         + ((system->n % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
 
-    hipLaunchKernelGGL(k_reset_hindex, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  system->d_my_atoms, system->reax_param.d_sbp, hindex, system->n );
+    hipLaunchKernelGGL(k_reset_hindex, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  system->d_my_atoms, system->reax_param.d_sbp, hindex, system->N );
     hipDeviceSynchronize( );
     cudaCheckError( );
 

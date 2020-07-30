@@ -6,6 +6,32 @@
 #include "index_utils.h"
 
 
+
+CUDA_GLOBAL void kvdW_coulomb_energy(
+		LR_lookup_table *t_LR,  int N, int num_atom_types)
+{
+
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if ( i >= N )
+	{
+		return;
+	}
+
+	if (i >= 20)
+	{
+		return;
+	}
+
+
+	LR_lookup_table *t;
+	t = &t_LR[3];
+
+	printf("t %f \n", t->inv_dx);
+
+
+}
+
 void copy_LR_table_to_device( reax_system *system, control_params *control,
 		storage *workspace, int *aggregated )
 {
@@ -16,15 +42,41 @@ void copy_LR_table_to_device( reax_system *system, control_params *control,
 
 	num_atom_types = system->reax_param.num_atom_types;
 
+	printf("atom types %d \n",num_atom_types);
+
 	cuda_malloc( (void **) &workspace->d_LR,
 			sizeof(LR_lookup_table) * ( num_atom_types * num_atom_types ),
-			FALSE, "LR_lookup:table" );
+			TRUE, "LR_lookup:table" );
 	copy_host_device( workspace->LR, workspace->d_LR,
 			sizeof(LR_lookup_table) * (num_atom_types * num_atom_types),
 			hipMemcpyHostToDevice, "LR_lookup:table");
 
+	/*copy_host_device( workspace->LR, workspace->d_LR,
+			sizeof(LR_lookup_table) * (num_atom_types * num_atom_types),
+			hipMemcpyDeviceToHost, "LR_lookup:table");
 
 
+
+	for( i = 0; i < num_atom_types; ++i ) {
+		if (aggregated[i]) {
+			for( j = i; j < num_atom_types; ++j ) {
+				if (aggregated[j]) {
+					printf("%d,%d\n",i,j);
+					printf("%f\n",workspace->LR[i][j].inv_dx);
+
+				}
+			}
+		}
+	}
+
+	exit(0);
+	int blocks = ((system->N * VDW_KER_THREADS_PER_ATOM) / DEF_BLOCK_SIZE)
+		        																+ (((system->N * VDW_KER_THREADS_PER_ATOM) % DEF_BLOCK_SIZE == 0) ? 0 : 1);
+
+	hipLaunchKernelGGL(kvdW_coulomb_energy, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,
+			workspace->d_LR, system->N,
+			system->reax_param.num_atom_types);
+	hipDeviceSynchronize();*/
 
 
 
@@ -79,13 +131,19 @@ void copy_LR_table_to_device( reax_system *system, control_params *control,
 					copy_host_device( workspace->LR[i][j].CEclmb, temp,
 							sizeof(cubic_spline_coef) * (control->tabulate + 1), hipMemcpyHostToDevice, "LR_lookup:ceclmb" );
 					copy_host_device( &temp, &workspace->d_LR[ index_lr(i, j, num_atom_types) ].CEclmb,
-					                            sizeof(cubic_spline_coef *), hipMemcpyHostToDevice, "LR_lookup:ceclmb" );
+							sizeof(cubic_spline_coef *), hipMemcpyHostToDevice, "LR_lookup:ceclmb" );
 
 				}
 			}
 		}
 	}
 
+
+
+
+
 	fprintf( stderr, "Copy of the LR Lookup Table to the device complete ... \n" );
+
+	//exit(0);
 }
 

@@ -44,6 +44,7 @@ FixReaxCBonds::FixReaxCBonds(LAMMPS *lmp, int narg, char **arg) :
   ntypes = atom->ntypes;
   nmax = atom->nmax;
 
+
   nevery = force->inumeric(FLERR,arg[3]);
 
   if (nevery <= 0 )

@@ -300,6 +300,12 @@ int BOp( storage *workspace, reax_list *bonds, double bo_cut,
 	/* Initially BO values are the uncorrected ones, page 1 */
 	BO = BO_s + BO_pi + BO_pi2;
 
+	/*if(i == 9 || j == 9)
+	{
+		printf("Before %d,%d,%f\n", i,j,workspace->total_bond_order[i]);
+	}*/
+
+
 	if (BO >= bo_cut) {
 		/****** bonds i-j and j-i ******/
 		ibond = &( bonds->select.bond_list[btop_i] );
@@ -357,13 +363,30 @@ int BOp( storage *workspace, reax_list *bonds, double bo_cut,
 		bo_ij->BO -= bo_cut;
 		bo_ji->BO_s -= bo_cut;
 		bo_ji->BO -= bo_cut;
+
+		if(i == 9)
+		{
+			printf("I is 9 %f\n",workspace->total_bond_order[i]);
+		}
+
+		if(j == 9)
+		{
+			printf("J is 9 %f\n",workspace->total_bond_order[j]);
+		}
 		workspace->total_bond_order[i] += bo_ij->BO; //currently total_BOp
 		workspace->total_bond_order[j] += bo_ji->BO; //currently total_BOp
+
+
 		bo_ij->Cdbo = bo_ij->Cdbopi = bo_ij->Cdbopi2 = 0.0;
 		bo_ji->Cdbo = bo_ji->Cdbopi = bo_ji->Cdbopi2 = 0.0;
 
 		return 1;
 	}
+
+
+
+
+
 
 	return 0;
 }
@@ -401,14 +424,13 @@ void BO( reax_system *system, control_params * /*control*/, simulation_data * /*
 
 		// printf("%d,%d,%f,%f,%f,%d\n", i, type_i, sbp_i->valency, workspace->Deltap[i],workspace->Deltap_boc[i], workspace->total_bond_order[i]);
 
-		printf("%d,%f\n",i,workspace->total_bond_order[i]);
+		//printf("%d,%f\n",i,workspace->total_bond_order[i]);
 
 
 		workspace->total_bond_order[i] = 0;
 
 	}
 
-	exit(0);
 
 
 	/* Corrected Bond Order calculations */
@@ -556,6 +578,8 @@ void BO( reax_system *system, control_params * /*control*/, simulation_data * /*
 					bo_ij->BO_pi2 = 0.0;
 
 				workspace->total_bond_order[i] += bo_ij->BO; //now keeps total_BO
+				//printf("%d,%f\n",i, workspace->total_bond_order[i]);
+
 
 			}
 			else {
@@ -573,6 +597,8 @@ void BO( reax_system *system, control_params * /*control*/, simulation_data * /*
 		}
 
 	}
+
+
 
 	p_lp1 = system->reax_param.gp.l[15];
 	for( j = 0; j < system->N; ++j ){
@@ -606,7 +632,11 @@ void BO( reax_system *system, control_params * /*control*/, simulation_data * /*
 			workspace->dDelta_lp_temp[j] = workspace->Clp[j];
 		}
 
+		//printf("%d,%f,%f,%f\n",j,workspace->nlp_temp[j],workspace->Delta_lp_temp[j],workspace->dDelta_lp_temp[j]);
+
 	}
+
+	//exit(0);
 
 
 

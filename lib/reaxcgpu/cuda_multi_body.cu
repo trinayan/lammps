@@ -351,5 +351,10 @@ CUDA_GLOBAL void Cuda_Atom_Energy_PostProcess( reax_list p_bonds,
         sbond = &bonds->select.bond_list[pj];
         sym_index_bond = &bonds->select.bond_list[ sbond->sym_index ];
         workspace->CdDelta[i] += sym_index_bond->ae_CdDelta;
+
+        if(i < 10)
+        {
+        	//printf("%f\n", workspace->CdDelta[i]);
+        }
     }
 }

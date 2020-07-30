@@ -205,20 +205,22 @@ void Init_Forces_noQEq( reax_system *system, control_params *control,
 	btop_i = 0;
 	renbr = (data->step-data->prev_steps) % control->reneighbor == 0;
 
+
+	int local_bonds = 0;
+
+
+
+
 	for( i = 0; i < system->N; ++i ) {
+
+		local_bonds = 0;
+
 		atom_i = &(system->my_atoms[i]);
 		type_i  = atom_i->type;
 		if (type_i < 0) continue;
 		start_i = Start_Index(i, far_nbrs);
 		end_i   = End_Index(i, far_nbrs);
 		btop_i = End_Index( i, bonds );
-
-		if(i == 9)
-		{
-			printf("%d\n", btop_i);
-		}
-
-
 
 		sbp_i = &(system->reax_param.sbp[type_i]);
 
@@ -234,7 +236,6 @@ void Init_Forces_noQEq( reax_system *system, control_params *control,
 		ihb_top = -1;
 		if (local && control->hbond_cut > 0) {
 			ihb = sbp_i->p_hbond;
-			printf("i %d, Ihb %d \n", i, ihb);
 
 			if (ihb == 1)
 				ihb_top = End_Index( atom_i->Hindex, hbonds );
@@ -299,12 +300,14 @@ void Init_Forces_noQEq( reax_system *system, control_params *control,
 					}
 				}
 
+
 				if (//(workspace->bond_mark[i] < 3 || workspace->bond_mark[j] < 3) &&
 						nbr_pj->d <= control->bond_cut &&
 						BOp( workspace, bonds, control->bo_cut,
 								i , btop_i, nbr_pj, sbp_i, sbp_j, twbp ) ) {
 					num_bonds += 2;
 					++btop_i;
+					local_bonds += 2;
 
 					if (workspace->bond_mark[j] > workspace->bond_mark[i] + 1)
 						workspace->bond_mark[j] = workspace->bond_mark[i] + 1;
@@ -313,6 +316,12 @@ void Init_Forces_noQEq( reax_system *system, control_params *control,
 					}
 				}
 			}
+		}
+
+
+		if (i < 40)
+		{
+			//printf("%d,%d,%d\n", i, ihb_top,hbonds);
 		}
 
 
@@ -332,15 +341,18 @@ void Init_Forces_noQEq( reax_system *system, control_params *control,
 		int start_index_hbonds   = Start_Index( i, hbonds);
 		//printf("%d,%d,%d,%d\n",start_index_bonds, start_index_hbonds,ihb_top,btop_i);
 
+		local_bonds = 0;
+
 	}
 
 
 	workspace->realloc.num_bonds = num_bonds;
 	workspace->realloc.num_hbonds = num_hbonds;
 
-	exit(0);
 
-	//printf("%d,%d\n", num_bonds, num_hbonds);
+	printf("%d,%d\n", num_bonds, num_hbonds);
+
+
 
 
 	Validate_Lists( system, workspace, lists, data->step,
@@ -415,11 +427,17 @@ void Estimate_Storages( reax_system *system, control_params *control,
 					/* hydrogen bond lists */
 					if (control->hbond_cut > 0.1 && (ihb==1 || ihb==2) &&
 							nbr_pj->d <= control->hbond_cut ) {
+
 						jhb = sbp_j->p_hbond;
 						if (ihb == 1 && jhb == 2)
+						{
 							++hb_top[i];
+
+						}
 						else if( j < system->n && ihb == 2 && jhb == 1 )
+						{
 							++hb_top[j];
+						}
 					}
 				}
 
@@ -446,7 +464,7 @@ void Estimate_Storages( reax_system *system, control_params *control,
 					/* Initially BO values are the uncorrected ones, page 1 */
 					BO = BO_s + BO_pi + BO_pi2;
 
-					if(i == 0)
+					if(i == 1)
 					{
 						//printf("%f,%f,%f,%f,%f,%f\n", BO,BO_s, BO_pi, BO_pi2, sbp_i->r_pi_pi, sbp_j->r_pi_pi );
 
@@ -463,13 +481,14 @@ void Estimate_Storages( reax_system *system, control_params *control,
 
 	*Htop = (int)(MAX( *Htop * safezone, mincap * MIN_HENTRIES ));
 	for( i = 0; i < system->n; ++i )
+	{
 		hb_top[i] = (int)(MAX( hb_top[i] * saferzone, MIN_HBONDS ));
+	}
 
 	for( i = 0; i < system->N; ++i ) {
 		*num_3body += SQR(bond_top[i]);
 		bond_top[i] = MAX( bond_top[i] * 2, MIN_BONDS );
 	}
-
 
 
 }

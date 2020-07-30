@@ -35,7 +35,7 @@ CUDA_GLOBAL void Cuda_Calculate_BO_init( reax_atom *my_atoms,
 
    //printf("%d,%d,%f,%f,%f,%f\n", i, type_i, sbp_i->valency, workspace->Deltap[i],workspace->Deltap_boc[i], workspace->total_bond_order[i]);
 
-    printf("%d,%f\n",i,workspace->total_bond_order[i]);
+ //   printf("%d,%f\n",i,workspace->total_bond_order[i]);
     workspace->total_bond_order[i] = 0; 
 
 }
@@ -278,6 +278,9 @@ CUDA_GLOBAL void Cuda_Calculate_BO( reax_atom *my_atoms, global_parameters gp,
 
             workspace->total_bond_order[i] += bo_ij->BO; //now keeps total_BO
 
+
+           // printf("%d,%f\n",i, workspace->total_bond_order[i]);
+
             /* fprintf( stderr, "%d %d\t%g %g %g %g\n"
                "Cdbo:\t%g %g %g\n"
                "Cdbopi:\t%g %g %g %g\n"
@@ -425,6 +428,9 @@ CUDA_GLOBAL void Cuda_Update_Workspace_After_BO( reax_atom *my_atoms,
         workspace->Delta_lp_temp[j] = sbp_j->nlp_opt - workspace->nlp_temp[j];
         workspace->dDelta_lp_temp[j] = workspace->Clp[j];
     }
+
+	//printf("%d,%f,%f,%f\n",j,workspace->nlp_temp[j],workspace->Delta_lp_temp[j],workspace->dDelta_lp_temp[j]);
+
 
 
     //} Commented for Cuda
