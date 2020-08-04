@@ -67,16 +67,18 @@ void copy_LR_table_to_device( reax_system *system, control_params *control,
 				}
 			}
 		}
-	}
+	}*/
 
-	exit(0);
-	int blocks = ((system->N * VDW_KER_THREADS_PER_ATOM) / DEF_BLOCK_SIZE)
+	/*int blocks = ((system->N * VDW_KER_THREADS_PER_ATOM) / DEF_BLOCK_SIZE)
 		        																+ (((system->N * VDW_KER_THREADS_PER_ATOM) % DEF_BLOCK_SIZE == 0) ? 0 : 1);
 
 	hipLaunchKernelGGL(kvdW_coulomb_energy, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,
 			workspace->d_LR, system->N,
 			system->reax_param.num_atom_types);
-	hipDeviceSynchronize();*/
+	hipDeviceSynchronize();
+
+	exit(0);*/
+
 
 
 
@@ -89,9 +91,9 @@ void copy_LR_table_to_device( reax_system *system, control_params *control,
 				if ( aggregated[j] )
 				{
 					cuda_malloc((void **) &d_y,
-							sizeof(LR_data) * workspace->LR[i][j].n , FALSE, "LR_lookup:d_y");
-					copy_host_device( workspace->LR[i][j].y, d_y,
-							sizeof(LR_data) * workspace->LR[i][j].n, hipMemcpyHostToDevice, "LR_lookup:y");
+							sizeof(LR_data) * (control->tabulate + 1) , FALSE, "LR_lookup:d_y");
+					copy_host_device( workspace->LR[index_lr(i, j, num_atom_types)].y, d_y,
+							sizeof(LR_data) * (control->tabulate + 1), hipMemcpyHostToDevice, "LR_lookup:y");
 					copy_host_device ( &d_y, &workspace->d_LR[ index_lr(i, j, num_atom_types) ].y,
 							sizeof(LR_data *), hipMemcpyHostToDevice, "LR_lookup:y" );
 
@@ -99,7 +101,7 @@ void copy_LR_table_to_device( reax_system *system, control_params *control,
 
 
 					cuda_malloc( (void **) &temp, sizeof(cubic_spline_coef) * (control->tabulate + 1), FALSE, "LR_lookup:h" );
-					copy_host_device( workspace->LR[i][j].H, temp,
+					copy_host_device( workspace->LR[index_lr(i, j, num_atom_types)].H, temp,
 							sizeof(cubic_spline_coef) * (control->tabulate + 1), hipMemcpyHostToDevice, "LR_lookup:h" );
 					copy_host_device( &temp, &workspace->d_LR[ index_lr(i, j, num_atom_types) ].H,
 							sizeof(cubic_spline_coef *), hipMemcpyHostToDevice, "LR_lookup:h" );
@@ -107,14 +109,14 @@ void copy_LR_table_to_device( reax_system *system, control_params *control,
 
 
 					cuda_malloc( (void **) &temp, sizeof(cubic_spline_coef) * (control->tabulate + 1), FALSE, "LR_lookup:vdW" );
-					copy_host_device( workspace->LR[i][j].vdW, temp,
+					copy_host_device( workspace->LR[index_lr(i, j, num_atom_types)].vdW, temp,
 							sizeof(cubic_spline_coef) * (control->tabulate + 1), hipMemcpyHostToDevice, "LR_lookup:vdW" );
 					copy_host_device( &temp, &workspace->d_LR[ index_lr(i, j, num_atom_types) ].vdW,
 							sizeof(cubic_spline_coef *), hipMemcpyHostToDevice, "LR_lookup:vdW" );
 
 
 					cuda_malloc( (void **) &temp, sizeof(cubic_spline_coef) * (control->tabulate + 1), FALSE, "LR_lookup:CEvd" );
-					copy_host_device( workspace->LR[i][j].CEvd, temp,
+					copy_host_device( workspace->LR[index_lr(i, j, num_atom_types)].CEvd, temp,
 							sizeof(cubic_spline_coef) * (control->tabulate + 1), hipMemcpyHostToDevice, "LR_lookup:CEvd" );
 					copy_host_device( &temp, &workspace->d_LR[ index_lr(i, j, num_atom_types) ].CEvd,
 							sizeof(cubic_spline_coef *), hipMemcpyHostToDevice, "LR_lookup:CDvd");
@@ -122,13 +124,13 @@ void copy_LR_table_to_device( reax_system *system, control_params *control,
 
 
 					cuda_malloc( (void **) &temp, sizeof(cubic_spline_coef) * (control->tabulate + 1), FALSE, "LR_lookup:ele" );
-					copy_host_device( workspace->LR[i][j].ele, temp,
+					copy_host_device( workspace->LR[index_lr(i, j, num_atom_types)].ele, temp,
 							sizeof(cubic_spline_coef) * (control->tabulate + 1), hipMemcpyHostToDevice, "LR_lookup:ele" );
 					copy_host_device( &temp, &workspace->d_LR[ index_lr(i, j, num_atom_types) ].ele,
 							sizeof(cubic_spline_coef *), hipMemcpyHostToDevice, "LR_lookup:ele" );
 
 					cuda_malloc( (void **) &temp, sizeof(cubic_spline_coef) * (control->tabulate + 1), FALSE, "LR_lookup:ceclmb" );
-					copy_host_device( workspace->LR[i][j].CEclmb, temp,
+					copy_host_device( workspace->LR[index_lr(i, j, num_atom_types)].CEclmb, temp,
 							sizeof(cubic_spline_coef) * (control->tabulate + 1), hipMemcpyHostToDevice, "LR_lookup:ceclmb" );
 					copy_host_device( &temp, &workspace->d_LR[ index_lr(i, j, num_atom_types) ].CEclmb,
 							sizeof(cubic_spline_coef *), hipMemcpyHostToDevice, "LR_lookup:ceclmb" );

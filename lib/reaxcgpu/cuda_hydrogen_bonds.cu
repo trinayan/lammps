@@ -616,7 +616,12 @@ CUDA_GLOBAL void Cuda_Hydrogen_Bonds_HNbrs( reax_atom *atoms,
 	if ( threadIdx.x == 0 )
 	{
 		//rvec_Add( atoms[i].f, __f[0] );
+
 		rvec_Add( workspace->f[i], __f[0] );
+		/*if(i < 5)
+		{
+			printf("%f,%f,%f\n", workspace->f[i][0],workspace->f[i][1],workspace->f[i][2]);
+		}*/
 	}
 #endif
 }

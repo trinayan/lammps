@@ -2124,7 +2124,7 @@ struct storage
 	reallocate_data realloc;
 	/* lookup table for force tabulation */
 	//LR_lookup_table *LR;
-	LR_lookup_table **LR;
+	LR_lookup_table *LR;
 
 	/* temporary workspace */
 	void *host_scratch;

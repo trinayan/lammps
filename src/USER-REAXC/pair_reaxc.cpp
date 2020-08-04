@@ -780,10 +780,14 @@ void PairReaxC::read_reax_forces(int /*vflag*/)
     system->my_atoms[i].f[1] = workspace->f[i][1];
     system->my_atoms[i].f[2] = workspace->f[i][2];
 
+	//printf("%f,%f,%f\n", system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2] );
+
+
     atom->f[i][0] += -workspace->f[i][0];
     atom->f[i][1] += -workspace->f[i][1];
     atom->f[i][2] += -workspace->f[i][2];
   }
+
 
 }
 

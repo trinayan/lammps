@@ -126,6 +126,7 @@ void Valence_Angles( reax_system *system, control_params *control,
 
 	for( j = 0; j < system->N; ++j ) {         // Ray: the first one with system->N
 		type_j = system->my_atoms[j].type;
+		printf("type j %d\n",type_j);
 		if (type_j < 0) continue;
 		start_j = Start_Index(j, bonds);
 		end_j = End_Index(j, bonds);
@@ -176,6 +177,7 @@ void Valence_Angles( reax_system *system, control_params *control,
 			BOA_ij = bo_ij->BO - control->thb_cut;
 
 
+
 			if( BOA_ij/*bo_ij->BO*/ > 0.0 &&
 					( j < system->n || pbond_ij->nbr < system->n ) ) {
 				i = pbond_ij->nbr;
@@ -210,9 +212,22 @@ void Valence_Angles( reax_system *system, control_params *control,
 					type_k   = system->my_atoms[k].type;
 					p_ijk    = &( thb_intrs->select.three_body_list[num_thb_intrs] );
 
+
+
 					Calculate_Theta( pbond_ij->dvec, pbond_ij->d,
 							pbond_jk->dvec, pbond_jk->d,
 							&theta, &cos_theta );
+
+					if(j == 14)
+					{
+
+						printf("Type:%d,%d,%d,%d,%d,%d\n",type_j,type_i,j,i, pi,pk);
+
+					}
+
+
+					//printf(" %d,%d,%d,%f\n", j,i,type_j,theta);
+
 
 					Calculate_dCos_Theta( pbond_ij->dvec, pbond_ij->d,
 							pbond_jk->dvec, pbond_jk->d,
@@ -245,6 +260,9 @@ void Valence_Angles( reax_system *system, control_params *control,
 								p_val4 = thbp->p_val4;
 								p_val7 = thbp->p_val7;
 								theta_00 = thbp->theta_00;
+
+								//printf("Valence %f,%f,%f,%f,%f \n",p_val1,p_val2,p_val4,p_val7,theta_00);
+
 
 								exp3ij = exp( -p_val3 * pow( BOA_ij, p_val4 ) );
 								f7_ij = 1.0 - exp3ij;
@@ -361,10 +379,6 @@ void Valence_Angles( reax_system *system, control_params *control,
 									rvec_ScaledAdd( workspace->f[i], CEval8, p_ijk->dcos_di );
 									rvec_ScaledAdd( workspace->f[j], CEval8, p_ijk->dcos_dj );
 									rvec_ScaledAdd( workspace->f[k], CEval8, p_ijk->dcos_dk );
-									if(j < 10)
-									{
-										printf("force %f,%f,%f\n", workspace->f[i][0], workspace->f[i][1], workspace->f[i][2]);
-									}
 								} else {
 									rvec_Scale( force, CEval8, p_ijk->dcos_di );
 									rvec_Add( workspace->f[i], force );
@@ -405,12 +419,19 @@ void Valence_Angles( reax_system *system, control_params *control,
 				}
 			}
 
+
 			Set_End_Index(pi, num_thb_intrs, thb_intrs );
 		}
 
-		// printf("i%d,%f,%f,%f\n", i, workspace->f[i][0],  workspace->f[i][1], workspace->f[i][2]);
+
+		if(j < 5)
+		{
+			printf("j%d,%f,%f,%f\n", j, workspace->f[j][0],  workspace->f[j][1], workspace->f[j][2]);
+		}
 
 	}
+
+
 
 
 	if (num_thb_intrs >= thb_intrs->num_intrs * DANGER_ZONE) {
@@ -422,5 +443,6 @@ void Valence_Angles( reax_system *system, control_params *control,
 			control->error_ptr->one(FLERR, errmsg);
 		}
 	}
+
 
 }

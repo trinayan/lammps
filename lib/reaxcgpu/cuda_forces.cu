@@ -132,9 +132,9 @@ CUDA_GLOBAL void k_init_end_index( int * intr_cnt, int *indices, int *end_indice
 
 	end_indices[i] = indices[i] + intr_cnt[i];
 
-	if (i < 10 )
+	if (i == 14 || i == 0 || i == 13 )
 	{
-		printf("%d,%d,%d\n", i, indices[i],end_indices[i]);
+	printf("%d,%d,%d\n", i, indices[i],end_indices[i]);
 	}
 }
 
@@ -178,7 +178,7 @@ CUDA_GLOBAL void k_init_hbond_indices( reax_atom * atoms, single_body_parameters
 
 		if (i < 20)
 		{
-			printf("%d,%d,%d\n", hindex,indices[hindex],  end_indices[hindex]);
+			//printf("%d,%d,%d\n", hindex,indices[hindex],  end_indices[hindex]);
 		}
 
 
@@ -385,9 +385,15 @@ CUDA_GLOBAL void k_estimate_storages( reax_atom *my_atoms,
 	}
 
 
+
+
 	bonds[i] = num_bonds;
 	max_bonds[i] = MAX( (int)(num_bonds * 2), MIN_BONDS );
 
+	if(i == 0 || i == 14 || i == 13)
+	{
+		printf("%d,%d,%d\n",i,bonds[i],max_bonds[i]);
+	}
 
 	//
 
@@ -814,6 +820,12 @@ CUDA_GLOBAL void k_new_fix_sym_dbond_indices( reax_list pbonds, int N )
 		{
 			jbond = &bonds->select.bond_list[k];
 			atom_j = jbond->nbr;
+
+
+			if(i == 18)
+			{
+				printf("%d,%d\n",j,k);
+			}
 
 			if ( atom_j == i )
 			{
@@ -1298,6 +1310,7 @@ void Cuda_Init_Neighbor_Indices( reax_system *system, reax_list **lists )
 	hipLaunchKernelGGL(k_init_end_index, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  system->d_far_nbrs, far_nbrs->index, far_nbrs->end_index, system->total_cap );
 	hipDeviceSynchronize( );
 	cudaCheckError( );
+
 }
 
 
@@ -1529,12 +1542,16 @@ int Cuda_Init_Forces( reax_system *system, control_params *control,
 			system->my_rank, data->step, ret, ret_bonds, ret_hbonds, ret_cm );
 #endif
 
+
+
 	if ( ret == SUCCESS )
 	{
 		/* fix sym_index and dbond_index */
 		hipLaunchKernelGGL(k_new_fix_sym_dbond_indices, dim3(blocks), dim3(control->block_size ), 0, 0,  *(lists[BONDS]), system->N );
 		hipDeviceSynchronize( );
 		cudaCheckError( );
+
+		exit(0);
 
 		if ( control->hbond_cut > 0.0 && system->numH > 0 )
 		{
@@ -1712,7 +1729,8 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 	type_i = atom_i->type;
 	start_i = Cuda_Start_Index( i, &far_nbrs_list );
 	end_i = Cuda_End_Index( i, &far_nbrs_list );
-	btop_i = Cuda_End_Index( i, &bonds_list );
+	btop_i = Cuda_Start_Index( i, &bonds_list );
+
 
 
 	sbp_i = &sbp[type_i];
@@ -1742,6 +1760,10 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 		}
 		else
 		{
+			if( i < 20)
+			{
+				printf("Not a HT atom %d,%d,%d\n", i,start_i,end_i);
+			}
 			ihb_top = -1;
 		}
 	}
@@ -1754,6 +1776,11 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 		nbr_pj = &far_nbrs_list.select.far_nbr_list[pj];
 		j = nbr_pj->nbr;
 		atom_j = &my_atoms[j];
+
+		if( nbr_pj->d == 0)
+		{
+			printf("Nbr : %d,%d,%f,%f,%f,%f\n",i,j,nbr_pj->d,nbr_pj->dvec[0],nbr_pj->dvec[1] ,nbr_pj->dvec[2]);
+		}
 
 
 		if ( renbr )
@@ -1792,7 +1819,10 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 				nbr_pj->dvec[1] = atom_i->x[1] - atom_j->x[1];
 				nbr_pj->dvec[2] = atom_i->x[2] - atom_j->x[2];
 				nbr_pj->d = rvec_Norm_Sqr( nbr_pj->dvec );
+
 			}
+
+
 
 			if ( nbr_pj->d <= SQR( control->nonb_cut ) )
 			{
@@ -1915,6 +1945,19 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 
 			/* uncorrected bond orders */
 			//printf("calling BOP %d\n", i);
+
+			if(	ihb_top == -1)
+			{
+				//	printf("Not a HT atom calling BOP %d,%f,%f,%f\n", i,nbr_pj->dvec[0],nbr_pj->dvec[1],nbr_pj->dvec[2]);
+
+
+			}
+
+			if(i == 14 && j == 0)
+			{
+				printf("%d,%d,%f,%f,%f\n",type_i,type_j,nbr_pj->dvec[0],nbr_pj->dvec[1],nbr_pj->dvec[2]);
+			}
+
 			if ( nbr_pj->d <= control->bond_cut &&
 					Cuda_BOp( bonds_list, control->bo_cut, i, btop_i, nbr_pj,
 							sbp_i, sbp_j, twbp, workspace.dDeltap_self,
@@ -1944,6 +1987,7 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 		num_hbonds = ihb_top - Cuda_Start_Index( atom_i->Hindex, &hbonds_list);
 
 	} else {
+		//printf("%d,%d\n",i,j);
 		num_hbonds = 0;
 	}
 
@@ -2044,15 +2088,20 @@ int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 
 
 
+
+
+
+
 	/* check reallocation flags on device */
 	copy_host_device( &ret_bonds, system->d_realloc_bonds, sizeof(int),
 			hipMemcpyDeviceToHost, "Cuda_Init_Forces::d_realloc_bonds" );
 	copy_host_device( &ret_hbonds, system->d_realloc_hbonds, sizeof(int),
 			hipMemcpyDeviceToHost, "Cuda_Init_Forces::d_realloc_hbonds" );
 
-	ret = (ret_bonds == FALSE && ret_hbonds == FALSE && ret_cm == FALSE) ? SUCCESS : FAILURE;
+	ret = (ret_bonds == FALSE && ret_hbonds == FALSE) ? SUCCESS : FAILURE;
 
-	printf("ret %d \n", ret);
+	printf(" %d,%d,%d\n", ret_bonds,ret_hbonds,ret_cm );
+	printf("%d\n", ret);
 
 	if ( ret == SUCCESS )
 	{
@@ -2129,7 +2178,6 @@ int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 
 	return 1;
 
-	exit(0);
 }
 
 
@@ -2166,7 +2214,9 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 		hipLaunchKernelGGL(Cuda_Calculate_BO_init, dim3(control->blocks_n), dim3(control->block_size ), 0, 0,  system->d_my_atoms, system->reax_param.d_sbp,
 				*(workspace->d_workspace), system->N );
 		hipDeviceSynchronize( );
-		cudaCheckError( );
+		cudaCheckError();
+
+
 
 
 
@@ -2181,14 +2231,20 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 
 
 
+
+
 		hipLaunchKernelGGL(Cuda_Update_Uncorrected_BO, dim3(control->blocks_n), dim3(control->block_size ), 0, 0,  *(workspace->d_workspace), *(lists[BONDS]), system->N );
 		hipDeviceSynchronize( );
 		cudaCheckError( );
+
+
 
 		hipLaunchKernelGGL(Cuda_Update_Workspace_After_BO, dim3(control->blocks_n), dim3(control->block_size ), 0, 0,  system->d_my_atoms, system->reax_param.d_gp, system->reax_param.d_sbp,
 				*(workspace->d_workspace), system->N );
 		hipDeviceSynchronize( );
 		cudaCheckError( );
+
+
 
 
 
@@ -2214,6 +2270,11 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 				system->n, system->reax_param.num_atom_types, spad );
 		hipDeviceSynchronize( );
 		cudaCheckError();
+
+
+
+
+
 
 
 
@@ -2246,6 +2307,12 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 				spad, spad + 2 * system->n, spad + 4 * system->n);
 		hipDeviceSynchronize( );
 		cudaCheckError( );
+
+
+
+
+
+
 
 		//        Cuda_Atom_Energy_PostProcess <<< control->blocks, control->block_size >>>
 		//            ( *(lists[BONDS]), *(workspace->d_workspace), system->n );
@@ -2297,6 +2364,7 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 	ret = Cuda_Estimate_Storage_Three_Body( system, control, workspace,
 			data->step, lists, thbody );
 
+
 #if defined(DEBUG_FOCUS)
 	fprintf( stderr, "system->total_thbodies = %d, lists:THREE_BODIES->num_intrs = %d,\n",
 			system->total_thbodies, lists[THREE_BODIES]->num_intrs );
@@ -2312,6 +2380,8 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 		cuda_memset( spad, 0, 6 * sizeof(real) * system->N + sizeof(rvec) * system->N * 2,
 				"Cuda_Compute_Bonded_Forces::spad" );
 
+
+		printf("Valence angels \n");
 		hipLaunchKernelGGL(Cuda_Valence_Angles, dim3(control->blocks_n), dim3(control->block_size ), 0, 0,  system->d_my_atoms, system->reax_param.d_gp,
 				system->reax_param.d_sbp, system->reax_param.d_thbp,
 				(control_params *)control->d_control_params,
@@ -2320,6 +2390,8 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 				spad, spad + 2 * system->N, spad + 4 * system->N, (rvec *)(spad + 6 * system->N) );
 		hipDeviceSynchronize( );
 		cudaCheckError( );
+
+
 
 
 
@@ -2521,6 +2593,7 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 			hipDeviceSynchronize( );
 			cudaCheckError( );
 
+
 #if defined(DEBUG_FOCUS)
 			t_elapsed = Get_Timing_Info( t_start );
 
@@ -2546,7 +2619,6 @@ void Cuda_Compute_NonBonded_Forces( reax_system *system, control_params *control
 	/* van der Waals and Coulomb interactions */
 	Cuda_NonBonded_Energy( system, control, workspace, data,
 			lists, out_control, (control->tabulate == 0) ? false: true );
-	exit(0);
 }
 
 
@@ -2560,23 +2632,6 @@ void Cuda_Compute_Total_Force( reax_system *system, control_params *control,
 	memset( f, 0, sizeof(rvec) * system->N );
 
 	Cuda_Total_Forces( system, control, data, workspace, lists );
-
-#if defined(PURE_REAX)
-	/* now all forces are computed to their partially-final values
-	 * based on the neighbors information each processor has had.
-	 * final values of force on each atom needs to be computed by adding up
-	 * all partially-final pieces */
-	copy_host_device( f, workspace->d_workspace->f, sizeof(rvec) * system->N ,
-			hipMemcpyDeviceToHost, "Cuda_Compute_Total_Force::workspace->d_workspace->f" );
-
-	Coll( system, mpi_data, f, RVEC_PTR_TYPE, mpi_data->mpi_rvec );
-
-	copy_host_device( f, workspace->d_workspace->f, sizeof(rvec) * system->N,
-			hipMemcpyHostToDevice, "Cuda_Compute_Total_Force::workspace->d_workspace->f" );
-
-	Cuda_Total_Forces_PURE( system, workspace );
-#endif
-
 }
 
 
@@ -2586,14 +2641,8 @@ int Cuda_Compute_Forces( reax_system *system, control_params *control,
 {
 
 	Cuda_Init_Forces_No_Charges(system, control, data, workspace,lists, out_control);
-
-
 	Cuda_Compute_Bonded_Forces(system, control, data, workspace, lists, out_control);
-
-
 	Cuda_Compute_NonBonded_Forces(system, control, data, workspace, lists, out_control,mpi_data);
-
-
-
+	Cuda_Compute_Total_Force( system, control, data, workspace, lists, mpi_data );
 }
 

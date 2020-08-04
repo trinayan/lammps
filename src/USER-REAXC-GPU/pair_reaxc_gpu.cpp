@@ -87,6 +87,9 @@ extern "C" void Cuda_Make_List( int n, int num_intrs, int type, reax_list *l);
 
 extern "C" void Output_Sync_Forces(storage *workspace, int total_cap);
 
+extern "C" void  Output_Sync_Atoms( reax_system *sys );
+
+extern "C" void Output_Sync_Simulation_Data( simulation_data *host, simulation_data *dev );
 
 
 
@@ -119,15 +122,15 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 	snprintf(fix_id,24,"REAXC_%d",instance_me);
 
 	system = (reax_system *)
-    		memory->smalloc(sizeof(reax_system),"reax:system");
+    						memory->smalloc(sizeof(reax_system),"reax:system");
 	memset(system,0,sizeof(reax_system));
 	control = (control_params *)
-    		memory->smalloc(sizeof(control_params),"reax:control");
+    						memory->smalloc(sizeof(control_params),"reax:control");
 	memset(control,0,sizeof(control_params));
 	data = (simulation_data *)
-    		memory->smalloc(sizeof(simulation_data),"reax:data");
+    						memory->smalloc(sizeof(simulation_data),"reax:data");
 	workspace = (storage *)
-    		memory->smalloc(sizeof(storage),"reax:storage");
+    						memory->smalloc(sizeof(storage),"reax:storage");
 
 	workspace->d_workspace = (storage *)memory->smalloc(sizeof(storage),"reax:gpu_storage");
 
@@ -143,7 +146,7 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 	}
 
 	cpu_lists = (reax_list *)
-    		  memory->smalloc(LIST_N * sizeof(reax_list),"reax:lists");
+    						  memory->smalloc(LIST_N * sizeof(reax_list),"reax:lists");
 	memset(cpu_lists,0,LIST_N * sizeof(reax_list));
 
 
@@ -152,10 +155,10 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 
 
 	out_control = (output_controls *)
-    		memory->smalloc(sizeof(output_controls),"reax:out_control");
+    						memory->smalloc(sizeof(output_controls),"reax:out_control");
 	memset(out_control,0,sizeof(output_controls));
 	mpi_data = (mpi_datatypes *)
-    		memory->smalloc(sizeof(mpi_datatypes),"reax:mpi");
+    						memory->smalloc(sizeof(mpi_datatypes),"reax:mpi");
 	control->me = system->my_rank = comm->me;
 
 
@@ -198,7 +201,7 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 
 PairReaxCGPU::~PairReaxCGPU()
 {
-	printf("Unimpl \n");
+	printf(" Destructor Unimpl \n");
 	exit(0);
 	/* if (copymode) return;
 
@@ -471,6 +474,8 @@ void PairReaxCGPU::init_style( )
 	int irequest = neighbor->request(this,instance_me);
 	neighbor->requests[irequest]->newton = 2;
 	neighbor->requests[irequest]->ghost = 1;
+	neighbor->requests[irequest]->half = 0;
+	neighbor->requests[irequest]->full = 1;
 
 	cutmax = MAX3(control->nonb_cut, control->hbond_cut, control->bond_cut);
 	if ((cutmax < 2.0*control->bond_cut) && (comm->me == 0))
@@ -554,11 +559,8 @@ void PairReaxCGPU::setup( )
 	}
 	else
 	{
-
 		// fill in reax datastructures
 		update_and_copy_reax_atoms_to_device();
-
-
 
 		// reset the bond list info for new atoms
 		printf("Initial setup done. far numbers gpu %d \n", gpu_lists[FAR_NBRS]->num_intrs);
@@ -642,83 +644,85 @@ void PairReaxCGPU::compute(int eflag, int vflag)
 
 
 	read_reax_forces_from_device(vflag);
+	Output_Sync_Atoms(system);
 
-	/*Compute_Forces(system,control,data,workspace,&lists,out_control,mpi_data);
-  read_reax_forces(vflag);
 
-  for(int k = 0; k < system->N; ++k) {
-    num_bonds[k] = system->my_atoms[k].num_bonds;
-    num_hbonds[k] = system->my_atoms[k].num_hbonds;
-  }
+	for(int k = 0; k < system->N; ++k)
+	{
+		num_bonds[k] = system->my_atoms[k].num_bonds;
+		num_hbonds[k] = system->my_atoms[k].num_hbonds;
+	}
 
-  // energies and pressure
 
-  if (eflag_global) {
-    evdwl += data->my_en.e_bond;
-    evdwl += data->my_en.e_ov;
-    evdwl += data->my_en.e_un;
-    evdwl += data->my_en.e_lp;
-    evdwl += data->my_en.e_ang;
-    evdwl += data->my_en.e_pen;
-    evdwl += data->my_en.e_coa;
-    evdwl += data->my_en.e_hb;
-    evdwl += data->my_en.e_tor;
-    evdwl += data->my_en.e_con;
-    evdwl += data->my_en.e_vdW;
+	Output_Sync_Simulation_Data( data, (simulation_data *)data->d_simulation_data);
 
-    ecoul += data->my_en.e_ele;
-    ecoul += data->my_en.e_pol;
 
-    // eng_vdwl += evdwl;
-    // eng_coul += ecoul;
 
-    // Store the different parts of the energy
-    // in a list for output by compute pair command
+	// energies and pressure
 
-    pvector[0] = data->my_en.e_bond;
-    pvector[1] = data->my_en.e_ov + data->my_en.e_un;
-    pvector[2] = data->my_en.e_lp;
-    pvector[3] = 0.0;
-    pvector[4] = data->my_en.e_ang;
-    pvector[5] = data->my_en.e_pen;
-    pvector[6] = data->my_en.e_coa;
-    pvector[7] = data->my_en.e_hb;
-    pvector[8] = data->my_en.e_tor;
-    pvector[9] = data->my_en.e_con;
-    pvector[10] = data->my_en.e_vdW;
-    pvector[11] = data->my_en.e_ele;
-    pvector[12] = 0.0;
-    pvector[13] = data->my_en.e_pol;
-  }
+	if (eflag_global) {
 
-  if (vflag_fdotr) virial_fdotr_compute();
+		evdwl += data->my_en.e_bond;
+		evdwl += data->my_en.e_ov;
+		evdwl += data->my_en.e_un;
+		evdwl += data->my_en.e_lp;
+		evdwl += data->my_en.e_ang;
+		evdwl += data->my_en.e_pen;
+		evdwl += data->my_en.e_coa;
+		evdwl += data->my_en.e_hb;
+		evdwl += data->my_en.e_tor;
+		evdwl += data->my_en.e_con;
+		evdwl += data->my_en.e_vdW;
 
-// Set internal timestep counter to that of LAMMPS
+		ecoul += data->my_en.e_ele;
+		ecoul += data->my_en.e_pol;
 
-  data->step = update->ntimestep;
+		// eng_vdwl += evdwl;
+		// eng_coul += ecoul;
 
-  Output_Results( system, control, data, &lists, out_control, mpi_data );
+		// Store the different parts of the energy
+		// in a list for output by compute pair command
 
-  // populate tmpid and tmpbo arrays for fix reax/c/species
-  int i, j;
+		pvector[0] = data->my_en.e_bond;
+		pvector[1] = data->my_en.e_ov + data->my_en.e_un;
+		pvector[2] = data->my_en.e_lp;
+		pvector[3] = 0.0;
+		pvector[4] = data->my_en.e_ang;
+		pvector[5] = data->my_en.e_pen;
+		pvector[6] = data->my_en.e_coa;
+		pvector[7] = data->my_en.e_hb;
+		pvector[8] = data->my_en.e_tor;
+		pvector[9] = data->my_en.e_con;
+		pvector[10] = data->my_en.e_vdW;
+		pvector[11] = data->my_en.e_ele;
+		pvector[12] = 0.0;
+		pvector[13] = data->my_en.e_pol;
+	}
 
-  if(fixspecies_flag) {
-    if (system->N > nmax) {
-      memory->destroy(tmpid);
-      memory->destroy(tmpbo);
-      nmax = system->N;
-      memory->create(tmpid,nmax,MAXSPECBOND,"pair:tmpid");
-      memory->create(tmpbo,nmax,MAXSPECBOND,"pair:tmpbo");
-    }
+	if (vflag_fdotr)
+	{
+		virial_fdotr_compute();
+	}
 
-    for (i = 0; i < system->N; i ++)
-      for (j = 0; j < MAXSPECBOND; j ++) {
-        tmpbo[i][j] = 0.0;
-        tmpid[i][j] = 0;
-      }
-    FindBond();
-  }
-	 */
+
+
+	// Set internal timestep counter to that of LAMMPS
+
+	data->step = update->ntimestep;
+
+
+	Output_Results( system, control, data, gpu_lists, out_control, mpi_data );
+
+	// populate tmpid and tmpbo arrays for fix reax/c/species
+	int i, j;
+
+	if(fixspecies_flag) {
+		printf("fix species not implemented for GPU  %d\n",fixspecies_flag);
+
+	}
+
+
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -880,7 +884,6 @@ int PairReaxCGPU::update_and_write_reax_lists_to_device()
 void PairReaxCGPU::read_reax_forces_from_device(int /*vflag*/)
 {
 
-	printf("System n %d,%d\n", system->N, system->total_cap);
 	Output_Sync_Forces(workspace,system->total_cap);
 
 	for( int i = 0; i < system->N; ++i ) {
@@ -888,15 +891,13 @@ void PairReaxCGPU::read_reax_forces_from_device(int /*vflag*/)
 		system->my_atoms[i].f[1] = workspace->f[i][1];
 		system->my_atoms[i].f[2] = workspace->f[i][2];
 
+		//printf("%f,%f,%f\n", system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2] );
+
 		atom->f[i][0] += -workspace->f[i][0];
 		atom->f[i][1] += -workspace->f[i][1];
 		atom->f[i][2] += -workspace->f[i][2];
-
-		printf("%f,%f,%f\n",system->my_atoms[i].f[0],atom->f[i][1],atom->f[i][2]);
-
 	}
 
-	exit(0);
 
 }
 
@@ -930,7 +931,7 @@ void *PairReaxCGPU::extract(const char *str, int &dim)
 
 double PairReaxCGPU::memory_usage()
 {
-	printf("Unimpl \n");
+	printf("Memory usage Unimpl \n");
 	exit(0);
 	/*  double bytes = 0.0;
 
@@ -962,29 +963,4 @@ double PairReaxCGPU::memory_usage()
 
 void PairReaxCGPU::FindBond()
 {
-	printf("Unimpl \n");
-	exit(0);
-	/*  int i, j, pj, nj;
-  double bo_tmp, bo_cut;
-
-  bond_data *bo_ij;
-  bo_cut = 0.10;
-
-  for (i = 0; i < system->n; i++) {
-    nj = 0;
-    for( pj = Start_Index(i, lists); pj < End_Index(i, lists); ++pj ) {
-      bo_ij = &( lists->select.bond_list[pj] );
-      j = bo_ij->nbr;
-      if (j < i) continue;
-
-      bo_tmp = bo_ij->bo_data.BO;
-
-      if (bo_tmp >= bo_cut ) {
-        tmpid[i][nj] = j;
-        tmpbo[i][nj] = bo_tmp;
-        nj ++;
-        if (nj > MAXSPECBOND) error->all(FLERR,"Increase MAXSPECBOND in reaxc_defs.h");
-      }
-    }
-  }*/
 }

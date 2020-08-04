@@ -210,9 +210,25 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 				}
 				//CHANGE ORIGINAL
 
+
+
+
 				Calculate_Theta( pbond_ij->dvec, pbond_ij->d,
 						pbond_jk->dvec, pbond_jk->d,
 						&theta, &cos_theta );
+
+				if(j == 14)
+				{
+					if(pbond_ij->dvec[0] == 0 || pbond_ij->dvec[1] == 0 || pbond_ij->dvec[2] == 0)
+					{
+						printf("Type:%d,%d,%d,%d,%d,%d\n",type_j,type_i,j,i, pi,pk);
+					}
+				}
+
+				//printf("%d,%d,%f\n",i,j,theta);
+
+				//printf("%f,%f,%f,%f,%f \n",pbond_ij->dvec[0],pbond_ij->dvec[1],pbond_ij->dvec[2],pbond_ij->d,theta);
+
 
 				Calculate_dCos_Theta( pbond_ij->dvec, pbond_ij->d,
 						pbond_jk->dvec, pbond_jk->d,
@@ -249,6 +265,10 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 							p_val7 = thbp->p_val7;
 							theta_00 = thbp->theta_00;
 
+
+							//printf("Valence %f,%f,%f,%f,%f \n",p_val1,p_val2,p_val4,p_val7,theta_00);
+
+
 							exp3ij = EXP( -p_val3 * POW( BOA_ij, p_val4 ) );
 							f7_ij = 1.0 - exp3ij;
 							Cf7ij = p_val3 * p_val4 * POW( BOA_ij, p_val4 - 1.0 ) * exp3ij;
@@ -269,6 +289,7 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 							theta_0 = DEG2RAD( theta_0 );
 
 							expval2theta  = EXP( -p_val2 * SQR(theta_0 - theta) );
+
 							if ( p_val1 >= 0 )
 							{
 								expval12theta = p_val1 * (1.0 - expval2theta);
@@ -280,6 +301,8 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 							}
 
 							CEval1 = Cf7ij * f7_jk * f8_Dj * expval12theta;
+
+
 							CEval2 = Cf7jk * f7_ij * f8_Dj * expval12theta;
 							CEval3 = Cf8j  * f7_ij * f7_jk * expval12theta;
 							CEval4 = -2.0 * p_val1 * p_val2 * f7_ij * f7_jk * f8_Dj *
@@ -315,7 +338,7 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 							f9_Dj = ( 2.0 + exp_pen3 ) / trm_pen34;
 							Cf9j = ( -p_pen3 * exp_pen3 * trm_pen34 - (2.0 + exp_pen3)
 									* ( -p_pen3 * exp_pen3 + p_pen4 * exp_pen4 ) )
-                                						/ SQR( trm_pen34 );
+                                												/ SQR( trm_pen34 );
 
 							/* very important: since each kernel generates all interactions,
                                need to prevent all energies becoming duplicates */
@@ -364,7 +387,12 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 							// we must again check for pk<pi for entire forces part
 							if ( pk < pi )
 							{
+								//printf("Valence %f,%f,%f,%f \n",CEval1,CEpen2,CEcoa1,CEcoa4);
+
 								bo_ij->Cdbo += (CEval1 + CEpen2 + (CEcoa1 - CEcoa4));
+
+
+
 								bo_jk->Cdbo += (CEval2 + CEpen3 + (CEcoa2 - CEcoa5));
 								workspace->CdDelta[j] += ((CEval3 + CEval7) + CEpen1 + CEcoa3);
 								//                                workspace->CdDelta[i] += CEcoa4;
@@ -553,7 +581,14 @@ CUDA_GLOBAL void Cuda_Valence_Angles_PostProcess( reax_atom *atoms,
 		//rvec_Add( atoms[i].f, sym_index_bond->va_f );
 
 		rvec_Add( workspace->f[i], sym_index_bond->va_f );
+
+
 	}
+
+	/*if(i < 5)
+	{
+		printf("%f,%f,%f\n", workspace->f[i][0],workspace->f[i][1],workspace->f[i][2]);
+	}*/
 
 
 
@@ -592,6 +627,10 @@ CUDA_GLOBAL void Estimate_Cuda_Valence_Angles( reax_atom *my_atoms,
 		bo_ij = &pbond_ij->bo_data;
 		BOA_ij = bo_ij->BO - control->thb_cut;
 
+
+
+
+
 		if ( BOA_ij > 0.0 && ( j < n || pbond_ij->nbr < n ) )
 		{
 			for ( pk = start_j; pk < end_j; ++pk )
@@ -605,6 +644,8 @@ CUDA_GLOBAL void Estimate_Cuda_Valence_Angles( reax_atom *my_atoms,
 				bo_jk = &pbond_jk->bo_data;
 				BOA_jk = bo_jk->BO - control->thb_cut;
 
+
+
 				//CHANGE ORIGINAL
 				//if ((BOA_jk <= 0) || ((j >= n) && (k >= n))) continue;
 				if ( BOA_jk <= 0.0 )
@@ -613,11 +654,15 @@ CUDA_GLOBAL void Estimate_Cuda_Valence_Angles( reax_atom *my_atoms,
 				}
 				//CHANGE ORIGINAL
 
+				//printf("start %d, end %d,%f,%f \n", start_j,end_j,bo_jk->BO,BOA_jk);
+
+
 				++num_thb_intrs;
 			}
 
 		}
 
 		count[ pi ] = num_thb_intrs;
+
 	}
 }

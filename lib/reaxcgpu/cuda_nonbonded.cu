@@ -426,17 +426,76 @@ CUDA_GLOBAL void k_tabulated_vdW_coulomb_energy( reax_atom *my_atoms,
 
 			t = &t_LR[ index_lr(tmin, tmax, num_atom_types) ];
 
-			printf("index %d \n",index_lr(tmin, tmax, num_atom_types));
-
 			//table = &LR[type_i][type_j];
 
 			/* Cubic Spline Interpolation */
 			r = (int)(r_ij * t->inv_dx);
+			if( r == 0 )
+			{
+				++r;
+			}
+			base = (real)(r+1) * t->dx;
+			dif = r_ij - base;
+			//fprintf(stderr, "r: %f, i: %d, base: %f, dif: %f\n", r, i, base, dif);
 
-			printf("rij %f ,t inv %f \n", r_ij, t->inv_dx);
+			if ( update_energies )
+			{
+				e_vdW = ((t->vdW[r].d*dif + t->vdW[r].c)*dif + t->vdW[r].b)*dif +
+						t->vdW[r].a;
+
+				e_ele = ((t->ele[r].d*dif + t->ele[r].c)*dif + t->ele[r].b)*dif +
+						t->ele[r].a;
+				e_ele *= my_atoms[i].q * my_atoms[j].q;
+
+				//data_e_vdW[i] += e_vdW;
+				data_e_vdW[i] += e_vdW / 2.0;
+				//data_e_ele[i] += e_ele;
+				data_e_ele[i] += e_ele / 2.0;
+			}
+
+			CEvd = ((t->CEvd[r].d * dif + t->CEvd[r].c) * dif + t->CEvd[r].b) * dif +
+					t->CEvd[r].a;
+
+			CEclmb = ((t->CEclmb[r].d * dif + t->CEclmb[r].c) * dif + t->CEclmb[r].b) * dif +
+					t->CEclmb[r].a;
+			CEclmb *= my_atoms[i].q * my_atoms[j].q;
+
+			if( control->virial == 0 )
+			{
+				if ( i < j )
+				{
+					rvec_ScaledAdd( workspace->f[i], -(CEvd + CEclmb), nbr_pj->dvec );
+				}
+				else
+				{
+					rvec_ScaledAdd( workspace->f[i], +(CEvd + CEclmb), nbr_pj->dvec );
+
+				}
+				//rvec_ScaledAdd( workspace->f[i], -(CEvd + CEclmb), nbr_pj->dvec );
+				//rvec_ScaledAdd( workspace->f[j], +(CEvd + CEclmb), nbr_pj->dvec );
+			}
+			/* NPT, iNPT or sNPT */
+			else
+			{
+				/* for pressure coupling, terms not related to bond order derivatives
+		                   are added directly into pressure vector/tensor */
+				rvec_Scale( temp, CEvd + CEclmb, nbr_pj->dvec );
+
+				rvec_ScaledAdd( workspace->f[i], -1., temp );
+				rvec_Add( workspace->f[j], temp );
+
+				rvec_iMultiply( ext_press, nbr_pj->rel_box, temp );
+				rvec_Add( data_ext_press [i], ext_press );
+			}
+
 
 		}
 	}
+
+	/*if(i < 5)
+	{
+		printf("%f,%f,%f\n", workspace->f[i][0],workspace->f[i][1],workspace->f[i][2]);
+	}*/
 	//  }
 
 }
@@ -500,7 +559,7 @@ void Cuda_NonBonded_Energy( reax_system *system, control_params *control,
 			&& data->step % out_control->energy_update_freq == 0) ? TRUE : FALSE;
 	rblocks = system->N / DEF_BLOCK_SIZE + ((system->N % DEF_BLOCK_SIZE == 0) ? 0 : 1);
 	blocks = ((system->N * VDW_KER_THREADS_PER_ATOM) / DEF_BLOCK_SIZE)
-        								+ (((system->N * VDW_KER_THREADS_PER_ATOM) % DEF_BLOCK_SIZE == 0) ? 0 : 1);
+        												+ (((system->N * VDW_KER_THREADS_PER_ATOM) % DEF_BLOCK_SIZE == 0) ? 0 : 1);
 
 	cuda_memset( spad, 0, size, "pol_energy" );
 

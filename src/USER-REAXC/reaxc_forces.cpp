@@ -222,6 +222,13 @@ void Init_Forces_noQEq( reax_system *system, control_params *control,
 		end_i   = End_Index(i, far_nbrs);
 		btop_i = End_Index( i, bonds );
 
+		if(i == 14 || i == 0)
+		{
+			int temp_j_start = Start_Index(14,bonds);
+			int temp_j = End_Index( 14, bonds );
+			printf("btopzzzzzz i %d,%d,%d,%d \n",i,btop_i,temp_j,temp_j_start );
+		}
+
 		sbp_i = &(system->reax_param.sbp[type_i]);
 
 		if (i < system->n) {
@@ -506,6 +513,8 @@ void Compute_Forces( reax_system *system, control_params *control,
 	/********* bonded interactions ************/
 	Compute_Bonded_Forces( system, control, data, workspace,
 			lists, out_control, mpi_data->world );
+
+	printf("Computing nonbonded \n");
 
 	/********* nonbonded interactions ************/
 	Compute_NonBonded_Forces( system, control, data, workspace,

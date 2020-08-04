@@ -266,9 +266,6 @@ void Tabulated_vdW_Coulomb_Energy( reax_system *system,control_params *control,
       /* Cubic Spline Interpolation */
       r = (int)(r_ij * t->inv_dx);
 
-      if(i < 10)
-    	 printf("rij %f ,t inv %f \n", r_ij, t->inv_dx);
-
 
       if (r == 0)  ++r;
       base = (double)(r+1) * t->dx;
@@ -314,9 +311,13 @@ void Tabulated_vdW_Coulomb_Energy( reax_system *system,control_params *control,
       }
       }
     }
+   /* if(i < 5)
+      	{
+      		printf("%f,%f,%f\n", workspace->f[i][0],workspace->f[i][1],workspace->f[i][2]);
+      	}*/
   }
 
-  exit(0);
+
 
   Compute_Polarization_Energy( system, data );
 }

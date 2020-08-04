@@ -189,7 +189,7 @@ typedef LAMMPS_NS::bigint rc_bigint;
 /* ??? */
 #define MAX_BONDS (30)
 /* ??? */
-#define MIN_BONDS (25)
+#define MIN_BONDS (15)
 /* ??? */
 #define MIN_HBONDS (25)
 /* ??? */
@@ -2122,7 +2122,7 @@ struct storage
 	reallocate_data realloc;
 	/* lookup table for force tabulation */
 	//LR_lookup_table *LR;
-	LR_lookup_table **LR;
+	LR_lookup_table *LR;
 
 	/* temporary workspace */
 	void *host_scratch;

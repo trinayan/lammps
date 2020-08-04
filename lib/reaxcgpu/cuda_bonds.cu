@@ -91,6 +91,11 @@ CUDA_GLOBAL void Cuda_Bonds( reax_atom *my_atoms, global_parameters gp,
 
             /* calculate derivatives of Bond Orders */
             bo_ij->Cdbo += CEbo;
+
+           // printf("cebo %f\n", bo_ij->Cdbo);
+
+
+
             bo_ij->Cdbopi -= (CEbo + twbp->De_p);
             bo_ij->Cdbopi2 -= (CEbo + twbp->De_pp);
 
@@ -132,7 +137,13 @@ CUDA_GLOBAL void Cuda_Bonds( reax_atom *my_atoms, global_parameters gp,
                     decobdboub = -gp10 * exphu * hulpov *
                         (gp3*exphub1 + 25.0*gp4*exphuov*hulpov*(exphua1+exphub1));
 
+                   // printf(" %f,%f,%f,%f,%f,%f,%f\n",gp10,exphu,hulpov,exphua1,exphub1,gp3,gp7);
+                    //printf("%d,%d,%f\n",i,j,workspace->total_bond_order[j]);
+
                     bo_ij->Cdbo += decobdbo;
+
+                   // printf("%f,%f\n",workspace->total_bond_order[j], bo_ij->Cdbo);
+
                     workspace->CdDelta[i] += decobdboua;
                     workspace->CdDelta[j] += decobdboub;
 

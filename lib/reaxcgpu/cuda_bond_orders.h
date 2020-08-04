@@ -5,6 +5,7 @@
 #include "reaxc_types.h"
 
 #include "vector.h"
+#include "cuda_list.h"
 
 extern "C" {
 
@@ -46,10 +47,8 @@ CUDA_DEVICE static inline int Cuda_BOp( reax_list bonds, real bo_cut,
 	j = nbr_pj->nbr;
 	r2 = SQR( nbr_pj->d );
 
-	if(i == 9)
-	{
-		// printf("%d\n", btop_i);
-	}
+
+
 
 	if ( sbp_i->r_s > 0.0 && sbp_j->r_s > 0.0 )
 	{
@@ -87,27 +86,42 @@ CUDA_DEVICE static inline int Cuda_BOp( reax_list bonds, real bo_cut,
 	/* Initially BO values are the uncorrected ones, page 1 */
 	BO = BO_s + BO_pi + BO_pi2;
 
-	if(i == 9)
-	{
-		printf("%f\n", BO);
-	}
+
 
 	if ( BO >= bo_cut )
 	{
 		/****** bonds i-j and j-i ******/
 
-	 /* Bond Order page2-3, derivative of total bond order prime */
+		/* Bond Order page2-3, derivative of total bond order prime */
 		Cln_BOp_s = twbp->p_bo2 * C12 / r2;
 		Cln_BOp_pi = twbp->p_bo4 * C34 / r2;
 		Cln_BOp_pi2 = twbp->p_bo6 * C56 / r2;
 
 
+
+
 		if ( i < j )
 		{
+
 			ibond = &( bonds.select.bond_list[btop_i] );
 			ibond->nbr = j;
 			ibond->d = nbr_pj->d;
 			rvec_Copy( ibond->dvec, nbr_pj->dvec );
+			btop_j = Cuda_End_Index( j, &bonds );
+
+			if(i == 0 || i == 14)
+			{
+				printf("when i %d, J %d, btop %d,%d\n", i, j, btop_i,btop_j);
+			}
+
+			/*if(i == 14 )
+			{
+				bond_data *temp_bond;
+				temp_bond = &( bonds.select.bond_list[350]);
+
+				printf("%f,%f,%f\n", temp_bond->dvec[0], temp_bond->dvec[1], temp_bond->dvec[2]);
+				//printf("Less %d,%d,%d,%f,%f,%f\n", btop_i,i,j,nbr_pj->dvec[0],nbr_pj->dvec[1],nbr_pj->dvec[2]);
+			}*/
 			ivec_Copy( ibond->rel_box, nbr_pj->rel_box );
 
 			//ibond->dbond_index = btop_i;
@@ -139,10 +153,7 @@ CUDA_DEVICE static inline int Cuda_BOp( reax_list bonds, real bo_cut,
 			bo_ij->BO_s -= bo_cut;
 			bo_ij->BO -= bo_cut;
 
-			if(i == 9)
-			{
-				printf(" I < J %d,%f\n", i,total_bond_order[i] );
-			}
+
 
 			//currently total_BOp
 			total_bond_order[i] += bo_ij->BO;
@@ -164,7 +175,6 @@ CUDA_DEVICE static inline int Cuda_BOp( reax_list bonds, real bo_cut,
 		else
 		{
 
-			printf("Entering \n");
 			//btop_j = End_Index( j, bonds );
 			btop_j = btop_i;
 
@@ -174,6 +184,16 @@ CUDA_DEVICE static inline int Cuda_BOp( reax_list bonds, real bo_cut,
 			jbond->d = nbr_pj->d;
 			rvec_Scale( jbond->dvec, -1, nbr_pj->dvec );
 			ivec_Scale( jbond->rel_box, -1, nbr_pj->rel_box );
+
+			/*if(i == 14)
+			{
+				bond_data *temp_bond;
+				temp_bond = &( bonds.select.bond_list[350]);
+
+				printf("%f,%f,%f\n", temp_bond->dvec[0], temp_bond->dvec[1], temp_bond->dvec[2]);
+				//printf(" Greater %d,%d,%d,%f,%f,%f\n",btop_j, i,j,jbond->dvec[0],jbond->dvec[1],jbond->dvec[2]);
+			}*/
+
 
 			//jbond->dbond_index = btop_i;
 			//jbond->sym_index = btop_i;
@@ -212,10 +232,7 @@ CUDA_DEVICE static inline int Cuda_BOp( reax_list bonds, real bo_cut,
 			total_bond_order[i] += bo_ji->BO; //currently total_BOp
 
 
-			if(i == 9 || j == 9)
-			{
-				printf(" I > J %d,%f\n", i,total_bond_order[i] );
-			}
+
 
 
 			bo_ji->Cdbo = bo_ji->Cdbopi = bo_ji->Cdbopi2 = 0.0;

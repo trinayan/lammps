@@ -210,6 +210,7 @@ void Add_dBond_to_Forces( reax_system *system, int i, int pj,
 	rvec_ScaledAdd( temp,  coef.C4dbopi2, workspace->dDeltap_self[j]);
 	rvec_Add( workspace->f[j], temp );
 
+
 	if (system->pair_ptr->vflag_atom) {
 		rvec_Scale(fj_tmp, -1.0, temp);
 		rvec_ScaledSum( delji, 1., system->my_atoms[j].x,-1., system->my_atoms[i].x );
@@ -273,11 +274,14 @@ int BOp( storage *workspace, reax_list *bonds, double bo_cut,
 	j = nbr_pj->nbr;
 	r2 = SQR(nbr_pj->d);
 
-
-	if(i == 9)
+	if(i == 0 || i == 14)
 	{
-		//printf("%d\n", btop_i);
+		printf("when i %d, J %d, btop %d\n", i, j, btop_i);
 	}
+
+
+
+
 
 	if (sbp_i->r_s > 0.0 && sbp_j->r_s > 0.0) {
 		C12 = twbp->p_bo1 * pow( nbr_pj->d / twbp->r_s, twbp->p_bo2 );
@@ -313,6 +317,16 @@ int BOp( storage *workspace, reax_list *bonds, double bo_cut,
 
 
 		jbond = &(bonds->select.bond_list[btop_j]);
+
+		/*if(btop_i == 350 || btop_j == 350)
+		{
+			printf("%d,%d, btopi:%d,btopj:%d\n", i, j , btop_i,btop_j);
+		}*/
+
+		if(i == 0 || i == 14)
+		{
+			printf("when i %d, J %d, btopi %d, btopj %d\n", i, j, btop_i,btop_j);
+		}
 
 		ibond->nbr = j;
 		jbond->nbr = i;
@@ -364,21 +378,24 @@ int BOp( storage *workspace, reax_list *bonds, double bo_cut,
 		bo_ji->BO_s -= bo_cut;
 		bo_ji->BO -= bo_cut;
 
-		if(i == 9)
-		{
-			printf("I is 9 %f\n",workspace->total_bond_order[i]);
-		}
 
-		if(j == 9)
-		{
-			printf("J is 9 %f\n",workspace->total_bond_order[j]);
-		}
 		workspace->total_bond_order[i] += bo_ij->BO; //currently total_BOp
 		workspace->total_bond_order[j] += bo_ji->BO; //currently total_BOp
 
 
 		bo_ij->Cdbo = bo_ij->Cdbopi = bo_ij->Cdbopi2 = 0.0;
 		bo_ji->Cdbo = bo_ji->Cdbopi = bo_ji->Cdbopi2 = 0.0;
+
+		if(i == 14)
+		{
+			bond_data *temp_bond;
+			temp_bond = &( bonds->select.bond_list[350]);
+
+			printf("%f,%f,%f\n", temp_bond->dvec[0], temp_bond->dvec[1], temp_bond->dvec[2]);
+			//ibond = &( bonds->select.bond_list[btop_i] );
+
+			//printf(" Greater btopi:%d,btopj:%d,%d,%d,%f,%f,%f\n",btop_i,btop_j, i,j,jbond->dvec[0],jbond->dvec[1],jbond->dvec[2]);
+		}
 
 		return 1;
 	}
@@ -424,7 +441,6 @@ void BO( reax_system *system, control_params * /*control*/, simulation_data * /*
 
 		// printf("%d,%d,%f,%f,%f,%d\n", i, type_i, sbp_i->valency, workspace->Deltap[i],workspace->Deltap_boc[i], workspace->total_bond_order[i]);
 
-		//printf("%d,%f\n",i,workspace->total_bond_order[i]);
 
 
 		workspace->total_bond_order[i] = 0;
@@ -432,6 +448,8 @@ void BO( reax_system *system, control_params * /*control*/, simulation_data * /*
 	}
 
 
+
+	printf("Corrected \n");
 
 	/* Corrected Bond Order calculations */
 	for( i = 0; i < system->N; ++i ) {
@@ -446,6 +464,12 @@ void BO( reax_system *system, control_params * /*control*/, simulation_data * /*
 
 		for( pj = start_i; pj < end_i; ++pj ) {
 			j = bonds->select.bond_list[pj].nbr;
+
+
+			if(i == 18)
+			{
+				printf("i:%d,j:%d\n", i,j);
+			}
 			type_j = system->my_atoms[j].type;
 			if (type_j < 0) continue;
 			bo_ij = &( bonds->select.bond_list[pj].bo_data );
@@ -546,6 +570,8 @@ void BO( reax_system *system, control_params * /*control*/, simulation_data * /*
 					A3_ji = A2_ji + Cf1_ji / f1;
 
 					/* find corrected bond orders and their derivative coef */
+					//printf("i:%d,j:%d,boij:%f,aoij:%f\n", i,j,bo_ij->BO,A0_ij );
+
 					bo_ij->BO    = bo_ij->BO    * A0_ij;
 					bo_ij->BO_pi = bo_ij->BO_pi * A0_ij *f1;
 					bo_ij->BO_pi2= bo_ij->BO_pi2* A0_ij *f1;
@@ -596,6 +622,11 @@ void BO( reax_system *system, control_params * /*control*/, simulation_data * /*
 			}
 		}
 
+		if(workspace->total_bond_order[i] == 0)
+		{
+			printf("total bo,%d %f\n",i,workspace->total_bond_order[i]);
+			//}
+		}
 	}
 
 
@@ -635,9 +666,5 @@ void BO( reax_system *system, control_params * /*control*/, simulation_data * /*
 		//printf("%d,%f,%f,%f\n",j,workspace->nlp_temp[j],workspace->Delta_lp_temp[j],workspace->dDelta_lp_temp[j]);
 
 	}
-
-	//exit(0);
-
-
 
 }

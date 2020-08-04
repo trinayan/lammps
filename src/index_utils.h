@@ -74,7 +74,7 @@ static inline CUDA_HOST_DEVICE int index_fbp( int i, int j, int k, int l, int nu
 /* Indexing routine for LR table (force tabulation) */
 static inline CUDA_HOST_DEVICE int index_lr( int i, int j, int num_atom_types )
 {
-	printf("index %d \n", (i * num_atom_types) + j);
+	//printf("index %d \n", (i * num_atom_types) + j);
     return (i * num_atom_types) + j;
 }
 

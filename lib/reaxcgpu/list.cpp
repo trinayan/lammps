@@ -46,9 +46,11 @@ void Print_List( reax_list * const list )
  * type: list interaction type
  * l: pointer to list to be allocated
  * */
-void Make_List( int n, int max_intrs, int type, reax_list * const l )
+void Make_List( int n, int num_intrs, int type, reax_list * const l )
 {
-    /*if ( l->allocated == TRUE )
+   /* printf("Calling make list \n");
+
+    if ( l->allocated == TRUE )
     {
         fprintf( stderr, "[WARNING] attempted to allocate list which was already allocated."
                 " Returning without allocation...\n" );
@@ -57,7 +59,7 @@ void Make_List( int n, int max_intrs, int type, reax_list * const l )
 
     l->allocated = TRUE;
     l->n = n;
-    l->max_intrs = max_intrs;
+    l->num_intrs = num_intrs;
     l->type = type;
 
     l->index = smalloc( sizeof(int) * n, "Make_List::index" );
@@ -66,33 +68,33 @@ void Make_List( int n, int max_intrs, int type, reax_list * const l )
     switch ( l->type )
     {
     case TYP_VOID:
-        l->select.v = smalloc( sizeof(void*) * l->max_intrs, "Make_List::v" );
+        l->select.v = smalloc( sizeof(void*) * l->num_intrs, "Make_List::v" );
         break;
 
     case TYP_BOND:
-        l->select.bond_list = smalloc( sizeof(bond_data) * l->max_intrs, "Make_List::bonds" );
+        l->select.bond_list = smalloc( sizeof(bond_data) * l->num_intrs, "Make_List::bonds" );
         break;
 
     case TYP_THREE_BODY:
-        l->select.three_body_list = smalloc( sizeof(three_body_interaction_data) * l->max_intrs,
+        l->select.three_body_list = smalloc( sizeof(three_body_interaction_data) * l->num_intrs,
                 "Make_List::three_bodies" );
         break;
 
     case TYP_HBOND:
-        l->select.hbond_list = smalloc( sizeof(hbond_data) * l->max_intrs, "Make_List::hbonds" );
+        l->select.hbond_list = smalloc( sizeof(hbond_data) * l->num_intrs, "Make_List::hbonds" );
         break;
 
     case TYP_FAR_NEIGHBOR:
-        l->select.far_nbr_list = smalloc( sizeof(far_neighbor_data) * l->max_intrs,
+        l->select.far_nbr_list = smalloc( sizeof(far_neighbor_data) * l->num_intrs,
                 "Make_List::far_nbrs" );
         break;
 
     case TYP_DBO:
-        l->select.dbo_list = smalloc( sizeof(dbond_data) * l->max_intrs, "Make_List::dbonds" );
+        l->select.dbo_list = smalloc( sizeof(dbond_data) * l->num_intrs, "Make_List::dbonds" );
         break;
 
     case TYP_DDELTA:
-        l->select.dDelta_list = smalloc( sizeof(dDelta_data) * l->max_intrs, "Make_List::dDeltas" );
+        l->select.dDelta_list = smalloc( sizeof(dDelta_data) * l->num_intrs, "Make_List::dDeltas" );
         break;
 
     default:
@@ -101,6 +103,8 @@ void Make_List( int n, int max_intrs, int type, reax_list * const l )
         break;
     }*/
 }
+
+
 
 
 void Delete_List( reax_list * const l )
