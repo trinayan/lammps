@@ -109,10 +109,10 @@ CUDA_DEVICE static inline int Cuda_BOp( reax_list bonds, real bo_cut,
 			rvec_Copy( ibond->dvec, nbr_pj->dvec );
 			btop_j = Cuda_End_Index( j, &bonds );
 
-			if(i == 0 || i == 14)
+			/*if(i == 0 || i == 14)
 			{
 				printf("when i %d, J %d, btop %d,%d\n", i, j, btop_i,btop_j);
-			}
+			}*/
 
 			/*if(i == 14 )
 			{

@@ -63,7 +63,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-																						  Fix(lmp, narg, arg), pertype_option(NULL)
+																														  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (lmp->citeme) lmp->citeme->add(cite_fix_qeq_reax);
 
@@ -635,12 +635,23 @@ void FixQEqReax::compute_H()
 				if (flag) {
 					H.jlist[m_fill] = j;
 					H.val[m_fill] = calculate_H( sqrt(r_sqr), shld[type[i]][type[j]]);
+					/*if(i == 0)
+					{
+						printf("%d,%f,%f,%f\n", m_fill, H.val[m_fill],sqrt(r_sqr),shld[type[i]][type[j]]);
+					}*/
 					m_fill++;
 				}
 			}
 			H.numnbrs[i] = m_fill - H.firstnbr[i];
 		}
+
+		/*if(i < 2)
+		{
+			printf("%d,%d,%d,%d\n", i,H.firstnbr[i],m_fill,H.numnbrs[i]);
+		}*/
 	}
+
+
 
 	if (m_fill >= H.m) {
 		char str[128];
@@ -696,14 +707,12 @@ int FixQEqReax::CG( double *b, double *x)
 	comm->reverse_comm_fix(this); //Coll_Vector( q );
 
 	vector_sum( r , 1.,  b, -1., q, nn);
-	printf("\n\n");
 
 
 	for (jj = 0; jj < nn; ++jj) {
 		j = ilist[jj];
 		if (atom->mask[j] & groupbit)
 			d[j] = r[j] * Hdia_inv[j]; //pre-condition
-		printf("D j %f \n", d[j]);
 	}
 
 
@@ -714,12 +723,14 @@ int FixQEqReax::CG( double *b, double *x)
 	printf("B norm %f, sig new %f \n", b_norm, sig_new);
 
 
+
 	for (i = 1; i < imax && sqrt(sig_new) / b_norm > tolerance; ++i) {
 		printf("\n\n");
 		printf("Packing forward comm on d \n");
 
 		comm->forward_comm_fix(this); //Dist_vector( d );
 		sparse_matvec( &H, d, q );
+
 		comm->reverse_comm_fix(this); //Coll_vector( q );
 
 		printf("\n\n");
@@ -779,6 +790,7 @@ int FixQEqReax::CG( double *b, double *x)
 
 
 
+
 	if (i >= imax && comm->me == 0) {
 		char str[128];
 		sprintf(str,"Fix qeq/reax CG convergence failed after %d iterations "
@@ -812,7 +824,7 @@ void FixQEqReax::sparse_matvec( sparse_matrix *A, double *x, double *b)
 		i = ilist[ii];
 		if (atom->mask[i] & groupbit)
 			b[i] = eta[ atom->type[i] ] * x[i];
-		printf("i %d, eta %f, x %f, q%f\n ", i, eta[ atom->type[i]],x[i],b[i]);
+		//printf("i %d, eta %f, x %f, q%f\n ", i, eta[ atom->type[i]],x[i],b[i]);
 
 	}
 
@@ -826,13 +838,32 @@ void FixQEqReax::sparse_matvec( sparse_matrix *A, double *x, double *b)
 		i = ilist[ii];
 		if (atom->mask[i] & groupbit) {
 			for (itr_j=A->firstnbr[i]; itr_j<A->firstnbr[i]+A->numnbrs[i]; itr_j++) {
+
 				j = A->jlist[itr_j];
+
+				/*if(i == 0)
+				{
+					printf("%d,%f,%f,%f\n", j, b[i],A->val[itr_j], x[j]);
+				}*/
 				b[i] += A->val[itr_j] * x[j];
 				b[j] += A->val[itr_j] * x[i];
+
+				/*if(i == 0 || j == 0)
+				{
+					printf("%d,%d,%f\n",i,j,b[0]);
+				}*/
 			}
 
 		}
 	}
+
+
+	/*for(i = 0; i < 5;i++)
+	{
+		printf("%f\n",b[i]);
+
+	}*/
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -857,11 +888,13 @@ void FixQEqReax::calculate_Q()
 	s_sum = parallel_vector_acc( s, nn);
 	t_sum = parallel_vector_acc( t, nn);
 
-	printf("%f,%f\n",s_sum,t_sum);
+	//printf("%f,%f\n",s_sum,t_sum);
 
 	u = s_sum / t_sum;
 
 	printf("U %f \n", u);
+
+
 
 
 	for (ii = 0; ii < nn; ++ii) {
@@ -882,6 +915,9 @@ void FixQEqReax::calculate_Q()
 			t_hist[i][0] = t[i];
 		}
 	}
+
+	exit(0);
+
 
 	pack_flag = 4;
 	comm->forward_comm_fix(this); //Dist_vector( atom->q );
@@ -1146,7 +1182,7 @@ double FixQEqReax::parallel_vector_acc( double *v, int n)
 	res = 0.0;
 	for (ii = 0; ii < n; ++ii) {
 		i = ilist[ii];
-		printf("v %f \n", v[i]);
+		//printf("v %f \n", v[i]);
 		if (atom->mask[i] & groupbit)
 			my_acc += v[i];
 	}
@@ -1178,7 +1214,7 @@ void FixQEqReax::vector_sum( double* dest, double c, double* v,
 		if (atom->mask[kk] & groupbit)
 		{
 			dest[kk] = c * v[kk] + d * y[kk];
-			printf("Index %d, Dest %f, c %f, v %f, y %f\n",kk, dest[kk], c, v[kk]);
+			//printf("Index %d, Dest %f, c %f, v %f, y %f\n",kk, dest[kk], c, v[kk]);
 
 			//printf("c:%f, v:%f, d:%f, y%f, Dest i %f \n", c, v[kk], d, y[kk], dest[kk]);
 			//printf("Dest k %f \n, dest[kk]");
@@ -1202,7 +1238,7 @@ void FixQEqReax::vector_add( double* dest, double c, double* v, int k)
 		kk = ilist[k];
 		if (atom->mask[kk] & groupbit) {
 			dest[kk] += c * v[kk];
-			printf("Index %d, Dest %f, c %f, v %f, y %f\n",kk, dest[kk], c, v[kk]);
+			//printf("Index %d, Dest %f, c %f, v %f, y %f\n",kk, dest[kk], c, v[kk]);
 
 		}
 	}

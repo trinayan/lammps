@@ -49,7 +49,7 @@ void Cuda_Make_List( int n, int num_intrs, int type, reax_list *l )
     {
         fprintf( stderr, "[WARNING] attempted to allocate list which was already allocated."
                 " Returning without allocation...\n" );
-        exit(0);
+        //exit(0);
         return;
     }
 

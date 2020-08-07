@@ -711,6 +711,7 @@ void PairReaxCGPU::compute(int eflag, int vflag)
 	data->step = update->ntimestep;
 
 
+
 	Output_Results( system, control, data, gpu_lists, out_control, mpi_data );
 
 	// populate tmpid and tmpbo arrays for fix reax/c/species
@@ -720,6 +721,8 @@ void PairReaxCGPU::compute(int eflag, int vflag)
 		printf("fix species not implemented for GPU  %d\n",fixspecies_flag);
 
 	}
+
+	//exit(0);
 
 
 
@@ -931,9 +934,8 @@ void *PairReaxCGPU::extract(const char *str, int &dim)
 
 double PairReaxCGPU::memory_usage()
 {
-	printf("Memory usage Unimpl \n");
-	exit(0);
-	/*  double bytes = 0.0;
+
+   double bytes = 0.0;
 
   // From pair_reax_c
   bytes += 1.0 * system->N * sizeof(int);
@@ -945,7 +947,7 @@ double PairReaxCGPU::memory_usage()
   bytes += 3.0 * system->total_cap * sizeof(int);
 
   // From reaxc_lists
-  bytes += 2.0 * lists->n * sizeof(int);
+  /*bytes += 2.0 * lists->n * sizeof(int);
   bytes += lists->num_intrs * sizeof(three_body_interaction_data);
   bytes += lists->num_intrs * sizeof(bond_data);
   bytes += lists->num_intrs * sizeof(dbond_data);
@@ -954,9 +956,9 @@ double PairReaxCGPU::memory_usage()
   bytes += lists->num_intrs * sizeof(hbond_data);
 
   if(fixspecies_flag)
-    bytes += 2 * nmax * MAXSPECBOND * sizeof(double);
+    bytes += 2 * nmax * MAXSPECBOND * sizeof(double);*/
 
-  return bytes;*/
+  return bytes;
 }
 
 /* ---------------------------------------------------------------------- */

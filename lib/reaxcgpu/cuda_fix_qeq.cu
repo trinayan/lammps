@@ -21,10 +21,7 @@ extern "C"
 CUDA_DEVICE real Init_Charge_Matrix_Entry(real *workspace_Tap,
 		int i, int j, real r_ij, real gamma)
 {
-	real Tap, dr3gamij_1, dr3gamij_3, ret;
-
-	ret = 0.0;
-
+	real Tap,denom;
 
 	Tap = workspace_Tap[7] * r_ij + workspace_Tap[6];
 	Tap = Tap * r_ij + workspace_Tap[5];
@@ -34,15 +31,10 @@ CUDA_DEVICE real Init_Charge_Matrix_Entry(real *workspace_Tap,
 	Tap = Tap * r_ij + workspace_Tap[1];
 	Tap = Tap * r_ij + workspace_Tap[0];
 
-	/* shielding */
-	dr3gamij_1 = r_ij * r_ij * r_ij
-			+ POW( gamma, -3.0 );
-	dr3gamij_3 = POW( dr3gamij_1 , 1.0 / 3.0 );
+	denom = r_ij * r_ij * r_ij + gamma;
+	denom = POW(denom, 1.0 / 3.0 );
 
-	/* i == j: periodic self-interaction term
-	 * i != j: general interaction term */
-	ret = ((i == j) ? 0.5 : 1.0) * Tap * EV_to_KCALpMOL / dr3gamij_3;
-	return ret;
+	return Tap * EV_to_KCALpMOL / denom;
 }
 
 
@@ -50,7 +42,7 @@ CUDA_DEVICE real Init_Charge_Matrix_Entry(real *workspace_Tap,
  * using the far neighbors list (stored in full format) and according to
  * the full shell communication method */
 CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms,
-		reax_list far_nbrs_list, sparse_matrix H, int nonb_cut, int inum, double *d_Tap, double *gamma, int small)
+		reax_list far_nbrs_list, sparse_matrix H, int nonb_cut, int n, double *d_Tap, double *gamma, int small)
 {
 	int i, j, pj;
 	int start_i, end_i;
@@ -68,7 +60,7 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms,
 
 	i = blockIdx.x * blockDim.x + threadIdx.x;
 
-	if ( i >= inum)
+	if ( i >= n)
 	{
 		return;
 	}
@@ -99,7 +91,7 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms,
 
 		if ( nbr_pj->d  <= nonb_cut)
 		{
-			if (j < inum)
+			if (j < n)
 			{
 				flag = 1;
 			}
@@ -146,10 +138,16 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms,
 		}
 	}
 
+	__syncthreads();
 
 
 	H.end[i] = cm_top;
 	num_cm_entries = cm_top - H.start[i];
+
+	/*if(i < 2)
+	{
+		printf(" H matrix %d,%d,%d,%d\n", i,H.start[i],cm_top,num_cm_entries);
+	}*/
 
 	//printf("Index : %d, H first number %d , m fill : %d, NumNbrs:%d \n",i,  H.start[i],cm_top,num_cm_entries);
 
@@ -201,6 +199,13 @@ CUDA_GLOBAL void k_init_distance( reax_atom *my_atoms, reax_list far_nbrs_list, 
 	}
 }
 
+void Cuda_Allocate_Hist_ST(fix_qeq_gpu *qeq_gpu,int nmax)
+{
+	cuda_malloc( (void **) &qeq_gpu->s_hist, sizeof(rvec4) * nmax, TRUE, "b" );
+	cuda_malloc( (void **) &qeq_gpu->t_hist, sizeof(rvec4) * nmax, TRUE, "x" );
+}
+
+
 void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_gpu)
 {
 	cuda_malloc( (void **) &qeq_gpu->s, sizeof(double) * nmax, TRUE,
@@ -232,24 +237,9 @@ void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_
 			"Cuda_Allocate_Matrix::start" );
 	cuda_malloc( (void **) &qeq_gpu->d, sizeof(double) * size, TRUE,
 			"Cuda_Allocate_Matrix::start" );
-
-	cuda_malloc( (void **) &qeq_gpu->s_hist, sizeof(rvec4) * nmax, TRUE, "b" );
-	cuda_malloc( (void **) &qeq_gpu->t_hist, sizeof(rvec4) * nmax, TRUE, "x" );
-
-
 }
-void  CudaAllocateMatrixForFixQeq(fix_qeq_gpu *qeq_gpu, int n, int m)
-{
-	qeq_gpu->H.m = m;
-	qeq_gpu->H.n = n;
 
-	cuda_malloc( (void **) &qeq_gpu->H.start, sizeof(int) * n, TRUE,
-			"Cuda_Allocate_Matrix::start" );
-	cuda_malloc( (void **) &qeq_gpu->H.end, sizeof(int) * n, TRUE,
-			"Cuda_Allocate_Matrix::end" );
-	cuda_malloc( (void **) &qeq_gpu->H.entries, sizeof(sparse_matrix_entry) * m, TRUE,
-			"Cuda_Allocate_Matrix::entries" );
-}
+
 void  CudaInitStorageForFixQeq(fix_qeq_gpu *qeq_gpu, double *Hdia_inv, double *b_s,double *b_t,double *b_prc,double *b_prm,double *s,double *t, int NN)
 {
 	copy_host_device( Hdia_inv, qeq_gpu->Hdia_inv, sizeof(double) * NN,
@@ -279,77 +269,23 @@ void  Cuda_Init_Fix_Atoms(reax_system *system,fix_qeq_gpu *qeq_gpu)
 			hipMemcpyHostToDevice, "Sync_Atoms::system->my_atoms");
 }
 
-void  Cuda_Calculate_H_Matrix(reax_list **lists,  reax_system *system, fix_qeq_gpu *qeq_gpu,control_params *control, int inum, int small)
+void  Cuda_Calculate_H_Matrix(reax_list **lists,  reax_system *system, fix_qeq_gpu *qeq_gpu,control_params *control, int n, int small)
 {
 
-	printf("Blocks n %d, block size %d\n", control->blocks_n, control->block_size);
-
-	printf("Control cut %f\n", control->nonb_cut);
-
-	//TB:: Verify if to use inum or system->N in kernel call
-	hipLaunchKernelGGL(k_init_distance, dim3(control->blocks_n), dim3(control->block_size), 0, 0,  qeq_gpu->d_fix_my_atoms, *(lists[FAR_NBRS]), inum );
-	hipDeviceSynchronize();
-
 	int blocks;
-	blocks = (system->N) / DEF_BLOCK_SIZE +
-			(((system->N % DEF_BLOCK_SIZE) == 0) ? 0 : 1);
+	blocks = (n) / DEF_BLOCK_SIZE +
+			(((n % DEF_BLOCK_SIZE) == 0) ? 0 : 1);
 
-	printf("Blocks %d , blocks size %d\n", blocks, DEF_BLOCK_SIZE);
-
-	printf("N %d, h n %d \n",system->N, qeq_gpu->H.n);
-
-	//TB:: Verify if to use inum or system->N  or qeq_gpu->H.n in kernel call
-	hipLaunchKernelGGL(k_init_cm_full_fs , dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  qeq_gpu->d_fix_my_atoms,
-			*(lists[FAR_NBRS]),qeq_gpu->H, control->nonb_cut, inum, qeq_gpu->d_Tap,qeq_gpu->gamma,small);
+	hipLaunchKernelGGL(k_init_distance, dim3(blocks), dim3(DEF_BLOCK_SIZE), 0, 0,  qeq_gpu->d_fix_my_atoms, *(lists[FAR_NBRS]), n );
 	hipDeviceSynchronize();
 
 
-	/*int  *d_ilist, *d_jlist, *d_numneigh, *d_firstneigh;
-	int *d_type;
-	LAMMPS_NS::tagint *d_tag;
-	double **d_x;
-	int *d_mask;
+	//printf("Blocks %d , blocks size %d\n", blocks, DEF_BLOCK_SIZE);
+	//printf("N %d, h n %d \n",system->N, qeq_gpu->H.n);
 
-	int param2 = 1000;
-	int numDimensions = 3;
-
-	cuda_malloc( (void **) &d_ilist, sizeof(int) * inum, TRUE,
-			"Cuda_Allocate_Matrix::start" );
-	cuda_malloc( (void **) &d_numneigh, sizeof(int) * inum, TRUE,
-			"Cuda_Allocate_Matrix::start" );
-	cuda_malloc( (void **) &d_firstneigh, sizeof(int) * inum * param2, TRUE,
-			"Cuda_Allocate_Matrix::start" );
-	cuda_malloc( (void **) &d_type, sizeof(int) * param2, TRUE,
-			"Cuda_Allocate_Matrix::start" );
-	cuda_malloc( (void **) &d_tag, sizeof(LAMMPS_NS::tagint) * param2, TRUE,
-			"Cuda_Allocate_Matrix::start" );
-	cuda_malloc( (void **) &d_mask, sizeof(int) * inum, TRUE,
-			"Cuda_Allocate_Matrix::start");
-	cuda_malloc( (void **) &d_x, sizeof(double)*param2*numDimensions, TRUE,
-			"Cuda_Allocate_Matrix::start");
-
-
-	copy_host_device(ilist, d_ilist, sizeof(int) * inum,
-			hipMemcpyHostToDevice, "Cuda_CG::q:get");
-	copy_host_device(numneigh, d_numneigh, sizeof(int) * inum,
-			hipMemcpyHostToDevice, "Cuda_CG::q:get");
-	copy_host_device(firstneigh, d_firstneigh, sizeof(int) *param2*inum,
-			hipMemcpyHostToDevice, "Cuda_CG::q:get");
-	copy_host_device(numneigh, d_numneigh, sizeof(int) * inum,
-			hipMemcpyHostToDevice, "Cuda_CG::q:get");
-	copy_host_device(mask, d_mask, sizeof(int) * inum,
-			hipMemcpyHostToDevice, "Cuda_CG::q:get");
-	copy_host_device(x, d_x, sizeof(double)*param2*numDimensions,
-			hipMemcpyHostToDevice, "Cuda_CG::q:get");*/
-
-
-
-	/*copy_host_device(t, qeq_gpu->t, sizeof(double) * NN,
-	  			            hipMemcpyHostToDevice, "Cuda_CG::q:get");
-	  copy_host_device(t, qeq_gpu->t, sizeof(double) * NN,
-	  			            hipMemcpyHostToDevice, "Cuda_CG::q:get");
-	  copy_host_device(t, qeq_gpu->t, sizeof(double) * NN,
-	  			            hipMemcpyHostToDevice, "Cuda_CG::q:get");*/
+	hipLaunchKernelGGL(k_init_cm_full_fs , dim3(blocks), dim3(DEF_BLOCK_SIZE), 0, 0,  qeq_gpu->d_fix_my_atoms,
+			*(lists[FAR_NBRS]),qeq_gpu->H, control->nonb_cut, n, qeq_gpu->d_Tap,qeq_gpu->gamma,small);
+	hipDeviceSynchronize();
 
 }
 
@@ -359,8 +295,6 @@ void Cuda_Init_Taper(fix_qeq_gpu *qeq_gpu,double *Tap, int numTap)
 			"Cuda_Allocate_Matrix::start");
 	copy_host_device(Tap, qeq_gpu->d_Tap, sizeof(double) * numTap,
 			hipMemcpyHostToDevice, "Cuda_CG::q:get");
-
-
 
 }
 
@@ -376,6 +310,7 @@ void Cuda_Allocate_Matrix( sparse_matrix *H, int n, int m )
 			"Cuda_Allocate_Matrix::end" );
 	cuda_malloc( (void **) &H->entries, sizeof(sparse_matrix_entry) * m, TRUE,
 			"Cuda_Allocate_Matrix::entries" );
+
 }
 
 
@@ -391,7 +326,7 @@ void Cuda_Deallocate_Matrix( sparse_matrix *H )
 
 CUDA_GLOBAL void k_estimate_cm_entries_storage(reax_atom *my_atoms,
 		control_params *control, reax_list far_nbrs,
-		int n, int total_cap,
+		int n,
 		int *cm_entries, int *max_cm_entries)
 {
 	int i, j, pj;
@@ -405,7 +340,7 @@ CUDA_GLOBAL void k_estimate_cm_entries_storage(reax_atom *my_atoms,
 
 	i = blockIdx.x * blockDim.x + threadIdx.x;
 
-	if ( i >= total_cap )
+	if ( i >= n )
 	{
 		return;
 	}
@@ -420,19 +355,13 @@ CUDA_GLOBAL void k_estimate_cm_entries_storage(reax_atom *my_atoms,
 	end_i = Cuda_End_Index( i, &far_nbrs );
 
 
-	printf("Control cut %d, %d, %d, %d, %d\n", control->nonb_cut, control->bond_cut, type_i,start_i,end_i);
+	//printf("Control cut %d, %d, %d, %d, %d\n", control->nonb_cut, control->bond_cut, type_i,start_i,end_i);
 
-	if ( i < n )
-	{
-		local = TRUE;
-		cutoff = control->nonb_cut;
-		//++num_cm_entries;//TB:: Is this correct?
-	}
-	else
-	{
-		local = FALSE;
-		cutoff = control->bond_cut;
-	}
+
+	local = TRUE;
+	cutoff = control->nonb_cut;
+	//TB: is the increment below correct
+	++num_cm_entries;
 
 
 	for ( pj = start_i; pj < end_i; ++pj )
@@ -468,40 +397,44 @@ CUDA_GLOBAL void k_estimate_cm_entries_storage(reax_atom *my_atoms,
 
 
 	cm_entries[i] = num_cm_entries;
-    max_cm_entries[i] = MAX( (int)(num_cm_entries * SAFE_ZONE), MIN_CM_ENTRIES );
+	max_cm_entries[i] = MAX( (int)(num_cm_entries * SAFE_ZONE), MIN_CM_ENTRIES );
 
 
 
-	printf("Cm etnries index %d,  %d \n", i, cm_entries[i]);
+	//printf("Cm etnries index %d,  %d \n", i, cm_entries[i]);
 }
 
-void Cuda_Estimate_CMEntries_Storages( reax_system *system, control_params *control, reax_list **lists, fix_qeq_gpu *qeq_gpu,int nn)
+void Cuda_Estimate_CMEntries_Storages( reax_system *system, control_params *control, reax_list **lists, fix_qeq_gpu *qeq_gpu,int n)
 {
 	int blocks;
 
 	cuda_malloc( (void **) &qeq_gpu->d_cm_entries,
-			system->total_cap * sizeof(int), TRUE, "system:d_cm_entries" );
+			n * sizeof(int), TRUE, "system:d_cm_entries" );
 	cuda_malloc( (void **) &qeq_gpu->d_max_cm_entries,
-				system->total_cap * sizeof(int), TRUE, "system:d_cm_entries" );
+			n * sizeof(int), TRUE, "system:d_cm_entries" );
+	cuda_malloc( (void **) &qeq_gpu->d_total_cm_entries,
+			n * sizeof(int), TRUE, "system:d_cm_entries" );
 
 
-	blocks = nn / DEF_BLOCK_SIZE +
-			(((nn % DEF_BLOCK_SIZE == 0)) ? 0 : 1);
+	blocks = n / DEF_BLOCK_SIZE +
+			(((n % DEF_BLOCK_SIZE == 0)) ? 0 : 1);
 
-	printf("nn %d, sys n %d \n",nn,system->n);
+	//printf("nn %d, sys n %d \n",n,system->n);
 
 	hipLaunchKernelGGL(k_estimate_cm_entries_storage, dim3(blocks), dim3(DEF_BLOCK_SIZE), 0, 0,  qeq_gpu->d_fix_my_atoms,
 			(control_params *)control->d_control_params,
-			*(lists[FAR_NBRS]),system->n, nn,
+			*(lists[FAR_NBRS]), n,
 			qeq_gpu->d_cm_entries,qeq_gpu->d_max_cm_entries);
 	hipDeviceSynchronize();
 	cudaCheckError();
 
-	Cuda_Reduction_Sum(qeq_gpu->d_max_cm_entries, system->d_total_cm_entries, nn);
-	copy_host_device( &system->total_cm_entries, system->d_total_cm_entries, sizeof(int),
-					hipMemcpyDeviceToHost, "Cuda_Estimate_Storages::d_total_cm_entries" );
 
-	printf("Total cm entries %d \n", system->total_cm_entries);
+	//TB:: Should max_cm or cm entries be used for calculating total_cm_entries
+	Cuda_Reduction_Sum(qeq_gpu->d_max_cm_entries, qeq_gpu->d_total_cm_entries, n);
+	copy_host_device( &system->total_cm_entries, qeq_gpu->d_total_cm_entries, sizeof(int),
+			hipMemcpyDeviceToHost, "Cuda_Estimate_Storages::d_total_cm_entries" );
+
+	//printf("Total cm entries %d \n", system->total_cm_entries);
 }
 
 void Cuda_Init_Sparse_Matrix_Indices( reax_system *system, fix_qeq_gpu *qeq_gpu, int n)
@@ -509,18 +442,18 @@ void Cuda_Init_Sparse_Matrix_Indices( reax_system *system, fix_qeq_gpu *qeq_gpu,
 	int blocks;
 
 	/* init indices */
-	Cuda_Scan_Excl_Sum(qeq_gpu->d_cm_entries, qeq_gpu->H.start, n);
+	Cuda_Scan_Excl_Sum(qeq_gpu->d_max_cm_entries, qeq_gpu->H.start, n);
 
 	/* init end_indices */
-	blocks = system->total_cap / DEF_BLOCK_SIZE
-			+ ((system->total_cap % DEF_BLOCK_SIZE == 0) ? 0 : 1);
+	blocks = n / DEF_BLOCK_SIZE
+			+ ((n % DEF_BLOCK_SIZE == 0) ? 0 : 1);
 	hipLaunchKernelGGL(k_init_end_index, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  qeq_gpu->d_cm_entries, qeq_gpu->H.start, qeq_gpu->H.end, n);
 	hipDeviceSynchronize( );
-	cudaCheckError( );
+	cudaCheckError();
 }
 
 
-CUDA_GLOBAL void k_init_matvec_fix(fix_qeq_gpu d_qeq_gpu,int nn, single_body_parameters
+CUDA_GLOBAL void k_init_matvec_fix(fix_qeq_gpu d_qeq_gpu,int n, single_body_parameters
 		*sbp,reax_atom *my_atoms)
 {
 	int i;
@@ -530,7 +463,7 @@ CUDA_GLOBAL void k_init_matvec_fix(fix_qeq_gpu d_qeq_gpu,int nn, single_body_par
 
 
 	i = blockIdx.x * blockDim.x + threadIdx.x;
-	if ( i >= nn)
+	if ( i >= n)
 	{
 		return;
 	}
@@ -550,14 +483,14 @@ CUDA_GLOBAL void k_init_matvec_fix(fix_qeq_gpu d_qeq_gpu,int nn, single_body_par
 	qeq_gpu->s[i] = 4*(qeq_gpu->s_hist[i][0]+qeq_gpu->s_hist[i][2])-(6*qeq_gpu->s_hist[i][1]+qeq_gpu->s_hist[i][3]);
 }
 
-void  Cuda_Init_Matvec_Fix(int nn, fix_qeq_gpu *qeq_gpu, reax_system *system)
+void  Cuda_Init_Matvec_Fix(int n, fix_qeq_gpu *qeq_gpu, reax_system *system)
 {
 	int blocks;
 
-	blocks = nn / DEF_BLOCK_SIZE
-			+ (( nn % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
+	blocks = n / DEF_BLOCK_SIZE
+			+ (( n % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
 
-	hipLaunchKernelGGL(k_init_matvec_fix, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0, *(qeq_gpu),nn,system->reax_param.d_sbp,qeq_gpu->d_fix_my_atoms);
+	hipLaunchKernelGGL(k_init_matvec_fix, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0, *(qeq_gpu),n,system->reax_param.d_sbp,qeq_gpu->d_fix_my_atoms);
 	hipDeviceSynchronize();
 	cudaCheckError();
 }
@@ -624,7 +557,7 @@ void  Cuda_UpdateQ_And_Copy_To_Device_Comm_Fix(double *buf,fix_qeq_gpu *qeq_gpu,
 
 	blocks = nn / DEF_BLOCK_SIZE
 			+ (( nn % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
-	printf("Blocks %d \n",blocks);
+	//printf("Blocks %d \n",blocks);
 
 
 	hipLaunchKernelGGL(k_update_q, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0, temp_buf,qeq_gpu->q,nn);
@@ -632,57 +565,14 @@ void  Cuda_UpdateQ_And_Copy_To_Device_Comm_Fix(double *buf,fix_qeq_gpu *qeq_gpu,
 
 }
 
-/*CUDA_GLOBAL void k_matvec_csr_fix( sparse_matrix H, real *vec, real *results,
-		int num_rows )
-{
-	rvec2 rvals;
-	int thread_id = blockDim.x * blockIdx.x + threadIdx.x;
 
-	if ( thread_id >= num_rows )
-	{
-		return;
-	}
-
-	int warp_id = thread_id / MATVEC_KER_THREADS_PER_ROW;
-	int lane = thread_id & (MATVEC_KER_THREADS_PER_ROW - 1);
-	int row_start;
-	int row_end;
-	// one warp per row
-	int row = warp_id;
-
-	rvals[0] = 0;
-	rvals[1] = 0;
-
-	if ( row < num_rows )
-	{
-		row_start = H.start[row];
-		row_end = H.end[row];
-
-		for( int jj = row_start + lane; jj < row_end; jj += MATVEC_KER_THREADS_PER_ROW )
-		{
-			rvals[0] += H.entries[jj].val * vec [ H.entries[jj].j ];
-			rvals[1] += H.entries[jj].val * vec [thread_id];
-		}
-	}
-
-	for ( int s = MATVEC_KER_THREADS_PER_ROW >> 1; s >= 1; s /= 2 )
-	{
-		rvals[0] += __shfl( rvals[0], s);
-		rvals[1] += __shfl( rvals[1], s);
-	}
-
-	if ( lane == 0 && row < num_rows )
-	{
-		results[thread_id] = rvals[0];
-		results[ro] = rvals[1];
-	}
-
-}*/
 
 CUDA_GLOBAL void k_matvec_csr_fix( sparse_matrix H, real *vec, real *results,
 		int num_rows )
 {
+
 	int i, c, col;
+	real results_row;
 	real val;
 
 	i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -692,31 +582,29 @@ CUDA_GLOBAL void k_matvec_csr_fix( sparse_matrix H, real *vec, real *results,
 		return;
 	}
 
+	results_row = results[i];
 
 	for ( c = H.start[i]; c < H.end[i]; c++ )
 	{
-		col = H.entries[c].j;
+		col = H.entries [c].j;
 		val = H.entries[c].val;
 
-		//printf("Before :%d,%d,%f,%f,%f,%f,%f\n",i,col, results[i], results[col], val, vec[col], vec[i]);
+		results_row += val * vec[col];
 
-		//results[i] += val * vec [col];
-		atomicAdd(&results[i],val * vec [col]);
-		__syncthreads();
-		atomicAdd(&results[col],val * vec [i]);
-		__syncthreads( );
-
-
-		//results[col] += val * vec [i];
-
-		//printf("After: %d,%d,%f,%f,%f,%f,%f\n",i,col, results[i], results[col], val, vec[col], vec[i]);
+		/*if(i == 0)
+		{
+			printf("%d,%f,%f,%f\n",col,results[i],val,vec[col]);
+			//printf("%d,%d,%f\n",i,col,results_row);
+		}*/
 	}
 
-	printf("i%d,col%d, val1:%f,val2:%f\n",i,col,results[i],results[col]);
+	__syncthreads( );
+	results[i] = results_row;
 
-	printf("\n\n");
-
-
+	/*if (i < 5)
+	{
+		printf("results %d,%f\n",i, results[i]);
+	}*/
 }
 
 CUDA_GLOBAL void k_init_q(reax_atom *my_atoms, double *q, double *x,double *eta, int nn, int NN)
@@ -741,7 +629,7 @@ CUDA_GLOBAL void k_init_q(reax_atom *my_atoms, double *q, double *x,double *eta,
 
 		q[i] = eta[type_i] * x[i];
 
-		printf("i %d, eta %f, x %f, q%f\n ", i, eta[type_i],x[i],q[i]);
+		//printf("i %d, eta %f, x %f, q%f\n ", i, eta[type_i],x[i],q[i]);
 	}
 	else
 	{
@@ -761,22 +649,22 @@ void Cuda_Sparse_Matvec_Compute(sparse_matrix *H,double *x, double *q, double *e
 
 	blocks = NN / DEF_BLOCK_SIZE
 			+ (( NN % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
-	printf("Blocks %d \n",blocks);
+	//printf("Blocks %d \n",blocks);
 
 
 	hipLaunchKernelGGL(k_init_q, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0, d_fix_my_atoms,q,x,eta,nn,NN);
 	hipDeviceSynchronize();
 
-	printf("nn%d,NN%d\n",nn,NN);
+	//printf("nn%d,NN%d\n",nn,NN);
 
 
 
 	blocks = nn / DEF_BLOCK_SIZE
 			+ (( nn % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
-	printf("Blocks %d \n",blocks);
+	//printf("Blocks %d \n",blocks);
 
 
-	hipLaunchKernelGGL(k_matvec_csr_fix, dim3(blocks), dim3(MATVEC_BLOCK_SIZE), sizeof(real) * MATVEC_BLOCK_SIZE , 0, *H, x, q, nn);
+	hipLaunchKernelGGL(k_matvec_csr_fix, dim3(blocks), dim3(DEF_BLOCK_SIZE), 0 , 0, *H, x, q, nn);
 	hipDeviceSynchronize();
 	cudaCheckError();
 }
@@ -825,74 +713,14 @@ int  compute_nearest_pow_2_fix( int blocks)
 
 
 
-float  Cuda_Parallel_Vector_Acc(int nn,fix_qeq_gpu *qeq_gpu,int control_blocks)
-{
-	int blocks;
-	real *output;
-	//cuda malloc this
-	cuda_malloc((void **) &output, sizeof(real)*(nn), TRUE,
-			"Cuda_Allocate_Matrix::start");
-	double my_acc, res;
 
-	blocks = nn / DEF_BLOCK_SIZE
-			+ (( nn % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
-
-	printf("Blocks %d, control blocks %d \n", blocks, control_blocks);
-
-
-	int blocks_pow_2 = compute_nearest_pow_2_fix(blocks);
-
-
-	printf("Blocks pow 2 %d \n", blocks_pow_2);
-
-	hipLaunchKernelGGL(k_reduction, dim3(blocks), dim3(DEF_BLOCK_SIZE), sizeof(real) * DEF_BLOCK_SIZE , 0,   qeq_gpu->s, output, nn );
-	hipDeviceSynchronize();
-	cudaCheckError( );
-
-	copy_host_device( &my_acc, output,
-			sizeof(real), hipMemcpyDeviceToHost, "charges:x" );
-
-	res = 0.0;
-
-	printf("My axx %f \n", my_acc);
-
-	return my_acc;
-
-	/*double s_sum = MPI_Allreduce( &my_acc, &res, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-
-
-	printf("S Sum %f \n", s_sum);
-	exit(0);
-
-	my_acc = res = 0.0;
-	cuda_memset( output, 0, sizeof(real) * nn, "cuda_charges_x:q" );
-
-	hipLaunchKernelGGL(k_reduction, dim3(blocks), dim3(DEF_BLOCK_SIZE), sizeof(real) * DEF_BLOCK_SIZE , 0,   qeq_gpu->t, output, nn );
-	hipDeviceSynchronize();
-	cudaCheckError( );
-
-	hipLaunchKernelGGL(k_reduction, dim3(1), dim3(blocks_pow_2), sizeof(real) * DEF_BLOCK_SIZE , 0,  qeq_gpu->t, output+nn, blocks);
-	hipDeviceSynchronize();
-	cudaCheckError( );
-
-	copy_host_device( &my_acc, output + nn,
-			sizeof(real), hipMemcpyDeviceToHost, "charges:x" );
-
-	double t_sum = MPI_Allreduce( &my_acc, &res, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-
-	printf("T sum %f, S Sum %f \n", t_sum, s_sum);
-
-	exit(0);*/
-}
 
 float  Cuda_Calculate_Local_S_Sum(int nn,fix_qeq_gpu *qeq_gpu)
 {
 	int blocks;
 	real *output;
 	//cuda malloc this
-	cuda_malloc((void **) &output, sizeof(real)*(nn), TRUE,
+	cuda_malloc((void **) &output, sizeof(real), TRUE,
 			"Cuda_Allocate_Matrix::start");
 	double my_acc;
 
@@ -901,10 +729,7 @@ float  Cuda_Calculate_Local_S_Sum(int nn,fix_qeq_gpu *qeq_gpu)
 			+ (( nn % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
 
 
-
-	hipLaunchKernelGGL(k_reduction, dim3(blocks), dim3(DEF_BLOCK_SIZE), sizeof(real) * DEF_BLOCK_SIZE , 0,   qeq_gpu->s, output, nn );
-	hipDeviceSynchronize();
-	cudaCheckError( );
+	Cuda_Reduction_Sum(qeq_gpu->s, output, nn);
 
 	my_acc = 0;
 
@@ -912,7 +737,8 @@ float  Cuda_Calculate_Local_S_Sum(int nn,fix_qeq_gpu *qeq_gpu)
 			sizeof(real), hipMemcpyDeviceToHost, "charges:x" );
 
 
-	printf("My acc %f \n", my_acc);
+	//printf("My acc %f \n", my_acc);
+
 
 	return my_acc;
 }
@@ -922,7 +748,7 @@ float  Cuda_Calculate_Local_T_Sum(int nn,fix_qeq_gpu *qeq_gpu)
 	int blocks;
 	real *output;
 	//cuda malloc this
-	cuda_malloc((void **) &output, sizeof(real)*(nn), TRUE,
+	cuda_malloc((void **) &output, sizeof(real), TRUE,
 			"Cuda_Allocate_Matrix::start");
 	double my_acc;
 
@@ -930,11 +756,9 @@ float  Cuda_Calculate_Local_T_Sum(int nn,fix_qeq_gpu *qeq_gpu)
 	blocks = nn / DEF_BLOCK_SIZE
 			+ (( nn % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
 
+	Cuda_Reduction_Sum(qeq_gpu->t, output, nn);
 
 
-	hipLaunchKernelGGL(k_reduction, dim3(blocks), dim3(DEF_BLOCK_SIZE), sizeof(real) * DEF_BLOCK_SIZE , 0,   qeq_gpu->t, output, nn );
-	hipDeviceSynchronize();
-	cudaCheckError( );
 
 	my_acc = 0;
 
@@ -942,9 +766,10 @@ float  Cuda_Calculate_Local_T_Sum(int nn,fix_qeq_gpu *qeq_gpu)
 			sizeof(real), hipMemcpyDeviceToHost, "charges:x" );
 
 
-	printf("My acc %f \n", my_acc);
+	//printf("My acc %f \n", my_acc);
 
 	return my_acc;
+
 }
 
 CUDA_GLOBAL void k_update_q_and_backup_st(double *q, double *s, double *t, reax_atom *my_atoms,rvec4 *s_hist, rvec4 *t_hist, double u, int nn)
@@ -967,7 +792,7 @@ CUDA_GLOBAL void k_update_q_and_backup_st(double *q, double *s, double *t, reax_
 
 	q[i]  = atom->q = s[i] - u*t[i];
 
-	printf("S[%d] %f,T[%d] %f,Q[%d] %f \n",i, s[i],i,t[i],i,q[i]);
+	//printf("S[%d] %f,T[%d] %f,Q[%d] %f \n",i, s[i],i,t[i],i,q[i]);
 
 
 	s_hist[i][3] = s_hist[i][2];
@@ -1015,9 +840,9 @@ void  CudaFreeFixQeqParams(fix_qeq_gpu *qeq_gpu)
 
 void CudaFreeHMatrix(fix_qeq_gpu *qeq_gpu)
 {
-  hipFree(&qeq_gpu->H.start);
-  hipFree(&qeq_gpu->H.end);
-  hipFree(&qeq_gpu->H.entries);
+	hipFree(&qeq_gpu->H.start);
+	hipFree(&qeq_gpu->H.end);
+	hipFree(&qeq_gpu->H.entries);
 
 }
 

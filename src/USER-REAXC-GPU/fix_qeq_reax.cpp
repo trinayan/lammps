@@ -41,7 +41,6 @@
 
 
 extern "C" void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_gpu);
-extern "C" void  CudaAllocateMatrixForFixQeq(fix_qeq_gpu *qeq_gpu,int n_cap, int m_cap);
 extern "C" void  CudaInitStorageForFixQeq(fix_qeq_gpu *qeq_gpu,double *Hdia_inv, double *b_s,double *b_t,double *b_prc,double *b_prm,double *s,double *t, int NN);
 extern "C" void  Cuda_Calculate_H_Matrix(reax_list **gpu_lists,  reax_system *system,fix_qeq_gpu *qeq_gpu, control_params *control, int inum, int SMALL);
 extern "C" void  Cuda_Init_Taper(fix_qeq_gpu *qeq_gpu, double *Tap, int numTap);
@@ -63,6 +62,7 @@ extern "C" void Cuda_Estimate_CMEntries_Storages( reax_system *system, control_p
 extern "C" void  Cuda_Update_Q_And_Backup_ST(int nn, fix_qeq_gpu *qeq_gpu, double u);
 extern "C" void  CudaFreeFixQeqParams(fix_qeq_gpu *qeq_gpu);
 extern "C" void  CudaFreeHMatrix(fix_qeq_gpu *qeq_gpu);
+extern "C" void  Cuda_Allocate_Hist_ST(fix_qeq_gpu *qeq_gpu,int nmax);
 
 
 
@@ -90,7 +90,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-																																																																												  Fix(lmp, narg, arg), pertype_option(NULL)
+																																																																																																						  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (lmp->citeme) lmp->citeme->add(cite_fix_qeq_reax);
 
@@ -160,7 +160,9 @@ FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
 			s_hist[i][j] = t_hist[i][j] = 0;
 
 
+	//Initialize Qeq gpu struct
 	qeq_gpu = (fix_qeq_gpu *)memory->smalloc(sizeof(fix_qeq_gpu),"reax:storage");
+	Cuda_Allocate_Hist_ST(qeq_gpu,atom->nmax);
 
 
 }
@@ -231,44 +233,11 @@ void FixQEqReax::pertype_parameters(char *arg)
 					"Fix qeq/reax could not extract params from pair reax/c/gpu");
 
 		Cuda_Copy_Pertype_Parameters_To_Device(chi,eta,gamma,atom->ntypes,qeq_gpu);
-		//TB: SBP parameters updated in Sync_System for GPU
 		return;
 	}
 
-	//TB:: Not sure why the below part exists and if it will ever be called
-	int i,itype,ntypes,rv;
-	double v1,v2,v3;
-	FILE *pf;
-
-	reaxflag = 0;
-	ntypes = atom->ntypes;
-
-	printf("Pertype parameters\n");
-	memory->create(chi,ntypes+1,"qeq/reax:chi");
-	memory->create(eta,ntypes+1,"qeq/reax:eta");
-	memory->create(gamma,ntypes+1,"qeq/reax:gamma");
-
-	if (comm->me == 0) {
-		if ((pf = fopen(arg,"r")) == NULL)
-			error->one(FLERR,"Fix qeq/reax parameter file could not be found");
-
-		for (i = 1; i <= ntypes && !feof(pf); i++) {
-			rv = fscanf(pf,"%d %lg %lg %lg",&itype,&v1,&v2,&v3);
-			if (rv != 4)
-				error->one(FLERR,"Fix qeq/reax: Incorrect format of param file");
-			if (itype < 1 || itype > ntypes)
-				error->one(FLERR,"Fix qeq/reax: invalid atom type in param file");
-			chi[itype] = v1;
-			eta[itype] = v2;
-			gamma[itype] = v3;
-		}
-		if (i <= ntypes) error->one(FLERR,"Invalid param file for fix qeq/reax");
-		fclose(pf);
-	}
-
-	MPI_Bcast(&chi[1],ntypes,MPI_DOUBLE,0,world);
-	MPI_Bcast(&eta[1],ntypes,MPI_DOUBLE,0,world);
-	MPI_Bcast(&gamma[1],ntypes,MPI_DOUBLE,0,world);
+	printf("Arg should be reax/c/gpu");
+	exit(EXIT_FAILURE);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -344,8 +313,8 @@ void FixQEqReax::allocate_matrix()
 		mincap = reaxc->system->mincap;
 		safezone = reaxc->system->safezone;
 	} else {
-		mincap = MIN_CAP;
-		safezone = SAFE_ZONE;
+		printf("Error at line %d at %s \n. Only REAX supported \n", __LINE__,__FILE__);
+		exit(EXIT_FAILURE);
 	}
 
 	n = atom->nlocal;
@@ -358,9 +327,8 @@ void FixQEqReax::allocate_matrix()
 		ilist = reaxc->list->ilist;
 		numneigh = reaxc->list->numneigh;
 	} else {
-		inum = list->inum;
-		ilist = list->ilist;
-		numneigh = list->numneigh;
+		printf("Error at line %d at %s \n. Only REAX supported \n", __LINE__,__FILE__);
+		exit(EXIT_FAILURE);
 	}
 
 	m = 0;
@@ -377,9 +345,6 @@ void FixQEqReax::allocate_matrix()
 	memory->create(H.jlist,m_cap,"qeq:H.jlist");
 	memory->create(H.val,m_cap,"qeq:H.val");
 
-
-	CudaAllocateMatrixForFixQeq(qeq_gpu, n_cap, m_cap);
-
 }
 
 /* ---------------------------------------------------------------------- */
@@ -392,8 +357,6 @@ void FixQEqReax::deallocate_matrix()
 	memory->destroy( H.val );
 
 	CudaFreeHMatrix(qeq_gpu);
-
-	//TB:: Implement deallocation of device side H matrix
 }
 
 /* ---------------------------------------------------------------------- */
@@ -422,6 +385,8 @@ void FixQEqReax::init()
 	neighbor->requests[irequest]->fix = 1;
 	neighbor->requests[irequest]->newton = 2;
 	neighbor->requests[irequest]->ghost = 1;
+	neighbor->requests[irequest]->half = 0;
+	neighbor->requests[irequest]->full = 1;
 
 	init_shielding();
 	init_taper();
@@ -532,8 +497,10 @@ void FixQEqReax::init_storage()
 	if (reaxc)
 		NN = reaxc->list->inum + reaxc->list->gnum;
 	else
-		NN = list->inum + list->gnum;
-
+	{
+		printf("Only REAX supported");
+		exit(EXIT_FAILURE);
+	}
 
 	for (int i = 0; i < NN; i++) {
 		Hdia_inv[i] = 1. / eta[atom->type[i]];
@@ -575,7 +542,7 @@ void FixQEqReax::pre_force(int /*vflag*/)
 
 	matvecs = matvecs_s + matvecs_t;
 
-	printf("Matvecs %d \n", matvecs);
+	//printf("Matvecs %d \n", matvecs);
 
 	cuda_calculate_Q();
 
@@ -614,29 +581,13 @@ void FixQEqReax::init_matvec()
 		nn = reaxc->list->inum;
 		ilist = reaxc->list->ilist;
 	} else {
-		nn = list->inum;
-		ilist = list->ilist;
+		printf("Error at line %d at %s \n. Only REAX supported \n", __LINE__,__FILE__);
+		exit(EXIT_FAILURE);
 	}
 
 
 	Cuda_Init_Matvec_Fix(nn, qeq_gpu,reaxc->system);
 
-	for (ii = 0; ii < nn; ++ii) {
-		i = ilist[ii];
-		if (atom->mask[i] & groupbit) {
-
-			/* init pre-conditioner for H and init solution vectors */
-			Hdia_inv[i] = 1. / eta[ atom->type[i]];
-			b_s[i]      = -chi[ atom->type[i] ];
-			b_t[i]      = -1.0;
-
-			/* quadratic extrapolation for s & t from previous solutions */
-			t[i] = t_hist[i][2] + 3 * ( t_hist[i][0] - t_hist[i][1]);
-
-			/* cubic extrapolation for s & t from previous solutions */
-			s[i] = 4*(s_hist[i][0]+s_hist[i][2])-(6*s_hist[i][1]+s_hist[i][3]);
-		}
-	}
 
 	pack_flag = 2;
 	comm->forward_comm_fix(this); //Dist_vector( s );
@@ -649,8 +600,7 @@ void FixQEqReax::init_matvec()
 /*-----------------------------------------------------------------------*/
 void FixQEqReax::intializeAtomsAndCopyToDevice()
 {
-	//int *num_bonds = fix_reax->num_bonds;
-	//int *num_hbonds = fix_reax->num_hbonds;
+
 	qeq_gpu->fix_my_atoms = (reax_atom*) malloc(reaxc->system->N * sizeof(reax_atom));
 	for( int i = 0; i < reaxc->system->N; ++i ){
 		qeq_gpu->fix_my_atoms[i].orig_id = atom->tag[i];
@@ -659,8 +609,6 @@ void FixQEqReax::intializeAtomsAndCopyToDevice()
 		qeq_gpu->fix_my_atoms[i].x[1] = atom->x[i][1];
 		qeq_gpu->fix_my_atoms[i].x[2] = atom->x[i][2];
 		qeq_gpu->fix_my_atoms[i].q = atom->q[i];
-		// qeq_gpu->fix_my_atoms[i].num_bonds = num_bonds[i];
-		//qeq_gpu->fix_my_atoms[i].num_hbonds = num_hbonds[i];
 	}
 	Cuda_Init_Fix_Atoms(reaxc->system, qeq_gpu);
 
@@ -686,106 +634,25 @@ void FixQEqReax::compute_H()
 		numneigh = reaxc->list->numneigh;
 		firstneigh = reaxc->list->firstneigh;
 	} else {
-		inum = list->inum;
-		ilist = list->ilist;
-		numneigh = list->numneigh;
-		firstneigh = list->firstneigh;
+		printf("Error at line %d at %s \n. Only REAX supported \n", __LINE__,__FILE__);
+		exit(EXIT_FAILURE);
 	}
 
 
 
 	intializeAtomsAndCopyToDevice();
 	Cuda_Estimate_CMEntries_Storages(reaxc->system, reaxc->control,reaxc->gpu_lists, qeq_gpu, inum);
-	printf("Ttoal cap, total cm , n %d,%d,%d\n", reaxc->system->total_cap, reaxc->system->total_cm_entries,reaxc->system->N);
-	Cuda_Allocate_Matrix(&qeq_gpu->H, reaxc->system->total_cap, reaxc->system->total_cm_entries);
-	Cuda_Init_Sparse_Matrix_Indices( reaxc->system, qeq_gpu, inum);
+	//printf("Ttoal cap, total cm , n %d,%d,%d\n", reaxc->system->total_cap, reaxc->system->total_cm_entries,reaxc->system->N);
+	Cuda_Allocate_Matrix(&qeq_gpu->H, inum, reaxc->system->total_cm_entries);
+	Cuda_Init_Sparse_Matrix_Indices(reaxc->system, qeq_gpu, inum);
 	Cuda_Calculate_H_Matrix(reaxc->gpu_lists, reaxc->system,qeq_gpu,reaxc->control,inum,SMALL);
 
 
 
-	printf("System N %d, m %d \n", reaxc->system->N,n);
-
-
-
-	// fill in the H matrix
-
-	printf("I num %d \n", inum);
-
-	printf("Atom nmax %d, n local %d  \n", atom->nmax,atom->nlocal);
-
-	printf("Swb %f, SMALL %f\n", swb, SMALL);
-
-
-	m_fill = 0;
-	r_sqr = 0;
-	for (ii = 0; ii < inum; ii++) {
-		i = ilist[ii];
-		if (mask[i] & groupbit) {
-			jlist = firstneigh[i];
-			jnum = numneigh[i];
-			H.firstnbr[i] = m_fill;
-			for (jj = 0; jj < jnum; jj++) {
-				j = jlist[jj];
-
-
-				j &= NEIGHMASK;
-				dx = x[j][0] - x[i][0];
-				dy = x[j][1] - x[i][1];
-				dz = x[j][2] - x[i][2];
-				r_sqr = SQR(dx) + SQR(dy) + SQR(dz);
-
-
-				flag = 0;
-				if (r_sqr <= SQR(swb)) {
-					if (j < n)
-					{
-						flag = 1;
-
-					}
-					else if (tag[i] < tag[j])
-					{
-						flag = 1;
-					}
-					else if (tag[i] == tag[j]) {
-						if (dz > SMALL)
-						{
-							flag = 1;
-						}
-						else if (fabs(dz) < SMALL) {
-							if (dy > SMALL)
-							{
-								flag = 1;
-
-							}
-							else if (fabs(dy) < SMALL && dx > SMALL)
-							{
-								flag = 1;
-							}
-						}
-					}
-				}
-
-				if (flag) {
-					H.jlist[m_fill] = j;
-					H.val[m_fill] = calculate_H( sqrt(r_sqr), shld[type[i]][type[j]]);
-					m_fill++;
-				}
-			}
-			H.numnbrs[i] = m_fill - H.firstnbr[i];
-		}
-
-		//printf("Index : %d, H first number %d , m fill : %d, NumNbrs:%d,  \n",i,  H.firstnbr[i],m_fill,H.numnbrs[i]);
-
-	}
-
-	if (m_fill >= H.m) {
-		char str[128];
-		sprintf(str,"H matrix size has been exceeded: m_fill=%d H.m=%d\n",
-				m_fill, H.m);
-		error->warning(FLERR,str);
-		error->all(FLERR,"Fix qeq/reax has insufficient QEq matrix size");
-	}
-
+	//printf("System N %d, m %d \n", reaxc->system->N,n);
+	//printf("I num %d \n", inum);
+	//printf("Atom nmax %d, n local %d  \n", atom->nmax,atom->nlocal);
+	//printf("Swb %f, SMALL %f\n", swb, SMALL);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -823,23 +690,21 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 		nn = reaxc->list->inum;
 		ilist = reaxc->list->ilist;
 	} else {
-		nn = list->inum;
-		ilist = list->ilist;
+		printf("Error at line %d at %s \n. Only REAX supported \n", __LINE__,__FILE__);
+		exit(EXIT_FAILURE);
 	}
 
 	imax = 200;
 
-	cuda_sparse_matvec(device_x, qeq_gpu->q);
-
-
 	pack_flag = 1;
+	cuda_sparse_matvec(device_x, qeq_gpu->q);
 	comm->reverse_comm_fix(this); //Coll_Vector( q );
 
 
 	Cuda_Vector_Sum_Fix(qeq_gpu->r , 1.0,  device_b, -1.0,
 			qeq_gpu->q, nn);
 
-	printf("\n\n");
+	//printf("\n\n");
 
 
 	Cuda_CG_Preconditioner_Fix(qeq_gpu->d, qeq_gpu->r,
@@ -866,48 +731,50 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 
 	sig_new = parallel_dot(r,d,nn);
 
-	printf("b NORM %f, sig new %f \n", b_norm, sig_new);
+	//printf("b NORM %f, sig new %f \n", b_norm, sig_new);
+
 
 
 	for (i = 1; i < imax && sqrt(sig_new) / b_norm > tolerance; ++i) {
-		printf("\n\n");
-		printf("Packing forward comm on d\n");
+		//printf("\n\n");
+		//printf("Packing forward comm on d\n");
 		comm->forward_comm_fix(this); //Dist_vector( d );
-		printf("\n\n");
+		//printf("\n\n");
 		cuda_sparse_matvec(qeq_gpu->d, qeq_gpu->q);
+
 		comm->reverse_comm_fix(this); //Coll_vector( q );
 
 		Cuda_Copy_Vector_From_Device(d,qeq_gpu->d,nn);
 
-		printf("\n\n");
-		for(int i = 0; i < nn; i++)
+		//printf("\n\n");
+		/*for(int i = 0; i < nn; i++)
 		{
 			printf("D[%d]=%f\n", i,d[i]);
-		}
+		}*/
 
-		printf("\n\n");
+		//printf("\n\n");
 
 		Cuda_Copy_Vector_From_Device(q,qeq_gpu->q,nn);
 
-		for(int i = 0; i < nn; i++)
+		/*for(int i = 0; i < nn; i++)
 		{
 			printf("Q[%d]=%f\n", i,q[i]);
-		}
+		}*/
 
 
 		tmp = parallel_dot( d, q, nn);
 
-		printf("Tmp %f \n", tmp);
+		//printf("Tmp %f \n", tmp);
 		alpha = sig_new / tmp;
 
-		printf("Device x vector sum \n");
+		//printf("Device x vector sum \n");
 		Cuda_Vector_Sum_Fix(device_x , alpha,  qeq_gpu->d, 1.0, device_x, nn);
-		printf("\n\n");
+		//printf("\n\n");
 
 
-		printf("Device r vector sum \n");
+		//printf("Device r vector sum \n");
 		Cuda_Vector_Sum_Fix(qeq_gpu->r, -alpha, qeq_gpu->q, 1.0,qeq_gpu->r,nn);
-		printf("\n\n");
+		//printf("\n\n");
 
 
 		Cuda_CG_Preconditioner_Fix(qeq_gpu->p,qeq_gpu->r,qeq_gpu->Hdia_inv,nn);
@@ -921,26 +788,27 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 
 		beta = sig_new / sig_old;
 
-		printf("Device d vector sum \n");
+		//printf("Device d vector sum \n");
 		Cuda_Vector_Sum_Fix(qeq_gpu->d, 1.,qeq_gpu->p,beta,qeq_gpu->d,nn);
-		printf("\n\n");
+		//printf("\n\n");
 
 
-		printf("i:%d,beta %f, sig new %f, alpha %f\n",i, beta, sig_new, alpha);
+		//printf("i:%d,beta %f, sig new %f, alpha %f\n",i, beta, sig_new, alpha);
 
 
 	}
 
 
 
-	if (i >= imax && comm->me == 0) {
+
+	/*if (i >= imax && comm->me == 0) {
 		char str[128];
 		sprintf(str,"Fix qeq/reax CG convergence failed after %d iterations "
 				"at " BIGINT_FORMAT " step",i,update->ntimestep);
 		error->warning(FLERR,str);
-	}
+	}*/
 
-	printf("I is %d \n", i);
+	//printf("I is %d \n", i);
 	return i;
 }
 
@@ -1033,9 +901,8 @@ void FixQEqReax::cuda_sparse_matvec(double *x, double *q)
 		NN = reaxc->list->inum + reaxc->list->gnum;
 		ilist = reaxc->list->ilist;
 	} else {
-		nn = list->inum;
-		NN = list->inum + list->gnum;
-		ilist = list->ilist;
+		printf("Error at line %d at %s \n. Only REAX supported \n", __LINE__,__FILE__);
+		exit(EXIT_FAILURE);
 	}
 
 	Cuda_Sparse_Matvec_Compute(&qeq_gpu->H, x, q ,qeq_gpu->eta, qeq_gpu->d_fix_my_atoms, nn, NN);
@@ -1110,8 +977,11 @@ void FixQEqReax::cuda_calculate_Q()
 
 	u = s_sum / t_sum;
 
+	//printf("u %f\n",u);
 
-    Cuda_Update_Q_And_Backup_ST(nn,qeq_gpu,u);
+
+
+	Cuda_Update_Q_And_Backup_ST(nn,qeq_gpu,u);
 
 
 	pack_flag = 4;
@@ -1215,7 +1085,8 @@ int FixQEqReax::pack_forward_comm(int n, int *list, double *buf,
 		}*/
 	}
 	else if (pack_flag == 5) {
-		printf("Not used \n");
+		printf("Error at line %d at %s \n. Functionality not implemented\n", __LINE__,__FILE__);
+		exit(EXIT_FAILURE);
 		m = 0;
 		exit(0);
 		for(int i = 0; i < n; i++) {
@@ -1282,8 +1153,9 @@ void FixQEqReax::unpack_forward_comm(int n, int first, double *buf)
 		}*/
 	}
 	else if (pack_flag == 5) {
-		printf("Not used \n");
-		exit(0);
+		printf("Error at line %d at %s \n. Functionality not implemented\n", __LINE__,__FILE__);
+		exit(EXIT_FAILURE);
+
 		int last = first + n;
 		m = 0;
 		for(i = first; i < last; i++) {
@@ -1307,8 +1179,8 @@ int FixQEqReax::pack_reverse_comm(int n, int first, double *buf)
 			buf[m++] = q[indxI  ];
 			buf[m++] = q[indxI+1];
 		}
-		printf("Not used \n");
-		exit(0);
+		printf("Error at line %d at %s \n. Functionality not implemented\n", __LINE__,__FILE__);
+		exit(EXIT_FAILURE);
 		return m;
 	}
 	else
@@ -1460,8 +1332,10 @@ double FixQEqReax::parallel_dot( double *v1, double *v2, int n)
 	if (reaxc)
 		ilist = reaxc->list->ilist;
 	else
-		ilist = list->ilist;
-
+	{
+		printf("Error at line %d at %s \n. Only REAX supported \n", __LINE__,__FILE__);
+		exit(EXIT_FAILURE);
+	}
 	my_dot = 0.0;
 	res = 0.0;
 	for (ii = 0; ii < n; ++ii) {

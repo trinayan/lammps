@@ -251,10 +251,10 @@ CUDA_GLOBAL void Cuda_Calculate_BO( reax_atom *my_atoms, global_parameters gp,
 
 				/* find corrected bond orders and their derivative coef */
 
-				if(i == 18 || i == 2 || i == 15 || i == 4 || i== 14)
+				/*if(i == 18 || i == 2 || i == 15 || i == 4 || i== 14)
 				{
 					printf("i:%d,j:%d,boij:%f,aoij:%f\n", i,j,bo_ij->BO,A0_ij );
-				}
+				}*/
 				bo_ij->BO = bo_ij->BO * A0_ij;
 				bo_ij->BO_pi = bo_ij->BO_pi * A0_ij *f1;
 				bo_ij->BO_pi2 = bo_ij->BO_pi2* A0_ij *f1;
@@ -459,10 +459,10 @@ CUDA_GLOBAL void Cuda_Update_Workspace_After_BO( reax_atom *my_atoms,
 		workspace->dDelta_lp_temp[j] = workspace->Clp[j];
 	}
 
-	if(j < 5)
+	/*if(j < 5)
 	{
 		printf("%d,%f\n",j,workspace->total_bond_order[j]);
-	}
+	}*/
 
 
 	//} Commented for Cuda
@@ -822,10 +822,10 @@ CUDA_GLOBAL void k_total_forces_postprocess( reax_atom *my_atoms,
 	bonds = &p_bonds;
 	workspace = &p_workspace;
 
-	if(i < 5)
+	/*if(i < 5)
 	{
 		printf("Forces %f,%f,%f\n", workspace->f[i][0],workspace->f[i][1],workspace->f[i][2]);
-	}
+	}*/
 
 	Cuda_dbond_to_Forces_postprocess( i, my_atoms, bonds, workspace );
 }
@@ -881,7 +881,7 @@ void Cuda_Total_Forces( reax_system *system, control_params *control,
 	blocks = system->N / DEF_BLOCK_SIZE
 			+ ((system->N % DEF_BLOCK_SIZE == 0) ? 0 : 1);
 
-	printf("virital %d \n", control->virial);
+	//printf("virital %d \n", control->virial);
 
 	hipLaunchKernelGGL(k_total_forces, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  *(workspace->d_workspace), *(lists[BONDS]),
 			(control_params *) control->d_control_params,

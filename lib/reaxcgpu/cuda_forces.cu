@@ -822,10 +822,10 @@ CUDA_GLOBAL void k_new_fix_sym_dbond_indices( reax_list pbonds, int N )
 			atom_j = jbond->nbr;
 
 
-			if(i == 18)
+			/*if(i == 18)
 			{
 				printf("%d,%d\n",j,k);
-			}
+			}*/
 
 			if ( atom_j == i )
 			{
@@ -1648,43 +1648,7 @@ CUDA_GLOBAL void k_validate_lists(reax_atom *my_atoms,reax_list bonds_list, reax
 
 
 
-void Cuda_Validate_Lists( reax_system *system, storage * /*workspace*/, reax_list **lists,
-		int step, int /*n*/, int N, int numH )
-{
-	int i, comp, Hindex;
-	double saferzone = system->saferzone;
 
-
-	int blocks = 0;
-	blocks = (system->N) / DEF_BLOCK_SIZE +
-			(((system->N % DEF_BLOCK_SIZE) == 0) ? 0 : 1);
-
-	int *d_validation_failed;
-
-	cuda_malloc((void **) &d_validation_failed, sizeof(int), TRUE,
-			"Cuda_Allocate_Bonds");
-
-	hipLaunchKernelGGL(k_validate_lists, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,system->d_my_atoms,
-			*(lists[BONDS]),
-			*(lists[HBONDS]), system->N,
-			numH, d_validation_failed, saferzone);
-	hipDeviceSynchronize( );
-	cudaCheckError();
-
-
-	int validation_failed = 0;;
-
-	copy_host_device(&validation_failed, d_validation_failed,
-			sizeof(int), hipMemcpyDeviceToHost, "charges:x" );
-
-
-	if(validation_failed)
-	{
-		printf("Lists Validation failed exiting \n");
-		//exit(0);
-
-	}
-}
 
 
 CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_parameters *sbp,
@@ -1760,10 +1724,6 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 		}
 		else
 		{
-			if( i < 20)
-			{
-				printf("Not a HT atom %d,%d,%d\n", i,start_i,end_i);
-			}
 			ihb_top = -1;
 		}
 	}
@@ -1776,12 +1736,6 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 		nbr_pj = &far_nbrs_list.select.far_nbr_list[pj];
 		j = nbr_pj->nbr;
 		atom_j = &my_atoms[j];
-
-		if( nbr_pj->d == 0)
-		{
-			printf("Nbr : %d,%d,%f,%f,%f,%f\n",i,j,nbr_pj->d,nbr_pj->dvec[0],nbr_pj->dvec[1] ,nbr_pj->dvec[2]);
-		}
-
 
 		if ( renbr )
 		{
@@ -1945,19 +1899,6 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 
 			/* uncorrected bond orders */
 			//printf("calling BOP %d\n", i);
-
-			if(	ihb_top == -1)
-			{
-				//	printf("Not a HT atom calling BOP %d,%f,%f,%f\n", i,nbr_pj->dvec[0],nbr_pj->dvec[1],nbr_pj->dvec[2]);
-
-
-			}
-
-			if(i == 14 && j == 0)
-			{
-				printf("%d,%d,%f,%f,%f\n",type_i,type_j,nbr_pj->dvec[0],nbr_pj->dvec[1],nbr_pj->dvec[2]);
-			}
-
 			if ( nbr_pj->d <= control->bond_cut &&
 					Cuda_BOp( bonds_list, control->bo_cut, i, btop_i, nbr_pj,
 							sbp_i, sbp_j, twbp, workspace.dDeltap_self,
@@ -1987,7 +1928,6 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 		num_hbonds = ihb_top - Cuda_Start_Index( atom_i->Hindex, &hbonds_list);
 
 	} else {
-		//printf("%d,%d\n",i,j);
 		num_hbonds = 0;
 	}
 
@@ -2147,7 +2087,7 @@ int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 		sum = sum + temp_copies[i];
 	}
 
-	printf("%d\n", sum);
+	//printf("%d\n", sum);
 
 
 	/*hipLaunchKernelGGL(k_reduction, dim3(blocks), dim3(DEF_BLOCK_SIZE), sizeof(real) * DEF_BLOCK_SIZE , 0,  num_bonds_per_atom,  total_num_bonds_per_atoms, system->N);
@@ -2361,8 +2301,12 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 #endif
 
 	thbody = (int *) workspace->scratch;
+
+	printf("data step %d,%d\n", data->step,data->prev_steps);
 	ret = Cuda_Estimate_Storage_Three_Body( system, control, workspace,
 			data->step, lists, thbody );
+
+	printf("ret %d \n", ret);
 
 
 #if defined(DEBUG_FOCUS)

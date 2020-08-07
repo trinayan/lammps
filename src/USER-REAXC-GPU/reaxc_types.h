@@ -2511,6 +2511,10 @@ struct fix_qeq_gpu
 	/* max. num. matrix entries per row (GPU) */
 	int *d_max_cm_entries;
 
+	int *d_total_cm_entries;
+	/* TRUE if charge matrix requires reallocation, FALSE otherwise (GPU) */
+	int *d_realloc_cm_entries;
+
 };
 
 /* Handle for working with an instance of the PuReMD library */

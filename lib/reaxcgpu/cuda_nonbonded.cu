@@ -551,7 +551,7 @@ void Cuda_NonBonded_Energy( reax_system *system, control_params *control,
 	int blocks, rblocks, update_energy;
 	int size = (2 * system->N + 2 * system->N ) * sizeof(real) +
 			2 * system->N * sizeof(rvec);
-	printf("Size %d \n", size);
+	//printf("Size %d \n", size);
 	rvec *spad_rvec;
 	real *spad = (real *) workspace->scratch;
 

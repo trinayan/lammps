@@ -132,7 +132,7 @@ CUDA_GLOBAL void Cuda_Atom_Energy( reax_atom *my_atoms, global_parameters gp,
 
 						bo_ij->Cdbo += deahu2dbo;
 
-						printf("cdbo %f\n",bo_ij->Cdbo);
+						//printf("cdbo %f\n",bo_ij->Cdbo);
 
 						workspace->CdDelta[i] += deahu2dsbo;
 

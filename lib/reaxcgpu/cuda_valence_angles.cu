@@ -217,13 +217,6 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 						pbond_jk->dvec, pbond_jk->d,
 						&theta, &cos_theta );
 
-				if(j == 14)
-				{
-					if(pbond_ij->dvec[0] == 0 || pbond_ij->dvec[1] == 0 || pbond_ij->dvec[2] == 0)
-					{
-						printf("Type:%d,%d,%d,%d,%d,%d\n",type_j,type_i,j,i, pi,pk);
-					}
-				}
 
 				//printf("%d,%d,%f\n",i,j,theta);
 

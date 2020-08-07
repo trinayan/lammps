@@ -2536,6 +2536,11 @@ struct fix_qeq_gpu
 	int *d_cm_entries;
 	int *d_max_cm_entries;
 
+	int *d_total_cm_entries;
+	/* TRUE if charge matrix requires reallocation, FALSE otherwise (GPU) */
+	int *d_realloc_cm_entries;
+
+
 	/* max. num. matrix entries per row (GPU) */
 };
 

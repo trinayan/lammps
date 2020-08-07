@@ -129,7 +129,7 @@ extern "C" void copy_device( void *dest, void *src, size_t size, const char *msg
 extern "C" void compute_blocks( int *blocks, int *block_size, int count )
 {
     *block_size = CUDA_BLOCK_SIZE;
-    printf("Cuda block_size %d \n", CUDA_BLOCK_SIZE );
+    printf("Cuda block_size %d,%d \n", count, (int) CEIL((double) count / CUDA_BLOCK_SIZE) );
     *blocks = (int) CEIL((double) count / CUDA_BLOCK_SIZE);
 }
 
