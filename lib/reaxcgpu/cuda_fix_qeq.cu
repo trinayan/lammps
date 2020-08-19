@@ -397,7 +397,7 @@ CUDA_GLOBAL void k_estimate_cm_entries_storage(reax_atom *my_atoms,
 
 
 	cm_entries[i] = num_cm_entries;
-	max_cm_entries[i] = MAX( (int)(num_cm_entries * SAFE_ZONE), MIN_CM_ENTRIES );
+	max_cm_entries[i] = MAX( (int)(num_cm_entries * REAX_SAFE_ZONE), MIN_CM_ENTRIES );
 
 
 

@@ -629,11 +629,11 @@ CUDA_GLOBAL void k_estimate_neighbors( reax_atom *my_atoms,
     else
     {
         /* used to trigger assignment of max_far_nbrs below */
-        num_far = MIN_NBRS;
+        num_far = REAX_MIN_NBRS;
     }
 
     far_nbrs[l] = num_far;
-    max_far_nbrs[l] = MAX( (int)(num_far * SAFE_ZONE), MIN_NBRS );
+    max_far_nbrs[l] = MAX( (int)(num_far * REAX_SAFE_ZONE), REAX_MIN_NBRS );
 }
 
 

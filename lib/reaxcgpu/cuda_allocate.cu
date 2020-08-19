@@ -571,7 +571,7 @@ void Cuda_ReAllocate( reax_system *system, control_params *control,
 			}
 
 			newsize = static_cast<int>
-			(MAX( realloc->num_far*safezone, mincap*MIN_NBRS ));
+			(MAX( realloc->num_far*safezone, mincap*REAX_MIN_NBRS ));
 			Cuda_Reallocate_Neighbor_List( far_nbrs, system->total_cap, system->total_far_nbrs );
 			Cuda_Init_Neighbor_Indices( system, lists );
 

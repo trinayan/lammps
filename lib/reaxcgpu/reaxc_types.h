@@ -72,6 +72,14 @@ typedef LAMMPS_NS::bigint rc_bigint;
 //#define PURE_REAX
 #define LAMMPS_REAX
 
+
+#define REAX_MAX_STR            1024
+#define REAX_MAX_NBRS           6
+#define REAX_MAX_3BODY_PARAM    5
+#define REAX_MAX_4BODY_PARAM    5
+#define REAX_MAX_ATOM_TYPES     25
+#define REAX_MAX_MOLECULE_SIZE  20
+#define MAX_BOND                20  // same as reaxc_defs.h
 //#define DEBUG
 //#define DEBUG_FOCUS
 //#define TEST_ENERGY
@@ -162,12 +170,7 @@ typedef LAMMPS_NS::bigint rc_bigint;
 /**/
 #define MAX_ATOM_NAME_LEN (8)
 
-/* ??? */
-#define MAX_RESTRICT (15)
-/* max. num. atoms per molecule */
-#define MAX_MOLECULE_SIZE (20)
-/* max. num. atom types defined in the force field parameter file */
-#define MAX_ATOM_TYPES (25)
+
 
 /* max. num. of interaction functions */
 #define NUM_INTRS (10)
@@ -180,18 +183,23 @@ typedef LAMMPS_NS::bigint rc_bigint;
 /* ??? */
 #define HB_THRESHOLD (1.0e-2)
 
+#define SAFER_ZONE (1.4)
+
 /* ??? */
-#define MIN_CAP (50)
+#define REAX_MIN_CAP    50
 /* ??? */
-#define MIN_NBRS (100)
+#define REAX_MIN_NBRS   100
 /* ??? */
 #define MIN_CM_ENTRIES (100)
 /* ??? */
-#define MAX_BONDS (30)
+#define MIN_HENTRIES    100
+
+#define MAX_BONDS       30
 /* ??? */
 #define MIN_BONDS (25)
 /* ??? */
-#define MIN_HBONDS (25)
+#define REAX_MIN_HBONDS 25
+
 /* ??? */
 #define MIN_3BODIES (1000)
 /* ??? */
@@ -199,9 +207,9 @@ typedef LAMMPS_NS::bigint rc_bigint;
 /* ??? */
 #define MIN_SEND (100)
 /* ??? */
-#define SAFE_ZONE (1.2)
+#define REAX_SAFE_ZONE  1.2
 /* ??? */
-#define SAFER_ZONE (1.4)
+#define REAX_SAFER_ZONE 1.4
 /* ??? */
 #define DANGER_ZONE (0.90)
 /* ??? */
@@ -1412,7 +1420,8 @@ struct reax_system
 	class LAMMPS_NS::Error *error_ptr;
 	class LAMMPS_NS::Pair *pair_ptr;
 	int my_bonds;
-	int mincap;
+	int mincap,minhbonds;
+
 	double safezone, saferzone;
 	// LR_lookup_table **LR;
 
@@ -1569,7 +1578,7 @@ struct control_params
 	/**/
 	int num_ignored;
 	/**/
-	int ignore[MAX_ATOM_TYPES];
+	int ignore[REAX_MAX_ATOM_TYPES];
 
 	/**/
 	int dipole_anal;
@@ -2387,9 +2396,8 @@ struct molecule
 	/**/
 	int atom_count;
 	/**/
-	int atom_list[MAX_MOLECULE_SIZE];
-	/**/
-	int mtypes[MAX_ATOM_TYPES];
+	int atom_list[REAX_MAX_MOLECULE_SIZE];
+	int mtypes[REAX_MAX_ATOM_TYPES];
 };
 
 

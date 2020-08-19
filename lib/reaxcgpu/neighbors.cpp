@@ -288,10 +288,10 @@ void Estimate_Num_Neighbors( reax_system *system )
     system->total_far_nbrs = 0;
     for ( i = 0; i < system->total_cap; ++i )
     {
-        system->max_far_nbrs[i] = MAX( (int)(system->far_nbrs[i] * SAFE_ZONE), MIN_NBRS );
+        system->max_far_nbrs[i] = MAX( (int)(system->far_nbrs[i] * REAX_SAFE_ZONE), REAX_MIN_NBRS );
         system->total_far_nbrs += system->max_far_nbrs[i];
     }
-    system->total_far_nbrs = MAX( system->total_far_nbrs, MIN_CAP * MIN_NBRS );
+    system->total_far_nbrs = MAX( system->total_far_nbrs, REAX_MIN_CAP * REAX_MIN_NBRS);
 
 #if defined(DEBUG_FOCUS)
     fprintf( stderr, "p%d: estimate nbrs done - system->total_far_nbrs=%d\n",

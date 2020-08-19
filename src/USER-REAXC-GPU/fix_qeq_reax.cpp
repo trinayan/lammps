@@ -90,7 +90,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-																																																																																																						  Fix(lmp, narg, arg), pertype_option(NULL)
+																																																																																																								  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (lmp->citeme) lmp->citeme->add(cite_fix_qeq_reax);
 
@@ -336,7 +336,8 @@ void FixQEqReax::allocate_matrix()
 		i = ilist[ii];
 		m += numneigh[i];
 	}
-	m_cap = MAX( (int)(m * safezone), mincap * MIN_NBRS);
+
+	m_cap = MAX( (int)(m * safezone), mincap * REAX_MIN_NBRS);
 
 	H.n = n_cap;
 	H.m = m_cap;

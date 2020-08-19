@@ -75,7 +75,6 @@
 //#define MAX_TOKENS          1024
 //#define MAX_TOKEN_LEN       1024
 
-#define MAX_ATOM_ID         100000
 //#define MAX_RESTRICT        15
 //#define MAX_MOLECULE_SIZE   20
 //#define MAX_ATOM_TYPES      25

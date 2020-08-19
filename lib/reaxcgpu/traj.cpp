@@ -81,14 +81,14 @@ int Reallocate_Output_Buffer( output_controls *out_control, int req_space,
         sfree( out_control->buffer, "Reallocate_Output_Buffer::out_control->buffer" );
     }
 
-    out_control->buffer_len = req_space * SAFE_ZONE;
+    out_control->buffer_len = req_space * REAX_SAFE_ZONE;
     out_control->buffer = (char*) smalloc( out_control->buffer_len * sizeof(char),
             "Reallocate_Output_Buffer::out_control->buffer" );
     if ( out_control->buffer == NULL )
     {
         fprintf( stderr,
                  "insufficient memory for required buffer size %d. terminating!\n",
-                 (int) (req_space * SAFE_ZONE) );
+                 (int) (req_space * REAX_SAFE_ZONE) );
         MPI_Abort( comm, INSUFFICIENT_MEMORY );
     }
 

@@ -90,19 +90,27 @@ void Init_Taper( control_params *control,  storage *workspace )
   double swa, swa2, swa3;
   double swb, swb2, swb3;
 
+  LAMMPS_NS::Error *error = control->error_ptr;
+
+
   swa = control->nonb_low;
   swb = control->nonb_cut;
 
+  if (fabs(swa) > 0.01 && control->me == 0)
+	    error->warning(FLERR, "Non-zero lower Taper-radius cutoff");
+
+
+
   if (fabs( swa ) > 0.01 && control->me == 0)
-    control->error_ptr->warning( FLERR, "Non-zero lower Taper-radius cutoff" );
+    error->warning( FLERR, "Non-zero lower Taper-radius cutoff" );
 
   if (swb < 0) {
-    control->error_ptr->all(FLERR,"Negative upper Taper-radius cutoff");
+    error->all(FLERR,"Negative upper Taper-radius cutoff");
   }
   else if( swb < 5 && control->me == 0) {
     char errmsg[256];
     snprintf(errmsg, 256, "Very low Taper-radius cutoff: %f", swb );
-    control->error_ptr->warning( FLERR, errmsg );
+    error->warning( FLERR, errmsg );
   }
 
   d1 = swb - swa;
@@ -166,6 +174,8 @@ int  Init_Lists( reax_system *system, control_params *control,
   int mincap = system->mincap;
   double safezone = system->safezone;
   double saferzone = system->saferzone;
+  LAMMPS_NS::Error *error = system->error_ptr;
+
 
   bond_top = (int*) calloc( system->total_cap, sizeof(int) );
   hb_top = (int*) calloc( system->local_cap, sizeof(int) );
@@ -179,11 +189,11 @@ int  Init_Lists( reax_system *system, control_params *control,
       system->my_atoms[i].num_hbonds = hb_top[i];
       total_hbonds += hb_top[i];
     }
-    total_hbonds = (int)(MAX( total_hbonds*saferzone, mincap*MIN_HBONDS ));
+    total_hbonds = (int)(MAX(total_hbonds*saferzone,mincap*system->minhbonds));
 
     if( !Make_List( system->Hcap, total_hbonds, TYP_HBOND,
                     *lists+HBONDS ) ) {
-      control->error_ptr->one(FLERR, "Not enough space for hbonds list.");
+      error->one(FLERR, "Not enough space for hbonds list.");
     }
     (*lists+HBONDS)->error_ptr = system->error_ptr;
   }
@@ -197,7 +207,7 @@ int  Init_Lists( reax_system *system, control_params *control,
 
   if( !Make_List( system->total_cap, bond_cap, TYP_BOND,
                   *lists+BONDS ) ) {
-    control->error_ptr->one(FLERR, "Not enough space for bonds list.");
+    error->one(FLERR, "Not enough space for bonds list.");
   }
   (*lists+BONDS)->error_ptr = system->error_ptr;
 
@@ -205,7 +215,7 @@ int  Init_Lists( reax_system *system, control_params *control,
   cap_3body = (int)(MAX( num_3body*safezone, MIN_3BODIES ));
   if( !Make_List( bond_cap, cap_3body, TYP_THREE_BODY,
                   *lists+THREE_BODIES ) ){
-    control->error_ptr->one(FLERR,"Problem in initializing angles list.");
+    error->one(FLERR,"Problem in initializing angles list.");
   }
   (*lists+THREE_BODIES)->error_ptr = system->error_ptr;
 
@@ -221,36 +231,38 @@ void Initialize( reax_system *system, control_params *control,
                  mpi_datatypes *mpi_data, MPI_Comm comm )
 {
   char msg[MAX_STR];
+  LAMMPS_NS::Error *error = system->error_ptr;
+
 
   if (Init_MPI_Datatypes(system, workspace, mpi_data, comm, msg) == FAILURE) {
-    control->error_ptr->one(FLERR,"Could not create datatypes");
+	  error->one(FLERR,"Could not create datatypes");
   }
 
   if (Init_System(system, control, msg) == FAILURE) {
-    control->error_ptr->one(FLERR,"System could not be initialized");
+	  error->one(FLERR,"System could not be initialized");
   }
 
   if (Init_Simulation_Data( system, control, data, msg ) == FAILURE) {
-    control->error_ptr->one(FLERR,"Sim_data could not be initialized");
+	  error->one(FLERR,"Sim_data could not be initialized");
   }
 
   if (Init_Workspace( system, control, workspace, msg ) ==
       FAILURE) {
-    control->error_ptr->one(FLERR,"Workspace could not be initialized");
+	  error->one(FLERR,"Workspace could not be initialized");
   }
 
   if (Init_Lists( system, control, data, workspace, lists, mpi_data, msg ) ==
       FAILURE) {
-    control->error_ptr->one(FLERR,"Lists could not be initialized");
+	  error->one(FLERR,"Lists could not be initialized");
     }
 
   if (Init_Output_Files(system,control,out_control,mpi_data,msg)== FAILURE) {
-    control->error_ptr->one(FLERR,"Could not open output files");
+	  error->one(FLERR,"Could not open output files");
   }
 
   if (control->tabulate) {
     if (Init_Lookup_Tables( system, control, workspace, mpi_data, msg ) == FAILURE) {
-    control->error_ptr->one(FLERR,"Lookup table could not be created");
+    	error->one(FLERR,"Lookup table could not be created");
     }
   }
 

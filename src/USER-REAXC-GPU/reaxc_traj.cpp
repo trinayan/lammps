@@ -43,11 +43,11 @@ int Reallocate_Output_Buffer( LAMMPS_NS::Error *error_ptr, output_controls *out_
 	if (out_control->buffer_len > 0)
 		free( out_control->buffer );
 
-	out_control->buffer_len = (int)(req_space*SAFE_ZONE);
+	out_control->buffer_len = (int)(req_space*REAX_SAFE_ZONE);
 	out_control->buffer = (char*) malloc(out_control->buffer_len*sizeof(char));
 	if (out_control->buffer == NULL) {
 		char errmsg[256];
-		snprintf(errmsg, 256, "Insufficient memory for required buffer size %d", (int) (req_space*SAFE_ZONE));
+		snprintf(errmsg, 256, "Insufficient memory for required buffer size %d", (int) (req_space*REAX_SAFE_ZONE));
 		error_ptr->one(FLERR,errmsg);
 	}
 
@@ -684,7 +684,7 @@ int Write_Angles( reax_system *system, control_params *control,
 
 					if( system->my_atoms[i].orig_id < system->my_atoms[k].orig_id &&
 							bo_jk->bo_data.BO >= control->bg_cut ) // physical j&k bond
-									++my_angles;
+						++my_angles;
 				}
 		}
 	/* total number of valences */
@@ -763,7 +763,7 @@ int Append_Frame( reax_system *system, control_params *control,
 
 	if (out_control->write_atoms)
 	{
-        Output_Sync_Atoms( system );
+		Output_Sync_Atoms( system );
 		Write_Atoms( system, control, out_control, mpi_data );
 
 	}
@@ -774,14 +774,14 @@ int Append_Frame( reax_system *system, control_params *control,
 
 	if (out_control->write_bonds)
 	{
-       Output_Sync_Lists( l_bond, lists[BONDS], TYP_BOND );
-       Write_Bonds( system, control, l_bond, out_control, mpi_data );
+		Output_Sync_Lists( l_bond, lists[BONDS], TYP_BOND );
+		Write_Bonds( system, control, l_bond, out_control, mpi_data );
 	}
 
 	if (out_control->write_angles)
 	{
-       Output_Sync_Lists( l_three_body, lists[THREE_BODIES], TYP_THREE_BODY );
-       Write_Angles( system, control, l_bond, l_three_body,
+		Output_Sync_Lists( l_three_body, lists[THREE_BODIES], TYP_THREE_BODY );
+		Write_Angles( system, control, l_bond, l_three_body,
 				out_control, mpi_data );
 
 	}

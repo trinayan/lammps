@@ -38,7 +38,7 @@ void Print_Molecule( reax_system *system, molecule *m, int mode, char *s )
     if ( mode == 1 )
     {
         /* print molecule summary */
-        for ( j = 0; j < MAX_ATOM_TYPES; ++j )
+        for ( j = 0; j < REAX_MAX_ATOM_TYPES; ++j )
             if ( m->mtypes[j] )
                 sprintf( s, "%s%s%d", s, system->reax_param.sbp[j].name, m->mtypes[j] );
     }
@@ -94,8 +94,8 @@ void Analyze_Fragments( reax_system *system, control_params *control,
     int  atom, i, flag;
     int  *mark = workspace->mark;
     int  num_fragments, num_fragment_types;
-    char fragment[MAX_ATOM_TYPES];
-    char fragments[MAX_FRAGMENT_TYPES][MAX_ATOM_TYPES];
+    char fragment[REAX_MAX_ATOM_TYPES];
+    char fragments[MAX_FRAGMENT_TYPES][REAX_MAX_ATOM_TYPES];
     int  fragment_count[MAX_FRAGMENT_TYPES];
     molecule m;
     reax_list *new_bonds = lists[BONDS];
@@ -111,7 +111,7 @@ void Analyze_Fragments( reax_system *system, control_params *control,
         if ( !mark[atom] )
         {
             /* discover a new fragment */
-            memset( m.mtypes, 0, MAX_ATOM_TYPES * sizeof(int) );
+            memset( m.mtypes, 0, REAX_MAX_ATOM_TYPES * sizeof(int) );
             Visit_Bonds( atom, mark, m.mtypes, system, control, new_bonds, ignore );
             ++num_fragments;
             Print_Molecule( system, &m, 1, fragment );

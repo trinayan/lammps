@@ -139,7 +139,7 @@ void Init_System( reax_system * const system, control_params * const control,
     system->N = SendRecv( system, mpi_data, mpi_data->boundary_atom_type, nrecv,
             Estimate_Boundary_Atoms, Unpack_Estimate_Message, TRUE );
 
-    system->total_cap = MAX( (int)(system->N * SAFE_ZONE), MIN_CAP );
+    system->total_cap = MAX( (int)(system->N * REAX_SAFE_ZONE), REAX_MIN_CAP );
     Bin_Boundary_Atoms( system );
 
     /* estimate numH and Hcap */
@@ -161,8 +161,8 @@ void Init_System( reax_system * const system, control_params * const control,
         }
     }
     //Tried fix
-    //system->Hcap = MAX( system->numH * SAFER_ZONE, MIN_CAP );
-    system->Hcap = MAX( system->n * SAFER_ZONE, MIN_CAP );
+    //system->Hcap = MAX( system->numH * REAX_SAFE_ZONE, REAX_MIN_CAP );
+    system->Hcap = MAX( system->n * REAX_SAFE_ZONE, REAX_MIN_CAP );
 
     /* list management */
     system->far_nbrs = smalloc( sizeof(int) * system->total_cap,

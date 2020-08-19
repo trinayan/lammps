@@ -244,9 +244,10 @@ void PairReaxC::settings(int narg, char **arg)
   qeqflag = 1;
   control->lgflag = 0;
   control->enobondsflag = 1;
-  system->mincap = MIN_CAP;
-  system->safezone = SAFE_ZONE;
-  system->saferzone = SAFER_ZONE;
+  system->mincap = REAX_MIN_CAP;
+  system->minhbonds = REAX_MIN_HBONDS;
+  system->safezone = REAX_SAFE_ZONE;
+  system->saferzone = REAX_SAFER_ZONE;
 
   // process optional keywords
 
@@ -265,7 +266,7 @@ void PairReaxC::settings(int narg, char **arg)
       else if (strcmp(arg[iarg+1],"no") == 0) control->enobondsflag = 0;
       else error->all(FLERR,"Illegal pair_style reax/c command");
       iarg += 2;
-  } else if (strcmp(arg[iarg],"lgvdw") == 0) {
+    } else if (strcmp(arg[iarg],"lgvdw") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal pair_style reax/c command");
       if (strcmp(arg[iarg+1],"yes") == 0) control->lgflag = 1;
       else if (strcmp(arg[iarg+1],"no") == 0) control->lgflag = 0;
@@ -283,6 +284,12 @@ void PairReaxC::settings(int narg, char **arg)
       system->mincap = force->inumeric(FLERR,arg[iarg+1]);
       if (system->mincap < 0)
         error->all(FLERR,"Illegal pair_style reax/c mincap command");
+      iarg += 2;
+    } else if (strcmp(arg[iarg],"minhbonds") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal pair_style reax/c command");
+      system->minhbonds = force->inumeric(FLERR,arg[iarg+1]);
+      if (system->minhbonds < 0)
+        error->all(FLERR,"Illegal pair_style reax/c minhbonds command");
       iarg += 2;
     } else error->all(FLERR,"Illegal pair_style reax/c command");
   }
@@ -461,9 +468,11 @@ void PairReaxC::setup( )
     write_reax_atoms();
 
     int num_nbrs = estimate_reax_lists();
+    if (num_nbrs < 0)
+      error->all(FLERR,"Too many neighbors for pair style reax/c");
     if(!Make_List(system->total_cap, num_nbrs, TYP_FAR_NEIGHBOR,
                   lists+FAR_NBRS))
-      error->one(FLERR,"Pair reax/c problem in far neighbor list");
+      error->all(FLERR,"Pair reax/c problem in far neighbor list");
     (lists+FAR_NBRS)->error_ptr=error;
 
     write_reax_lists();
@@ -712,7 +721,7 @@ int PairReaxC::estimate_reax_lists()
 
   free( marked );
 
-  return static_cast<int> (MAX( num_nbrs*safezone, mincap*MIN_NBRS ));
+  return static_cast<int> (MAX(num_nbrs*safezone, mincap*REAX_MIN_NBRS));
 }
 
 /* ---------------------------------------------------------------------- */
@@ -780,15 +789,21 @@ void PairReaxC::read_reax_forces(int /*vflag*/)
     system->my_atoms[i].f[1] = workspace->f[i][1];
     system->my_atoms[i].f[2] = workspace->f[i][2];
 
-	//printf("%f,%f,%f\n", system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2] );
-
-
     atom->f[i][0] += -workspace->f[i][0];
     atom->f[i][1] += -workspace->f[i][1];
     atom->f[i][2] += -workspace->f[i][2];
+
+    if( i < system->n)
+    {
+        printf( "%3d %12.6f %12.6f %12.6f\n",
+           system->my_atoms[i].orig_id,system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
+    // printf("%d,%f,%f,%f\n",i, atom->f[i][0], atom->f[i][1], atom->f[i][2]);
   }
 
 
+  }
+
+  exit(0);
 }
 
 /* ---------------------------------------------------------------------- */

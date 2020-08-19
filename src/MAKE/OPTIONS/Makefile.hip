@@ -7,14 +7,14 @@ SHELL = /bin/sh
 # specify flags and libraries needed for your compiler
 
 CC =		mpicxx
-CCFLAGS =	-g -O3 
+CCFLAGS =	-g -O3
 SHFLAGS =	-fPIC
 DEPFLAGS =	-M
 
 HIP_PATH ?= $(wildcard /opt/rocm/hip)
 LINK =		$(HIP_PATH)/bin/hipcc
 LINKFLAGS =	-g -O3 $(shell mpicxx --showme:link)
-LIB = 
+LIB =
 SIZE =		size
 
 ARCHIVE =	ar
@@ -27,12 +27,12 @@ SHLIBFLAGS =	-shared
 # if you change any -D setting, do full re-compile after "make clean"
 
 # LAMMPS ifdef settings
-# see possible settings in Section 2.2 (step 4) of manual
+# see possible settings in Section 3.5 of the manual
 
 LMP_INC =	-DLAMMPS_GZIP -DLAMMPS_MEMALIGN=64
 
 # MPI library
-# see discussion in Section 2.2 (step 5) of manual
+# see discussion in Section 3.4 of the manual
 # MPI wrapper compiler/linker can provide this info
 # can point to dummy MPI library in src/STUBS as in Makefile.serial
 # use -D MPICH and OMPI settings in INC to avoid C++ lib conflicts
@@ -41,30 +41,30 @@ LMP_INC =	-DLAMMPS_GZIP -DLAMMPS_MEMALIGN=64
 # LIB = name of MPI library
 
 MPI_INC =       -DMPICH_SKIP_MPICXX -DOMPI_SKIP_MPICXX=1
-MPI_PATH = 
-MPI_LIB =	
+MPI_PATH =
+MPI_LIB =
 
 # FFT library
-# see discussion in Section 2.2 (step 6) of manual
+# see discussion in Section 3.5.2 of manual
 # can be left blank to use provided KISS FFT library
 # INC = -DFFT setting, e.g. -DFFT_FFTW, FFT compiler settings
 # PATH = path for FFT library
 # LIB = name of FFT library
 
-FFT_INC =    	
-FFT_PATH = 
-FFT_LIB =	
+FFT_INC =
+FFT_PATH =
+FFT_LIB =
 
 # JPEG and/or PNG library
-# see discussion in Section 2.2 (step 7) of manual
+# see discussion in Section 3.5.4 of manual
 # only needed if -DLAMMPS_JPEG or -DLAMMPS_PNG listed with LMP_INC
 # INC = path(s) for jpeglib.h and/or png.h
 # PATH = path(s) for JPEG library and/or PNG library
 # LIB = name(s) of JPEG library and/or PNG library
 
-JPG_INC =       
-JPG_PATH = 	
-JPG_LIB =	
+JPG_INC =
+JPG_PATH =
+JPG_LIB =
 
 # ---------------------------------------------------------------------
 # build rules and dependencies
@@ -91,18 +91,23 @@ vpath %.h ..
 
 # Link target
 
-$(EXE):	$(OBJ) $(EXTRA_LINK_DEPENDS)
-	$(LINK) $(LINKFLAGS) $(EXTRA_PATH) $(OBJ) $(EXTRA_LIB) $(LIB) -o $(EXE)
-	$(SIZE) $(EXE)
+$(EXE): main.o $(LMPLIB) $(EXTRA_LINK_DEPENDS)
+	$(LINK) $(LINKFLAGS) main.o $(EXTRA_PATH) $(LMPLINK) $(EXTRA_LIB) $(LIB) -o $@
+	$(SIZE) $@
 
 # Library targets
 
-lib:	$(OBJ) $(EXTRA_LINK_DEPENDS)
-	$(ARCHIVE) $(ARFLAGS) $(EXE) $(OBJ)
+$(ARLIB): $(OBJ) $(EXTRA_LINK_DEPENDS)
+	@rm -f ../$(ARLIB)
+	$(ARCHIVE) $(ARFLAGS) ../$(ARLIB) $(OBJ)
+	@rm -f $(ARLIB)
+	@ln -s ../$(ARLIB) $(ARLIB)
 
-shlib:	$(OBJ) $(EXTRA_LINK_DEPENDS)
-	$(CC) $(CCFLAGS) $(SHFLAGS) $(SHLIBFLAGS) $(EXTRA_PATH) -o $(EXE) \
-        $(OBJ) $(EXTRA_LIB) $(LIB)
+$(SHLIB): $(OBJ) $(EXTRA_LINK_DEPENDS)
+	$(CC) $(CCFLAGS) $(SHFLAGS) $(SHLIBFLAGS) $(EXTRA_PATH) -o ../$(SHLIB) \
+		$(OBJ) $(EXTRA_LIB) $(LIB)
+	@rm -f $(SHLIB)
+	@ln -s ../$(SHLIB) $(SHLIB)
 
 
 # Compilation rules

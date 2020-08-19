@@ -599,9 +599,9 @@ void Bin_My_Atoms( reax_system * const system, storage * const workspace )
     /* check if current gcell->max_atoms is safe */
     if ( max_atoms >= g->max_atoms * DANGER_ZONE )
     {
-        workspace->realloc.gcell_atoms = MAX( max_atoms * SAFE_ZONE, MIN_GCELL_POPL );
+        workspace->realloc.gcell_atoms = MAX( max_atoms * REAX_SAFE_ZONE, MIN_GCELL_POPL );
 #if defined(HAVE_HIP)
-        workspace->d_workspace->realloc.gcell_atoms = MAX( max_atoms * SAFE_ZONE, MIN_GCELL_POPL );
+        workspace->d_workspace->realloc.gcell_atoms = MAX( max_atoms * REAX_SAFE_ZONE, MIN_GCELL_POPL );
 #endif
     }
     else

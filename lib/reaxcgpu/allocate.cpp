@@ -54,8 +54,8 @@ void PreAllocate_Space( reax_system * const system, control_params * const contr
         storage * const workspace )
 {
     /* determine capacity based on box vol & est atom volume */
-    system->local_cap = MAX( (int)(system->n * SAFE_ZONE), MIN_CAP );
-    system->total_cap = MAX( (int)(system->N * SAFE_ZONE), MIN_CAP );
+    system->local_cap = MAX( (int)(system->n * REAX_SAFE_ZONE), REAX_MIN_CAP );
+    system->total_cap = MAX( (int)(system->N * REAX_SAFE_ZONE), REAX_MIN_CAP );
 
 #if defined(DEBUG_FOCUS)||defined(__CUDA_DEBUG_LOG__)
     fprintf( stderr, "p%d: local_cap=%d total_cap=%d\n",
@@ -70,8 +70,8 @@ void PreAllocate_Space( reax_system * const system, control_params * const contr
     {
         workspace->restricted = scalloc( system->local_cap, sizeof(int),
                 "PreAllocate_Space::workspace->restricted_atoms" );
-        workspace->restricted_list = scalloc( system->local_cap * MAX_RESTRICT,
-                sizeof(int), "PreAllocate_Space::workspace->restricted_list" );
+        //workspace->restricted_list = scalloc( system->local_cap * MAX_RESTRICT,
+          //      sizeof(int), "PreAllocate_Space::workspace->restricted_list" );
     }
 }
 
@@ -558,7 +558,7 @@ int Estimate_GCell_Population( reax_system * const system, MPI_Comm comm )
         }
     }
 
-    my_max = MAX( max_atoms * SAFE_ZONE, MIN_GCELL_POPL );
+    my_max = MAX( max_atoms * REAX_SAFE_ZONE, MIN_GCELL_POPL );
     MPI_Allreduce( &my_max, &all_max, 1, MPI_INT, MPI_MAX, comm );
 
 #if defined(DEBUG_FOCUS)
@@ -748,7 +748,7 @@ void ReAllocate( reax_system * const system, control_params * const control,
             (FALSE && system->n <= LOOSE_ZONE * system->local_cap) )
     {
         nflag = TRUE;
-        system->local_cap = (int)(system->n * SAFE_ZONE);
+        system->local_cap = (int)(system->n * REAX_SAFE_ZONE);
     }
 
     Nflag = FALSE;
@@ -756,7 +756,7 @@ void ReAllocate( reax_system * const system, control_params * const control,
             (FALSE && system->N <= LOOSE_ZONE * system->total_cap) )
     {
         Nflag = TRUE;
-        system->total_cap = (int)(system->N * SAFE_ZONE);
+        system->total_cap = (int)(system->N * REAX_SAFE_ZONE);
     }
 
     if ( Nflag == TRUE )
@@ -783,8 +783,8 @@ void ReAllocate( reax_system * const system, control_params * const control,
         {
 #if defined(DEBUG_FOCUS)
             fprintf( stderr, "p%d: reallocating far_nbrs: far_nbrs=%d, space=%dMB\n",
-                     system->my_rank, (int)(system->total_far_nbrs * SAFE_ZONE),
-                     (int)(system->total_far_nbrs * SAFE_ZONE * sizeof(far_neighbor_data) /
+                     system->my_rank, (int)(system->total_far_nbrs * REAX_SAFE_ZONE),
+                     (int)(system->total_far_nbrs * REAX_SAFE_ZONE * sizeof(far_neighbor_data) /
                            (1024 * 1024)) );
 #endif
 
@@ -799,8 +799,8 @@ void ReAllocate( reax_system * const system, control_params * const control,
     {
 #if defined(DEBUG_FOCUS)
         fprintf( stderr, "p%d: reallocating H matrix: Htop=%d, space=%dMB\n",
-                system->my_rank, (int)(realloc->Htop * SAFE_ZONE),
-                (int)(realloc->Htop * SAFE_ZONE * sizeof(sparse_matrix_entry) /
+                system->my_rank, (int)(realloc->Htop * REAX_SAFE_ZONE),
+                (int)(realloc->Htop * REAX_SAFE_ZONE * sizeof(sparse_matrix_entry) /
                 (1024 * 1024)) );
 #endif
 
@@ -931,7 +931,7 @@ void ReAllocate( reax_system * const system, control_params * const control,
 #endif
 
         /* update mpi buffer estimates based on last comm */
-        system->est_recv = MAX( system->max_recved * SAFER_ZONE, MIN_SEND );
+        system->est_recv = MAX( system->max_recved * REAX_SAFE_ZONE, MIN_SEND );
         system->est_trans =
             (system->est_recv * sizeof(boundary_atom)) / sizeof(mpi_atom);
         total_send = 0;
@@ -939,7 +939,7 @@ void ReAllocate( reax_system * const system, control_params * const control,
         {
             nbr_pr = &system->my_nbrs[i];
             nbr_data = &mpi_data->out_buffers[i];
-            nbr_pr->est_send = MAX( nbr_data->cnt * SAFER_ZONE, MIN_SEND );
+            nbr_pr->est_send = MAX( nbr_data->cnt * REAX_SAFE_ZONE, MIN_SEND );
             total_send += nbr_pr->est_send;
         }
 

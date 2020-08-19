@@ -398,7 +398,7 @@ CUDA_GLOBAL void k_estimate_storages( reax_atom *my_atoms,
 	//
 
 	hbonds[i] = num_hbonds;
-	max_hbonds[i] = MAX( (int)(num_hbonds * SAFE_ZONE), MIN_HBONDS );
+	max_hbonds[i] = MAX( (int)(num_hbonds * REAX_SAFE_ZONE), REAX_MIN_HBONDS );
 
 
 }
@@ -1068,7 +1068,7 @@ static int Cuda_Estimate_Storage_Three_Body( reax_system *system, control_params
 
 	if ( step == 0 )
 	{
-		system->total_thbodies = MAX( (int)(system->total_thbodies * SAFE_ZONE), MIN_3BODIES );
+		system->total_thbodies = MAX( (int)(system->total_thbodies * REAX_SAFE_ZONE), MIN_3BODIES );
 		system->total_thbodies_indices = system->total_bonds;
 
 		/* create Three-body list */
@@ -1081,12 +1081,12 @@ static int Cuda_Estimate_Storage_Three_Body( reax_system *system, control_params
 	{
 		if ( system->total_thbodies > lists[THREE_BODIES]->num_intrs )
 		{
-			system->total_thbodies = MAX( (int)(lists[THREE_BODIES]->num_intrs * SAFE_ZONE),
+			system->total_thbodies = MAX( (int)(lists[THREE_BODIES]->num_intrs * REAX_SAFE_ZONE),
 					system->total_thbodies );
 		}
 		if ( system->total_bonds > lists[THREE_BODIES]->n )
 		{
-			system->total_thbodies_indices = MAX( (int)(lists[THREE_BODIES]->n * SAFE_ZONE),
+			system->total_thbodies_indices = MAX( (int)(lists[THREE_BODIES]->n * REAX_SAFE_ZONE),
 					system->total_bonds );
 		}
 
@@ -1625,7 +1625,7 @@ CUDA_GLOBAL void k_validate_lists(reax_atom *my_atoms,reax_list bonds_list, reax
 		if (Hindex > -1)
 		{
 
-			my_atoms[i].num_hbonds = (int)(MAX(Cuda_Num_Entries(Hindex, &hbonds_list)*saferzone, MIN_HBONDS ));
+			my_atoms[i].num_hbonds = (int)(MAX(Cuda_Num_Entries(Hindex, &hbonds_list)*saferzone, REAX_MIN_HBONDS ));
 
 
 			if (Hindex < numH-1)

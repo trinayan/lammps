@@ -380,8 +380,8 @@ void Estimate_Boundary_Atoms( reax_system * const system, int start, int end,
     }
 
     /* estimate the space based on the count above */
-    nbr1->est_send = MAX( MIN_SEND, nbr1->est_send * SAFER_ZONE );
-    nbr2->est_send = MAX( MIN_SEND, nbr2->est_send * SAFER_ZONE );
+    nbr1->est_send = MAX( MIN_SEND, nbr1->est_send * REAX_SAFER_ZONE );
+    nbr2->est_send = MAX( MIN_SEND, nbr2->est_send * REAX_SAFER_ZONE );
 
 #if defined(DEBUG_FOCUS)
     fprintf( stderr, "p%d estimate_exchange: end=%d dim=%d est1=%d est2=%d\n",
@@ -523,7 +523,7 @@ static void Unpack_Exchange_Message( reax_system * const system, int end, void *
     nbr->atoms_cnt = cnt;
 
     /* update est_recv */
-    nbr->est_recv = MAX( (int)(cnt * SAFER_ZONE), MIN_SEND );
+    nbr->est_recv = MAX( (int)(cnt * REAX_SAFER_ZONE), MIN_SEND );
 
     /* update max_recv to make sure that we reallocate at the right time */
     if ( cnt > system->max_recved )

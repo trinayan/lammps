@@ -71,7 +71,7 @@ void Cuda_Reset_Atoms( reax_system* system, control_params *control,
     copy_host_device( &system->numH, system->d_numH, sizeof(int), 
             hipMemcpyDeviceToHost, "Cuda_Reset_Atoms::d_numH" );
 
-    system->Hcap = MAX( (int)(system->numH * SAFER_ZONE), MIN_CAP );
+    system->Hcap = MAX( (int)(system->numH * SAFER_ZONE), REAX_MIN_CAP );
 
     printf("Num  H %d, %d \n", system->numH, system->Hcap);
 

@@ -928,24 +928,24 @@ void Estimate_Storages( reax_system * const system, control_params * const contr
     for ( i = 0; i < system->N; ++i )
     {
 #if defined(HALF_LIST)
-        system->max_bonds[i] = MAX( (int)(2.0 * system->bonds[i] * SAFE_ZONE), MIN_BONDS );
+        system->max_bonds[i] = MAX( (int)(2.0 * system->bonds[i] * REAX_SAFE_ZONE), MIN_BONDS );
 #else
-        system->max_bonds[i] = MAX( (int)(system->bonds[i] * SAFE_ZONE), MIN_BONDS );
+        system->max_bonds[i] = MAX( (int)(system->bonds[i] * REAX_SAFE_ZONE), MIN_BONDS );
 #endif
         if ( system->reax_param.sbp[ system->my_atoms[i].type ].p_hbond == H_ATOM )
         {
             system->max_hbonds[ system->my_atoms[i].Hindex ] = MAX(
-                    (int)(system->hbonds[ system->my_atoms[i].Hindex ] * SAFE_ZONE), MIN_HBONDS );
+                    (int)(system->hbonds[ system->my_atoms[i].Hindex ] * REAX_SAFE_ZONE), REAX_MIN_HBONDS );
         }
         if ( i < system->local_cap )
         {
-            system->max_cm_entries[i] = MAX( (int)(system->cm_entries[i] * SAFE_ZONE), MIN_CM_ENTRIES );
+            system->max_cm_entries[i] = MAX( (int)(system->cm_entries[i] * REAX_SAFE_ZONE), MIN_CM_ENTRIES );
         }
     }
     for ( i = system->N; i < system->total_cap; ++i )
     {
         system->max_bonds[i] = MIN_BONDS;
-        system->max_hbonds[i] = MIN_HBONDS;
+        system->max_hbonds[i] = REAX_MIN_HBONDS;
         if ( i < system->local_cap )
         {
             system->max_cm_entries[i] = MIN_CM_ENTRIES;
@@ -983,10 +983,10 @@ void Estimate_Storages( reax_system * const system, control_params * const contr
 #endif
     }
 
-    system->total_bonds = MAX( system->total_bonds, MIN_CAP * MIN_BONDS );
-    system->total_hbonds = MAX( system->total_hbonds, MIN_CAP * MIN_HBONDS );
-    system->total_cm_entries = MAX( system->total_cm_entries, MIN_CAP * MIN_CM_ENTRIES );
-    system->total_thbodies = MAX( system->total_thbodies * SAFE_ZONE, MIN_3BODIES );
+    system->total_bonds = MAX( system->total_bonds, REAX_MIN_CAP * MIN_BONDS );
+    system->total_hbonds = MAX( system->total_hbonds, REAX_MIN_CAP * REAX_MIN_HBONDS );
+    system->total_cm_entries = MAX( system->total_cm_entries, REAX_MIN_CAP * MIN_CM_ENTRIES );
+    system->total_thbodies = MAX( system->total_thbodies * REAX_SAFE_ZONE, MIN_3BODIES );
 
 #if defined(DEBUG_FOCUS)
     fprintf( stderr, "p%d @ estimate storages: total_cm_entries = %d, total_thbodies = %d\n",

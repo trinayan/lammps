@@ -31,7 +31,7 @@
 #include "domain.h"
 #include "citeme.h"
 
-//these are defined here to avoid confusing hardcoded indicies, but
+//these are defined here to avoid confusing hardcoded indices, but
 //they do not allow flexibility. If they are changed the code will break
 #define DIM 3
 #define NUMH 2  //number of hydrogen atoms per water molecule
@@ -382,8 +382,6 @@ void PairE3B::settings(int narg, char **arg)
 {
   if (narg != 1) error->all(FLERR,"Illegal pair_style command");
   typeO=force->inumeric(FLERR,arg[0]);
-  if (typeO<1 || typeO>atom->ntypes)
-    error->all(FLERR,"Invalid Otype: out of bounds");
 }
 
 /* ----------------------------------------------------------------------
@@ -477,6 +475,8 @@ void PairE3B::init_style()
     error->all(FLERR,"Pair style E3B requires atom IDs");
   if (force->newton_pair == 0)
     error->all(FLERR,"Pair style E3B requires newton pair on");
+  if (typeO<1 || typeO>atom->ntypes)
+    error->all(FLERR,"Invalid Otype: out of bounds");
 
   // need a half neighbor list
   neighbor->request(this,instance_me);

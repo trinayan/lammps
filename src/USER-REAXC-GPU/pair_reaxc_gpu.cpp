@@ -122,15 +122,15 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 	snprintf(fix_id,24,"REAXC_%d",instance_me);
 
 	system = (reax_system *)
-    						memory->smalloc(sizeof(reax_system),"reax:system");
+    												memory->smalloc(sizeof(reax_system),"reax:system");
 	memset(system,0,sizeof(reax_system));
 	control = (control_params *)
-    						memory->smalloc(sizeof(control_params),"reax:control");
+    												memory->smalloc(sizeof(control_params),"reax:control");
 	memset(control,0,sizeof(control_params));
 	data = (simulation_data *)
-    						memory->smalloc(sizeof(simulation_data),"reax:data");
+    												memory->smalloc(sizeof(simulation_data),"reax:data");
 	workspace = (storage *)
-    						memory->smalloc(sizeof(storage),"reax:storage");
+    												memory->smalloc(sizeof(storage),"reax:storage");
 
 	workspace->d_workspace = (storage *)memory->smalloc(sizeof(storage),"reax:gpu_storage");
 
@@ -146,7 +146,7 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 	}
 
 	cpu_lists = (reax_list *)
-    						  memory->smalloc(LIST_N * sizeof(reax_list),"reax:lists");
+    												  memory->smalloc(LIST_N * sizeof(reax_list),"reax:lists");
 	memset(cpu_lists,0,LIST_N * sizeof(reax_list));
 
 
@@ -155,10 +155,10 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 
 
 	out_control = (output_controls *)
-    						memory->smalloc(sizeof(output_controls),"reax:out_control");
+    												memory->smalloc(sizeof(output_controls),"reax:out_control");
 	memset(out_control,0,sizeof(output_controls));
 	mpi_data = (mpi_datatypes *)
-    						memory->smalloc(sizeof(mpi_datatypes),"reax:mpi");
+    												memory->smalloc(sizeof(mpi_datatypes),"reax:mpi");
 	control->me = system->my_rank = comm->me;
 
 
@@ -306,9 +306,12 @@ void PairReaxCGPU::settings(int narg, char **arg)
 	qeqflag = 1;
 	control->lgflag = 0;
 	control->enobondsflag = 1;
-	system->mincap = MIN_CAP;
-	system->safezone = SAFE_ZONE;
-	system->saferzone = SAFER_ZONE;
+	system->mincap = REAX_MIN_CAP;
+	system->minhbonds = REAX_MIN_HBONDS;
+	system->safezone = REAX_SAFE_ZONE;
+	system->saferzone = REAX_SAFER_ZONE;
+
+
 
 	// process optional keywords
 
@@ -346,7 +349,16 @@ void PairReaxCGPU::settings(int narg, char **arg)
 			if (system->mincap < 0)
 				error->all(FLERR,"Illegal pair_style reax/c mincap command");
 			iarg += 2;
-		} else error->all(FLERR,"Illegal pair_style reax/c command");
+
+		}
+		else if (strcmp(arg[iarg],"minhbonds") == 0) {
+			if (iarg+2 > narg) error->all(FLERR,"Illegal pair_style reax/c command");
+			system->minhbonds = force->inumeric(FLERR,arg[iarg+1]);
+			if (system->minhbonds < 0)
+				error->all(FLERR,"Illegal pair_style reax/c minhbonds command");
+			iarg += 2;
+		}
+		else error->all(FLERR,"Illegal pair_style reax/c command");
 	}
 
 	// LAMMPS is responsible for generating nbrs
@@ -532,13 +544,19 @@ void PairReaxCGPU::setup( )
 		update_and_copy_reax_atoms_to_device();
 
 		int num_nbrs = estimate_reax_lists(); //TB:: Should this be moved to GPU?
+		if (num_nbrs < 0)
+		{
+			error->all(FLERR,"Too many neighbors for pair style reax/c");
+		}
 		system->total_far_nbrs = num_nbrs;
 
 		printf("Num nbrs %d \n", num_nbrs);
 
 		if(!Make_List(system->total_cap, num_nbrs, TYP_FAR_NEIGHBOR,
 				(cpu_lists+FAR_NBRS)))
-			error->one(FLERR,"Pair reax/c problem in far neighbor list");
+		{
+			error->all(FLERR,"Pair reax/c problem in far neighbor list");
+		}
 		(cpu_lists+FAR_NBRS)->error_ptr=error;
 		Cuda_Make_List(system->total_cap, system->total_far_nbrs,
 				TYP_FAR_NEIGHBOR, gpu_lists[FAR_NBRS]);
@@ -645,6 +663,8 @@ void PairReaxCGPU::compute(int eflag, int vflag)
 
 	read_reax_forces_from_device(vflag);
 	Output_Sync_Atoms(system);
+
+	exit(0);
 
 
 	for(int k = 0; k < system->N; ++k)
@@ -816,8 +836,7 @@ int PairReaxCGPU::estimate_reax_lists()
 	}
 
 	free( marked );
-
-	return static_cast<int> (MAX( num_nbrs*safezone, mincap*MIN_NBRS ));
+	return static_cast<int> (MAX(num_nbrs*safezone, mincap*REAX_MIN_NBRS));
 }
 
 /* ---------------------------------------------------------------------- */
@@ -894,11 +913,16 @@ void PairReaxCGPU::read_reax_forces_from_device(int /*vflag*/)
 		system->my_atoms[i].f[1] = workspace->f[i][1];
 		system->my_atoms[i].f[2] = workspace->f[i][2];
 
-		//printf("%f,%f,%f\n", system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2] );
 
 		atom->f[i][0] += -workspace->f[i][0];
 		atom->f[i][1] += -workspace->f[i][1];
 		atom->f[i][2] += -workspace->f[i][2];
+
+		if(i < system->n)
+		{
+			printf("%f,%f,%f\n", system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2] );
+		}
+
 	}
 
 
@@ -935,19 +959,19 @@ void *PairReaxCGPU::extract(const char *str, int &dim)
 double PairReaxCGPU::memory_usage()
 {
 
-   double bytes = 0.0;
+	double bytes = 0.0;
 
-  // From pair_reax_c
-  bytes += 1.0 * system->N * sizeof(int);
-  bytes += 1.0 * system->N * sizeof(double);
+	// From pair_reax_c
+	bytes += 1.0 * system->N * sizeof(int);
+	bytes += 1.0 * system->N * sizeof(double);
 
-  // From reaxc_allocate: BO
-  bytes += 1.0 * system->total_cap * sizeof(reax_atom);
-  bytes += 19.0 * system->total_cap * sizeof(double);
-  bytes += 3.0 * system->total_cap * sizeof(int);
+	// From reaxc_allocate: BO
+	bytes += 1.0 * system->total_cap * sizeof(reax_atom);
+	bytes += 19.0 * system->total_cap * sizeof(double);
+	bytes += 3.0 * system->total_cap * sizeof(int);
 
-  // From reaxc_lists
-  /*bytes += 2.0 * lists->n * sizeof(int);
+	// From reaxc_lists
+	/*bytes += 2.0 * lists->n * sizeof(int);
   bytes += lists->num_intrs * sizeof(three_body_interaction_data);
   bytes += lists->num_intrs * sizeof(bond_data);
   bytes += lists->num_intrs * sizeof(dbond_data);
@@ -958,7 +982,7 @@ double PairReaxCGPU::memory_usage()
   if(fixspecies_flag)
     bytes += 2 * nmax * MAXSPECBOND * sizeof(double);*/
 
-  return bytes;
+	return bytes;
 }
 
 /* ---------------------------------------------------------------------- */
