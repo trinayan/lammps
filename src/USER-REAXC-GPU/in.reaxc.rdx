@@ -37,7 +37,7 @@ thermo_style 	custom step temp epair etotal press &
 		v_eb v_ea v_elp v_emol v_ev v_epen v_ecoa &
 		v_ehb v_et v_eco v_ew v_ep v_efi v_eqeq
 
-timestep	1.0
+timestep	0.25
 
 #dump		1 all atom 10 dump.reaxc.rdx
 

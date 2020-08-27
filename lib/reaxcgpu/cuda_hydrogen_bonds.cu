@@ -508,6 +508,8 @@ CUDA_GLOBAL void Cuda_Hydrogen_Bonds_PostProcess( reax_atom *atoms,
 		//rvec_Add( atoms[i].f, sym_index_bond->hb_f );
 		rvec_Add( workspace->f[i], sym_index_bond->hb_f );
 	}
+
+
 }
 
 
@@ -624,6 +626,7 @@ CUDA_GLOBAL void Cuda_Hydrogen_Bonds_HNbrs( reax_atom *atoms,
 		}*/
 	}
 #endif
+
 }
 
 

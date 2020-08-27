@@ -916,7 +916,7 @@ void FixQEqReax::calculate_Q()
 		}
 	}
 
-	exit(0);
+
 
 
 	pack_flag = 4;

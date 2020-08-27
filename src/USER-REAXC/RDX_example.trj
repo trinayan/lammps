@@ -7,8 +7,8 @@ timestep_length_(in_fs):             250.000
 is_this_a_restart?:                  no                      
 write_restart_files?:                no                      
 frequency_to_write_restarts:         0                       
-tabulate_long_range_intrs?:          yes                     
-table_size:                          10000                   
+tabulate_long_range_intrs?:          no                      
+table_size:                          0                       
 restrict_bonds?:                     no                      
 bond_restriction_length:             0                       
 reposition_atoms?:                   fit to periodic box     

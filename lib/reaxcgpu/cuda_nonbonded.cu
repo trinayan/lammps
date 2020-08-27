@@ -208,6 +208,15 @@ CUDA_GLOBAL void k_vdW_coulomb_energy( reax_atom *my_atoms,
 				tmp = Tap / dr3gamij_3;
 				//data_e_ele[i] += e_ele = C_ele * my_atoms[i].q * my_atoms[j].q * tmp;
 				e_ele = C_ele * my_atoms[i].q * my_atoms[j].q * tmp;
+
+
+				//if(my_atoms[thread_id].orig_id == 8)
+					//printf("%f,%f,%f,%f,%d,%d\n", tmp,C_ele,my_atoms[i].q, my_atoms[j].q,i,j);
+				   //   printf("%d,%d,%f,%f,%f\n",thread_id , my_atoms[thread_id].orig_id,workspace->f[thread_id][0], workspace->f[thread_id][1], workspace->f[thread_id][2]);
+
+
+
+
 				//data_e_ele[i] += e_ele;
 				//data_e_ele[i] += e_ele  / 2.0;
 #if defined(__SM_35__)
@@ -360,6 +369,10 @@ CUDA_GLOBAL void k_vdW_coulomb_energy( reax_atom *my_atoms,
 		rvec_Add( workspace->f[i], sh_force[ threadIdx.x ] );
 	}
 #endif
+
+	// if(thread_id < 20)
+	  //    printf("%d,%d,%f,%f,%f\n",thread_id , my_atoms[thread_id].orig_id,workspace->f[thread_id][0], workspace->f[thread_id][1], workspace->f[thread_id][2]);
+
 
 }
 

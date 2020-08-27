@@ -126,7 +126,6 @@ void Valence_Angles( reax_system *system, control_params *control,
 
 	for( j = 0; j < system->N; ++j ) {         // Ray: the first one with system->N
 		type_j = system->my_atoms[j].type;
-		printf("type j %d\n",type_j);
 		if (type_j < 0) continue;
 		start_j = Start_Index(j, bonds);
 		end_j = End_Index(j, bonds);
@@ -218,12 +217,6 @@ void Valence_Angles( reax_system *system, control_params *control,
 							pbond_jk->dvec, pbond_jk->d,
 							&theta, &cos_theta );
 
-					if(j == 14)
-					{
-
-						printf("Type:%d,%d,%d,%d,%d,%d\n",type_j,type_i,j,i, pi,pk);
-
-					}
 
 
 					//printf(" %d,%d,%d,%f\n", j,i,type_j,theta);
@@ -423,16 +416,22 @@ void Valence_Angles( reax_system *system, control_params *control,
 			Set_End_Index(pi, num_thb_intrs, thb_intrs );
 		}
 
+    //  if(system->my_atoms[j].orig_id == 1)
+  		//printf("%f,%f,%f\n", workspace->f[0][0], workspace->f[0][1], workspace->f[0][2]);
 
-		if(j < 5)
-		{
-			printf("j%d,%f,%f,%f\n", j, workspace->f[j][0],  workspace->f[j][1], workspace->f[j][2]);
-		}
+
 
 	}
 
 
+	/*for(int i = 0; i < 20; i++)
+	{
+		 if(system->my_atoms[i].orig_id == 1)
+		   printf("%d,%d,%f,%f,%f\n",i,system->my_atoms[i].orig_id, workspace->f[i][0], workspace->f[i][1], workspace->f[i][2]);
+	}*/
 
+
+   //exit(0);
 
 	if (num_thb_intrs >= thb_intrs->num_intrs * DANGER_ZONE) {
 		workspace->realloc.num_3body = num_thb_intrs;

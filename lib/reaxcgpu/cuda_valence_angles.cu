@@ -93,6 +93,12 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 	SBOp = 0.0;
 	prod_SBO = 1.0;
 
+	if(j == 0)
+	{
+		printf("start%d,end%d\n",start_j,end_j);;
+	}
+
+
 	for( t = start_j; t < end_j; ++t )
 	{
 		bo_jt = &bonds->select.bond_list[t].bo_data;
@@ -112,7 +118,7 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 	else
 	{
 		vlpadj = workspace->nlp[j];
-		dSBO2 = (prod_SBO - 1) * (1 - p_val8 * workspace->dDelta_lp[j]);
+		dSBO2 = (prod_SBO - 1.0) * (1.0 + p_val8 * workspace->dDelta_lp[j]);
 	}
 
 	SBO = SBOp + (1 - prod_SBO) * (-workspace->Delta_boc[j] - p_val8 * vlpadj);
@@ -153,6 +159,8 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 				&& ( j < n || pbond_ij->nbr < n ) )
 		{
 			i = pbond_ij->nbr;
+
+
 			type_i = my_atoms[i].type;
 
 			/* first copy 3-body intrs from previously computed ones where i > k;
@@ -202,14 +210,21 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 				type_k = my_atoms[k].type;
 				p_ijk = &thb_intrs->select.three_body_list[num_thb_intrs];
 
+
+
+
 				//CHANGE ORIGINAL
 				//if ((BOA_jk <= 0) || ((j >= n) && (k >= n))) continue;
 				if ( BOA_jk <= 0.0 )
 				{
+
 					continue;
 				}
 				//CHANGE ORIGINAL
+				if(j == 0) {
+					//printf("%d,%d,%d\n",i,j,k);
 
+				}
 
 
 
@@ -228,6 +243,12 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 						&p_ijk->dcos_di, &p_ijk->dcos_dj,
 						&p_ijk->dcos_dk );
 
+
+				if(j == 0)
+				{
+					//printf("calc dos di %d,%d,%f,%f,%f,%f,%f,%f,%f,%f\n",pi,pk,pbond_ij->dvec[0],pbond_ij->dvec[1],pbond_ij->dvec[2],pbond_ij->d,pbond_jk->dvec[0],pbond_jk->dvec[1],pbond_jk->dvec[2],pbond_jk->d);
+				}
+
 				p_ijk->thb = k;
 				p_ijk->pthb = pk;
 				p_ijk->theta = theta;
@@ -244,6 +265,11 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 						&& bo_ij->BO * bo_jk->BO > SQR(control->thb_cut) )
 				{
 					thbh = &d_thbh[ index_thbp(type_i, type_j, type_k, num_atom_types) ];
+
+					if(j == 0) {
+						//printf("%d,%d,%d,%d\n",i,j,k,thbh->cnt);
+
+					}
 
 					for ( cnt = 0; cnt < thbh->cnt; ++cnt )
 					{
@@ -331,7 +357,7 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 							f9_Dj = ( 2.0 + exp_pen3 ) / trm_pen34;
 							Cf9j = ( -p_pen3 * exp_pen3 * trm_pen34 - (2.0 + exp_pen3)
 									* ( -p_pen3 * exp_pen3 + p_pen4 * exp_pen4 ) )
-                                												/ SQR( trm_pen34 );
+                                																																										/ SQR( trm_pen34 );
 
 							/* very important: since each kernel generates all interactions,
                                need to prevent all energies becoming duplicates */
@@ -408,11 +434,15 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 
 								if ( control->virial == 0 )
 								{
-									//                                    rvec_ScaledAdd( workspace->f[i], CEval8, p_ijk->dcos_di );
-									rvec_ScaledAdd( pbond_ij->va_f, CEval8, p_ijk->dcos_di );
+									rvec_ScaledAdd( pbond_ij->va_f, CEval8, p_ijk->dcos_di);
 									rvec_ScaledAdd( workspace->f[j], CEval8, p_ijk->dcos_dj );
-									//                                    rvec_ScaledAdd( workspace->f[k], CEval8, p_ijk->dcos_dk );
 									rvec_ScaledAdd( pbond_jk->va_f, CEval8, p_ijk->dcos_dk );
+
+									if(j == 0)
+									{
+										printf("%d,%d,%d\n",j,pi,pk);
+									}
+
 								}
 								else
 								{
@@ -564,24 +594,39 @@ CUDA_GLOBAL void Cuda_Valence_Angles_PostProcess( reax_atom *atoms,
 	bonds = &p_bonds;
 	workspace = &p_workspace;
 
+
+	/*if( i < 20 && atoms[i].orig_id == 1)
+	{
+		printf("Before %d,%d,%f,%f,%f\n",i, atoms[i].orig_id, workspace->f[0][0],workspace->f[0][1],workspace->f[0][2]);
+	}*/
+
+
+
 	for( pj = Cuda_Start_Index(i, bonds); pj < Cuda_End_Index(i, bonds); ++pj )
 	{
 		pbond = &bonds->select.bond_list[pj];
-		sym_index_bond = &bonds->select.bond_list[ pbond->sym_index ];
 
+		sym_index_bond = &bonds->select.bond_list[ pbond->sym_index ];
 		workspace->CdDelta[i] += sym_index_bond->va_CdDelta;
 
 		//rvec_Add( atoms[i].f, sym_index_bond->va_f );
+		rvec_Add( workspace->f[i], sym_index_bond->va_f);
 
-		rvec_Add( workspace->f[i], sym_index_bond->va_f );
-
+		/*if( i < 20 && atoms[i].orig_id == 1)
+		{
+			printf("Before %d,%d,%f,%f,%f\n",pj,pbond->sym_index,sym_index_bond->va_f[0],sym_index_bond->va_f[1],sym_index_bond->va_f[2]);
+		}*/
 
 	}
+
+	//if(i < 20)
+		//printf("%d,%d,%f,%f,%f\n",i,atoms[i].orig_id, workspace->f[i][0], workspace->f[i][1], workspace->f[i][2]);
 
 	/*if(i < 5)
 	{
 		printf("%f,%f,%f\n", workspace->f[i][0],workspace->f[i][1],workspace->f[i][2]);
 	}*/
+
 
 
 

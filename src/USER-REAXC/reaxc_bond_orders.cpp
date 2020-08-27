@@ -274,9 +274,10 @@ int BOp( storage *workspace, reax_list *bonds, double bo_cut,
 	j = nbr_pj->nbr;
 	r2 = SQR(nbr_pj->d);
 
-	if(i == 0 || i == 14)
+	if(i == 0 )
 	{
-		printf("when i %d, J %d, btop %d\n", i, j, btop_i);
+		printf("j%d\n",j);
+		//printf("when i %d, J %d, btop %d\n", i, j, btop_i);
 	}
 
 

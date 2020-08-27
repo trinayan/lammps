@@ -87,6 +87,12 @@ void Compute_NonBonded_Forces( reax_system *system, control_params *control,
 		MPI_Comm /*comm*/ )
 {
 
+	for(int i = 0; i < 20; i++)
+		{
+			printf("%d,%d,%f,%f,%f\n",i, system->my_atoms[i].orig_id,workspace->f[i][0], workspace->f[i][1], workspace->f[i][2]);
+		}
+
+	printf("\n\n");
 	/* van der Waals and Coulomb interactions */
 	if (control->tabulate == 0)
 		vdW_Coulomb_Energy( system, control, data, workspace,
@@ -94,6 +100,14 @@ void Compute_NonBonded_Forces( reax_system *system, control_params *control,
 	else
 		Tabulated_vdW_Coulomb_Energy( system, control, data, workspace,
 				lists, out_control );
+
+
+	for(int i = 0; i < 20; i++)
+	{
+		printf("%d,%d,%f,%f,%f\n",i, system->my_atoms[i].orig_id,workspace->f[i][0], workspace->f[i][1], workspace->f[i][2]);
+	}
+
+	exit(0);
 }
 
 
@@ -509,6 +523,7 @@ void Compute_Forces( reax_system *system, control_params *control,
 
 	Init_Forces_noQEq( system, control, data, workspace,
 			lists, out_control);
+
 
 	/********* bonded interactions ************/
 	Compute_Bonded_Forces( system, control, data, workspace,

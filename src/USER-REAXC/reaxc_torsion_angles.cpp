@@ -478,4 +478,5 @@ void Torsion_Angles( reax_system *system, control_params *control,
 			} // j-k neighbor check ends
 		} // pk loop ends
 	} // j loop
+
 }

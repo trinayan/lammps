@@ -772,7 +772,7 @@ float  Cuda_Calculate_Local_T_Sum(int nn,fix_qeq_gpu *qeq_gpu)
 
 }
 
-CUDA_GLOBAL void k_update_q_and_backup_st(double *q, double *s, double *t, reax_atom *my_atoms,rvec4 *s_hist, rvec4 *t_hist, double u, int nn)
+CUDA_GLOBAL void k_update_q_and_backup_st(double *q, double *s, double *t, reax_atom *my_atoms,rvec4 *s_hist, rvec4 *t_hist, double u, int nn,reax_atom *sys_my_atoms)
 {
 
 	int i;
@@ -784,15 +784,18 @@ CUDA_GLOBAL void k_update_q_and_backup_st(double *q, double *s, double *t, reax_
 	reax_atom *atom;
 	atom = &my_atoms[i];
 
+	reax_atom *atom2;
+	atom2 = &sys_my_atoms[i];
+
 
 	if ( i >= nn)
 	{
 		return;
 	}
 
-	q[i]  = atom->q = s[i] - u*t[i];
+	q[i]  = atom->q  = sys_my_atoms[i].q = s[i] - u*t[i];
 
-	//printf("S[%d] %f,T[%d] %f,Q[%d] %f \n",i, s[i],i,t[i],i,q[i]);
+	//printf("S[%d] %f,T[%d] %f,Q[%d] %f \n",i, s[i],i,t[i],i,sys_my_atoms[i].q);
 
 
 	s_hist[i][3] = s_hist[i][2];
@@ -807,17 +810,18 @@ CUDA_GLOBAL void k_update_q_and_backup_st(double *q, double *s, double *t, reax_
 	t_hist[i][0] = t[i];
 }
 
-void  Cuda_Update_Q_And_Backup_ST(int nn, fix_qeq_gpu *qeq_gpu, double u)
+void  Cuda_Update_Q_And_Backup_ST(int nn, fix_qeq_gpu *qeq_gpu, double u,reax_system *system)
 {
 	int blocks;
 	blocks = nn / DEF_BLOCK_SIZE
 			+ (( nn % DEF_BLOCK_SIZE == 0 ) ? 0 : 1);
 
-	hipLaunchKernelGGL(k_update_q_and_backup_st, dim3(blocks), dim3(DEF_BLOCK_SIZE), 0, 0,   qeq_gpu->q,qeq_gpu->s,qeq_gpu->t,qeq_gpu->d_fix_my_atoms,qeq_gpu->s_hist,qeq_gpu->t_hist,u, nn );
+	hipLaunchKernelGGL(k_update_q_and_backup_st, dim3(blocks), dim3(DEF_BLOCK_SIZE), 0, 0,   qeq_gpu->q,qeq_gpu->s,qeq_gpu->t,qeq_gpu->d_fix_my_atoms,qeq_gpu->s_hist,qeq_gpu->t_hist,u, nn, system->d_my_atoms);
 	hipDeviceSynchronize();
-	cudaCheckError( );
+	cudaCheckError();
 
-
+	copy_host_device(qeq_gpu->fix_my_atoms, qeq_gpu->d_fix_my_atoms, sizeof(reax_atom) * system->N,
+				hipMemcpyDeviceToHost, "Sync_Atoms::system->my_atoms");
 }
 
 void  CudaFreeFixQeqParams(fix_qeq_gpu *qeq_gpu)

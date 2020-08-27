@@ -122,15 +122,15 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 	snprintf(fix_id,24,"REAXC_%d",instance_me);
 
 	system = (reax_system *)
-    						memory->smalloc(sizeof(reax_system),"reax:system");
+    																		memory->smalloc(sizeof(reax_system),"reax:system");
 	memset(system,0,sizeof(reax_system));
 	control = (control_params *)
-    						memory->smalloc(sizeof(control_params),"reax:control");
+    																		memory->smalloc(sizeof(control_params),"reax:control");
 	memset(control,0,sizeof(control_params));
 	data = (simulation_data *)
-    						memory->smalloc(sizeof(simulation_data),"reax:data");
+    																		memory->smalloc(sizeof(simulation_data),"reax:data");
 	workspace = (storage *)
-    						memory->smalloc(sizeof(storage),"reax:storage");
+    																		memory->smalloc(sizeof(storage),"reax:storage");
 
 	workspace->d_workspace = (storage *)memory->smalloc(sizeof(storage),"reax:gpu_storage");
 
@@ -146,7 +146,7 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 	}
 
 	cpu_lists = (reax_list *)
-    						  memory->smalloc(LIST_N * sizeof(reax_list),"reax:lists");
+    																		  memory->smalloc(LIST_N * sizeof(reax_list),"reax:lists");
 	memset(cpu_lists,0,LIST_N * sizeof(reax_list));
 
 
@@ -155,10 +155,10 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 
 
 	out_control = (output_controls *)
-    						memory->smalloc(sizeof(output_controls),"reax:out_control");
+    																		memory->smalloc(sizeof(output_controls),"reax:out_control");
 	memset(out_control,0,sizeof(output_controls));
 	mpi_data = (mpi_datatypes *)
-    						memory->smalloc(sizeof(mpi_datatypes),"reax:mpi");
+    																		memory->smalloc(sizeof(mpi_datatypes),"reax:mpi");
 	control->me = system->my_rank = comm->me;
 
 
@@ -544,6 +544,8 @@ void PairReaxCGPU::setup( )
 				TYP_FAR_NEIGHBOR, gpu_lists[FAR_NBRS]);
 		update_and_write_reax_lists_to_device();
 
+		//exit(0);
+
 		Initialize( system, control, data, workspace, &cpu_lists, out_control,
 				mpi_data, world );
 
@@ -560,7 +562,7 @@ void PairReaxCGPU::setup( )
 	else
 	{
 		// fill in reax datastructures
-		update_and_copy_reax_atoms_to_device();
+		//update_and_copy_reax_atoms_to_device();
 
 		// reset the bond list info for new atoms
 		printf("Initial setup done. far numbers gpu %d \n", gpu_lists[FAR_NBRS]->num_intrs);
@@ -807,15 +809,62 @@ int PairReaxCGPU::estimate_reax_lists()
 
 		for( itr_j = 0; itr_j < numneigh[i]; ++itr_j ){
 			j = jlist[itr_j];
-			j &= NEIGHMASK;
-			get_distance( x[j], x[i], &d_sqr, &dvec );
+			if( i < j)
+			{
+				j &= NEIGHMASK;
+				get_distance( x[j], x[i], &d_sqr, &dvec );
 
-			if (d_sqr <= SQR(control->nonb_cut))
-				++num_nbrs;
+				if (d_sqr <= SQR(control->nonb_cut))
+					++num_nbrs;
+			}
 		}
+
+		if( i < 20)
+			printf("Before %d\n", num_nbrs);
+
+		for( itr_j = 0; itr_j < numneigh[i]; ++itr_j ){
+			j = jlist[itr_j];
+			if( i > j)
+			{
+				j &= NEIGHMASK;
+				get_distance( x[i], x[j], &d_sqr, &dvec );
+
+				if (d_sqr <= SQR(control->nonb_cut))
+				{
+					++num_nbrs;
+				}
+			}
+		}
+
+		if( i < 20)
+			printf("After %d\n", num_nbrs);
+
 	}
 
-	free( marked );
+
+
+	/* for( itr_i = 0; itr_i < numall; ++itr_i ){
+	    i = ilist[itr_i];
+	    marked[i] = 1;
+	    ++num_marked;
+	    jlist = firstneigh[i];
+
+	    for( itr_j = 0; itr_j < numneigh[i]; ++itr_j ){
+	      j = jlist[itr_j];
+	      j &= NEIGHMASK;
+	      get_distance( x[j], x[i], &d_sqr, &dvec );
+
+	      if (d_sqr <= SQR(control->nonb_cut))
+	        ++num_nbrs;
+	    }
+
+		if( i < 20)
+				printf("%d\n", num_nbrs);
+	  }*/
+
+
+	free(marked);
+
 
 	return static_cast<int> (MAX( num_nbrs*safezone, mincap*MIN_NBRS ));
 }
@@ -848,11 +897,14 @@ int PairReaxCGPU::update_and_write_reax_lists_to_device()
 	int inum = list->inum;
 	dist = (double*) calloc( system->N, sizeof(double) );
 
+
+
 	int numall = list->inum + list->gnum;
 
 	for( itr_i = 0; itr_i < numall; ++itr_i ){
 		i = ilist[itr_i];
 		jlist = firstneigh[i];
+
 		Set_Start_Index( i, num_nbrs, far_nbrs );
 
 		if (i < inum)
@@ -860,17 +912,42 @@ int PairReaxCGPU::update_and_write_reax_lists_to_device()
 		else
 			cutoff_sqr = control->bond_cut*control->bond_cut;
 
-		for( itr_j = 0; itr_j < numneigh[i]; ++itr_j ){
+		for( itr_j = 0; itr_j < numneigh[i]; ++itr_j ) {
 			j = jlist[itr_j];
-			j &= NEIGHMASK;
-			get_distance( x[j], x[i], &d_sqr, &dvec );
+			if ( i <  j)
+			{
+				j &= NEIGHMASK;
 
-			if (d_sqr <= (cutoff_sqr)) {
-				dist[j] = sqrt( d_sqr );
-				set_far_nbr( &far_list[num_nbrs], j, dist[j], dvec );
-				++num_nbrs;
+				get_distance( x[j], x[i], &d_sqr, &dvec );
+
+				if (d_sqr <= (cutoff_sqr)) {
+					dist[j] = sqrt( d_sqr );
+					set_far_nbr( &far_list[num_nbrs], j, dist[j], dvec );
+					++num_nbrs;
+				}
 			}
 		}
+
+		for( itr_j = 0; itr_j < numneigh[i]; ++itr_j ) {
+			j = jlist[itr_j];
+			if ( i >  j)
+			{
+				j &= NEIGHMASK;
+
+				get_distance( x[i], x[j], &d_sqr, &dvec );
+
+				if (d_sqr <= (cutoff_sqr)) {
+					dist[j] = sqrt( d_sqr );
+					set_far_nbr( &far_list[num_nbrs], j, dist[j], dvec );
+					++num_nbrs;
+				}
+			}
+		}
+
+
+
+
+
 		Set_End_Index( i, num_nbrs, far_nbrs );
 	}
 
@@ -896,10 +973,16 @@ void PairReaxCGPU::read_reax_forces_from_device(int /*vflag*/)
 
 		//printf("%f,%f,%f\n", system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2] );
 
+	    printf("%f,%f,%f\n", system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2] );
+
 		atom->f[i][0] += -workspace->f[i][0];
 		atom->f[i][1] += -workspace->f[i][1];
 		atom->f[i][2] += -workspace->f[i][2];
+
+
 	}
+
+	exit(0);
 
 
 }
@@ -935,19 +1018,19 @@ void *PairReaxCGPU::extract(const char *str, int &dim)
 double PairReaxCGPU::memory_usage()
 {
 
-   double bytes = 0.0;
+	double bytes = 0.0;
 
-  // From pair_reax_c
-  bytes += 1.0 * system->N * sizeof(int);
-  bytes += 1.0 * system->N * sizeof(double);
+	// From pair_reax_c
+	bytes += 1.0 * system->N * sizeof(int);
+	bytes += 1.0 * system->N * sizeof(double);
 
-  // From reaxc_allocate: BO
-  bytes += 1.0 * system->total_cap * sizeof(reax_atom);
-  bytes += 19.0 * system->total_cap * sizeof(double);
-  bytes += 3.0 * system->total_cap * sizeof(int);
+	// From reaxc_allocate: BO
+	bytes += 1.0 * system->total_cap * sizeof(reax_atom);
+	bytes += 19.0 * system->total_cap * sizeof(double);
+	bytes += 3.0 * system->total_cap * sizeof(int);
 
-  // From reaxc_lists
-  /*bytes += 2.0 * lists->n * sizeof(int);
+	// From reaxc_lists
+	/*bytes += 2.0 * lists->n * sizeof(int);
   bytes += lists->num_intrs * sizeof(three_body_interaction_data);
   bytes += lists->num_intrs * sizeof(bond_data);
   bytes += lists->num_intrs * sizeof(dbond_data);
@@ -958,7 +1041,7 @@ double PairReaxCGPU::memory_usage()
   if(fixspecies_flag)
     bytes += 2 * nmax * MAXSPECBOND * sizeof(double);*/
 
-  return bytes;
+	return bytes;
 }
 
 /* ---------------------------------------------------------------------- */

@@ -670,4 +670,8 @@ CUDA_GLOBAL void Cuda_Torsion_Angles_PostProcess ( reax_atom *my_atoms,
 
 		rvec_Add (workspace->f[i], sym_index_bond->ta_f );
 	}
+
+
+	//if (i < 20)
+		//printf("%d,%f,%f,%f\n", i,workspace->f[i][0],workspace->f[i][1],workspace->f[i][2]);
 }

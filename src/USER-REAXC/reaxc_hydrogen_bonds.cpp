@@ -182,4 +182,11 @@ void Hydrogen_Bonds( reax_system *system, control_params *control,
         }
       }
     }
+
+
+	/*for(int i = 0; i < 20; i++)
+	{
+		printf("%d,%d,%f,%f,%f\n",i,system->my_atoms[i].orig_id, workspace->f[i][0], workspace->f[i][1], workspace->f[i][2]);
+	}
+	exit(0);*/
 }

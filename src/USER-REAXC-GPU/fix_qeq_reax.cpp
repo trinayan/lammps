@@ -59,7 +59,7 @@ extern "C" float  Cuda_Calculate_Local_S_Sum(int nn,fix_qeq_gpu *qeq_gpu);
 extern "C" float  Cuda_Calculate_Local_T_Sum(int nn,fix_qeq_gpu *qeq_gpu);
 extern "C" void  Cuda_UpdateQ_And_Copy_To_Device_Comm_Fix(double *buf,fix_qeq_gpu *qeq_gpu,int n);
 extern "C" void Cuda_Estimate_CMEntries_Storages( reax_system *system, control_params *control, reax_list **lists, fix_qeq_gpu *qeq_gpu,int nn);
-extern "C" void  Cuda_Update_Q_And_Backup_ST(int nn, fix_qeq_gpu *qeq_gpu, double u);
+extern "C" void  Cuda_Update_Q_And_Backup_ST(int nn, fix_qeq_gpu *qeq_gpu, double u, reax_system *system);
 extern "C" void  CudaFreeFixQeqParams(fix_qeq_gpu *qeq_gpu);
 extern "C" void  CudaFreeHMatrix(fix_qeq_gpu *qeq_gpu);
 extern "C" void  Cuda_Allocate_Hist_ST(fix_qeq_gpu *qeq_gpu,int nmax);
@@ -90,7 +90,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-																																																																																																						  Fix(lmp, narg, arg), pertype_option(NULL)
+																																																																																																								  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (lmp->citeme) lmp->citeme->add(cite_fix_qeq_reax);
 
@@ -981,7 +981,12 @@ void FixQEqReax::cuda_calculate_Q()
 
 
 
-	Cuda_Update_Q_And_Backup_ST(nn,qeq_gpu,u);
+	Cuda_Update_Q_And_Backup_ST(nn,qeq_gpu,u,reaxc->system);
+
+
+	for( int i = 0; i < reaxc->system->N; ++i ){
+		atom->q[i] = qeq_gpu->fix_my_atoms[i].q;
+	}
 
 
 	pack_flag = 4;
