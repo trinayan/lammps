@@ -6,7 +6,6 @@
 #include "cuda_neighbors.h"
 #include "cuda_utils.h"
 
-#include "allocate.h"
 #include "index_utils.h"
 #include "tool_box.h"
 #include "vector.h"

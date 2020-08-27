@@ -7,7 +7,6 @@
 #include "cuda_reduction.h"
 #include "basic_comm.h"
 
-#include "allocate.h"
 #include "index_utils.h"
 #include "tool_box.h"
 #include "vector.h"

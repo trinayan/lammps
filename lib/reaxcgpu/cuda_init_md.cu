@@ -5,7 +5,6 @@
 #include "cuda_list.h"
 #include "cuda_copy.h"
 #include "cuda_forces.h"
-#include "cuda_integrate.h"
 #include "cuda_neighbors.h"
 #include "cuda_reset_tools.h"
 #include "cuda_system_props.h"
@@ -13,11 +12,6 @@
 
 #include "lookup.h"
 
-#include "box.h"
-#include "comm_tools.h"
-#include "grid.h"
-#include "init_md.h"
-#include "io_tools.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
