@@ -107,7 +107,6 @@ void Compute_NonBonded_Forces( reax_system *system, control_params *control,
 		printf("%d,%d,%f,%f,%f\n",i, system->my_atoms[i].orig_id,workspace->f[i][0], workspace->f[i][1], workspace->f[i][2]);
 	}
 
-	exit(0);
 }
 
 
@@ -118,7 +117,11 @@ void Compute_Total_Force( reax_system *system, control_params *control,
 	int i, pj;
 	reax_list *bonds = (*lists) + BONDS;
 
+	printf("\n\n");
 	for( i = 0; i < system->N; ++i )
+	{
+		if(system->my_atoms[i].orig_id == 13 && i < 20)
+			printf("Atom 13 %f,%f,%f\n", workspace->f[i][0], workspace->f[i][1], workspace->f[i][2]);
 		for( pj = Start_Index(i, bonds); pj < End_Index(i, bonds); ++pj )
 			if (i < bonds->select.bond_list[pj].nbr) {
 				if (control->virial == 0)
@@ -127,6 +130,11 @@ void Compute_Total_Force( reax_system *system, control_params *control,
 					Add_dBond_to_Forces_NPT( i, pj, data, workspace, lists );
 			}
 
+		if(system->my_atoms[i].orig_id == 13 && i < 20)
+					printf("Atom 13 %f,%f,%f\n", workspace->f[i][0], workspace->f[i][1], workspace->f[i][2]);
+
+	}
+		exit(0);
 }
 
 void Validate_Lists( reax_system *system, storage * /*workspace*/, reax_list **lists,

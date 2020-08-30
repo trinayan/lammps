@@ -723,6 +723,8 @@ CUDA_GLOBAL void k_init_forces( reax_atom *my_atoms, single_body_parameters *sbp
 				}
 			}
 
+			if(atom_i->orig_id == 13)
+				printf("atom j orig %d\n", atom_j->orig_id);
 			/* uncorrected bond orders */
 			if ( nbr_pj->d <= control->bond_cut &&
 					Cuda_BOp( bonds_list, control->bo_cut, i, btop_i, nbr_pj,
@@ -811,44 +813,49 @@ CUDA_GLOBAL void k_new_fix_sym_dbond_indices( reax_list pbonds, int N, reax_atom
 
 	bonds = &pbonds;
 
+
+	//if ( i < 20)
+	//printf("orig %d, start %d, end %d,delta %d\n",my_atom[i].orig_id, Cuda_Start_Index(i, bonds), Cuda_End_Index(i, bonds),  Cuda_End_Index(i, bonds)-Cuda_Start_Index(i, bonds));
+
+
 	for ( j = Cuda_Start_Index(i, bonds); j < Cuda_End_Index(i, bonds); j++ )
 	{
 		ibond = &bonds->select.bond_list[j];
 		nbr = ibond->nbr;
 
-		if( i < 20 && my_atom[i].orig_id == 1)
-		{
-			printf("%d,%d\n",i,nbr);
-		}
+
+
+
+
 
 		for ( k = Cuda_Start_Index(nbr, bonds); k < Cuda_End_Index(nbr, bonds); k++ )
 		{
 			jbond = &bonds->select.bond_list[k];
 			atom_j = jbond->nbr;
 
-
-			/*if(i == 18)
-			{
-				printf("%d,%d\n",j,k);
-			}*/
-
-
-
 			if ( atom_j == i )
 			{
 				if ( i > nbr )
 				{
+					if(i < 20)
+					{
+						if(k == 323 || k == 134 || k == 153 || k == 174 ||  j == 323  || j == 134 || j == 153 || j == 174 )
+							printf("Dbond %d,%d,%d,%d\n",j,k,my_atom[i].orig_id,my_atom[j].orig_id);
+					}
 					ibond->dbond_index = j;
 					jbond->dbond_index = j;
 
 					ibond->sym_index = k;
 					jbond->sym_index = j;
 
-					if( i < 20 && my_atom[i].orig_id == 1)
+					if( i < 20 && my_atom[i].orig_id == 13)
 					{
+						//printf("%d,%d,%d,%d,%d\n",my_atom[j].orig_id,my_atom[k].orig_id,i,k,j );
 						// printf("Setting \n")
 						//printf("%d,%d,\n",my_atom[j].orig_id, my_atom[k].orig_id);
 					}
+
+
 				}
 			}
 		}
@@ -1811,6 +1818,8 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 
 			/* uncorrected bond orders */
 
+			if(atom_i->orig_id == 13 && i < 20)
+				printf("atom j orig %d\n", atom_j->orig_id);
 
 			//printf("calling BOP %d\n", i);
 			if ( nbr_pj->d <= control->bond_cut &&
@@ -1942,7 +1951,6 @@ int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 	cudaCheckError();
 
 
-	//exit(0);
 
 
 
@@ -1959,6 +1967,7 @@ int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 	printf(" %d,%d,%d\n", ret_bonds,ret_hbonds,ret_cm );
 	printf("%d\n", ret);
 
+	printf("\n\n\n");
 	if ( ret == SUCCESS )
 	{
 		/* fix sym_index and dbond_index */
@@ -2073,6 +2082,8 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 				*(workspace->d_workspace), system->N );
 		hipDeviceSynchronize( );
 		cudaCheckError();
+
+		//exit(0);
 
 
 
@@ -2252,6 +2263,8 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 				spad, spad + 2 * system->N, spad + 4 * system->N, (rvec *)(spad + 6 * system->N) );
 		hipDeviceSynchronize( );
 		cudaCheckError( );
+
+		//exit(0);
 
 
 

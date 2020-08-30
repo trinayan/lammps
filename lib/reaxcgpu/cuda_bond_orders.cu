@@ -33,7 +33,9 @@ CUDA_GLOBAL void Cuda_Calculate_BO_init( reax_atom *my_atoms,
 														   - sbp_i->valency_val;
 
 
-	//printf("%d,%d,%f,%f,%f,%f\n", i, type_i, sbp_i->valency, workspace->Deltap[i],workspace->Deltap_boc[i], workspace->total_bond_order[i]);
+
+	if(i < 20)
+		printf("%d,%d,%f,%f,%f\n", my_atoms[i].orig_id, sbp_i->valency, workspace->Deltap[i],workspace->Deltap_boc[i], workspace->total_bond_order[i]);
 
 	workspace->total_bond_order[i] = 0;
 
@@ -663,7 +665,7 @@ CUDA_DEVICE void Cuda_Add_dBond_to_Forces( int i, int pj,
 	j = nbr_j->nbr;
 
 	if(my_atoms[i].orig_id == 13 && i < 20)
-		printf("%d,%d\n",i,j);
+		printf("%d,%d,%d,%d\n",i,j,my_atoms[i].orig_id,my_atoms[j].orig_id );
 
 
 	//bo_ij = &nbr_j->bo_data;
@@ -679,6 +681,9 @@ CUDA_DEVICE void Cuda_Add_dBond_to_Forces( int i, int pj,
 		bo_ji = &nbr_j->bo_data;
 		bo_ij = &bonds->select.bond_list[ nbr_j->sym_index ].bo_data;
 	}
+
+
+
 
 	coef.C1dbo = bo_ij->C1dbo * (bo_ij->Cdbo + bo_ji->Cdbo);
 	coef.C2dbo = bo_ij->C2dbo * (bo_ij->Cdbo + bo_ji->Cdbo);
@@ -698,17 +703,26 @@ CUDA_DEVICE void Cuda_Add_dBond_to_Forces( int i, int pj,
 	coef.C2dDelta = bo_ij->C2dbo * (workspace->CdDelta[i]+workspace->CdDelta[j]);
 	coef.C3dDelta = bo_ij->C3dbo * (workspace->CdDelta[i]+workspace->CdDelta[j]);
 
+
+	if(my_atoms[i].orig_id == 13 && my_atoms[j].orig_id == 8 && i < 20)
+		printf("Vals %f,%f,%f,%f,%f.%f\n",bo_ij->C1dbo,bo_ij->C2dbo,bo_ij->C3dbo,workspace->CdDelta[i],workspace->CdDelta[j],workspace->CdDelta[18]);
+		//printf("Vals :%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",coef.C1dbo,coef.C2dbo,coef.C3dbo,coef.C1dbopi,coef.C2dbopi,coef.C3dbopi,coef.C4dbopi,coef.C1dbopi2,coef.C2dbopi2,coef.C3dbopi2,coef.C4dbopi2,coef.C1dDelta,coef.C2dDelta,coef.C3dDelta);
+
+
+
+	//if(my_atoms[i].orig_id == 13 && my_atoms[j].orig_id == 8 && i < 20)
+		//	 rvec_MakeZero(workspace->f[i]);
+
 	if ( i < j )
 	{
-
-
-		if(my_atoms[i].orig_id == 13 && i < 20)
-					printf("Before %f,%f,%f\n",workspace->f[i][0],coef.C2dbo,workspace->dDeltap_self[i][0]);
-
-
 		for ( pk = Cuda_Start_Index(i, bonds); pk < Cuda_End_Index(i, bonds); ++pk )
 		{
 			nbr_k = &bonds->select.bond_list[pk];
+
+			//if(pk == 323 || pk == 134 || pk == 153 || pk == 174)
+				//printf("Updating pk %d,i %d, j %d, atom i %d, atom j %d \n",pk, i,j,my_atoms[i].orig_id,my_atoms[j].orig_id);
+
+
 			rvec_MakeZero( tf_f );
 
 			/*2nd,dBO*/
@@ -722,15 +736,18 @@ CUDA_DEVICE void Cuda_Add_dBond_to_Forces( int i, int pj,
 
 			//Temp storage
 			rvec_Add( nbr_k->tf_f, tf_f );
+
+
 		}
+
+
+
 		/*1st, dBO*/
 		rvec_ScaledAdd( workspace->f[i], coef.C1dbo, bo_ij->dBOp );
 		/*2nd, dBO*/
 		rvec_ScaledAdd( workspace->f[i], coef.C2dbo, workspace->dDeltap_self[i] );
 
 
-		if(my_atoms[i].orig_id == 13 && i < 20)
-			printf("%f,%f,%f\n",workspace->f[i][0],coef.C2dbo,workspace->dDeltap_self[i][0]);
 
 
 		/*1st, dBO*/
@@ -752,6 +769,11 @@ CUDA_DEVICE void Cuda_Add_dBond_to_Forces( int i, int pj,
 		/*3rd, dBO_pi2*/
 		rvec_ScaledAdd( workspace->f[i], coef.C3dbopi2, workspace->dDeltap_self[i] );
 
+
+
+
+
+
 	}
 	else
 	{
@@ -759,6 +781,10 @@ CUDA_DEVICE void Cuda_Add_dBond_to_Forces( int i, int pj,
 		{
 			nbr_k = &bonds->select.bond_list[pk];
 			rvec_MakeZero( tf_f );
+
+			//if(pk == 323 || pk == 134 || pk == 153 || pk == 174)
+				//printf("Updating pk %d,i %d, j %d, atom i %d, atom j %d \n",pk, i,j,my_atoms[i].orig_id,my_atoms[j].orig_id);
+
 
 			/*3rd, dBO*/
 			rvec_ScaledAdd( tf_f, -coef.C3dbo, nbr_k->bo_data.dBOp );
@@ -771,6 +797,7 @@ CUDA_DEVICE void Cuda_Add_dBond_to_Forces( int i, int pj,
 
 			//Temp Storage
 			rvec_Add( nbr_k->tf_f, tf_f );
+
 		}
 
 		/*1st,dBO*/
@@ -778,10 +805,23 @@ CUDA_DEVICE void Cuda_Add_dBond_to_Forces( int i, int pj,
 		/*2nd,dBO*/
 		rvec_ScaledAdd( workspace->f[i], coef.C3dbo, workspace->dDeltap_self[i] );
 
+
+		if(my_atoms[i].orig_id == 13 && my_atoms[j].orig_id == 8 && i < 20)
+			printf("Temp force 1 %f,%f,%f,%f,%f\n",  workspace->f[i][0], coef.C1dbo, coef.C3dbo,bo_ij->dBOp[0],workspace->dDeltap_self[i][0] );
+
+
+
 		/*1st, dBO*/
 		rvec_ScaledAdd( workspace->f[i], -coef.C1dDelta, bo_ij->dBOp );
 		/*2nd, dBO*/
 		rvec_ScaledAdd( workspace->f[i], coef.C3dDelta, workspace->dDeltap_self[i] );
+
+
+		if(my_atoms[i].orig_id == 13 && my_atoms[j].orig_id == 8 && i < 20)
+		{
+			printf("Temp force 2 %f,%f,%f\n",  workspace->f[i][0],coef.C1dDelta,coef.C3dDelta);
+
+		}
 
 		/*1st, dBOpi*/
 		rvec_ScaledAdd( workspace->f[i], -coef.C1dbopi, bo_ij->dln_BOp_pi );
@@ -790,13 +830,23 @@ CUDA_DEVICE void Cuda_Add_dBond_to_Forces( int i, int pj,
 		/*3rd, dBOpi*/
 		rvec_ScaledAdd( workspace->f[i], coef.C4dbopi, workspace->dDeltap_self[i] );
 
+		if(my_atoms[i].orig_id == 13 && my_atoms[j].orig_id == 8 && i < 20)
+					printf("Temp force 3 %f\n",  workspace->f[i][0]);
+
+
 		/*1st, dBOpi2*/
 		rvec_ScaledAdd( workspace->f[i], -coef.C1dbopi2, bo_ij->dln_BOp_pi2 );
 		/*2nd, dBOpi2*/
 		rvec_ScaledAdd( workspace->f[i], -coef.C2dbopi2, bo_ij->dBOp );
 		/*3rd, dBOpi2*/
 		rvec_ScaledAdd( workspace->f[i], coef.C4dbopi2, workspace->dDeltap_self[i] );
+
+		if(my_atoms[i].orig_id == 13 && my_atoms[j].orig_id == 8 && i < 20)
+							printf("Temp force 4 %f\n",  workspace->f[i][0]);
 	}
+
+	if(my_atoms[i].orig_id == 13 && my_atoms[j].orig_id == 8 && i < 20)
+				printf("Forces %f,%f,%f\n",workspace->f[i][0],workspace->f[i][1],workspace->f[i][2]);
 }
 
 
@@ -813,6 +863,9 @@ CUDA_DEVICE void Cuda_dbond_to_Forces_postprocess( int i, reax_atom *atoms,
 		nbr_k_sym = &bonds->select.bond_list [nbr_k->sym_index];
 
 		//rvec_Add( atoms[i].f, nbr_k_sym->tf_f );
+
+		if(atoms[i].orig_id == 13 && i < 20)
+			printf("Adding tf  %d,%d, %f,%f,%f\n",pk,nbr_k->sym_index, nbr_k_sym->tf_f[0],nbr_k_sym->tf_f[1],nbr_k_sym->tf_f[2]);
 
 		rvec_Add( workspace->f[i], nbr_k_sym->tf_f );
 
@@ -845,10 +898,13 @@ CUDA_GLOBAL void k_total_forces_postprocess( reax_atom *my_atoms,
 		printf("Forces %f,%f,%f\n", workspace->f[i][0],workspace->f[i][1],workspace->f[i][2]);
 	}*/
 
+	//if ( i < 20 &&  my_atoms[i].orig_id == 13 )
+		//printf("Before %d,%d,%f,%f,%f\n",i , my_atoms[i].orig_id,workspace->f[i][0], workspace->f[i][1], workspace->f[i][2]);
+
 	Cuda_dbond_to_Forces_postprocess( i, my_atoms, bonds, workspace );
 
-	if ( i < 20)
-		printf("%d,%d,%f,%f,%f\n",i , my_atoms[i].orig_id,workspace->f[i][0], workspace->f[i][1], workspace->f[i][2]);
+	if ( i < 20 )
+		printf("Forces %d,%f,%f,%f\n", my_atoms[i].orig_id,workspace->f[i][0], workspace->f[i][1], workspace->f[i][2]);
 
 }
 
@@ -873,15 +929,18 @@ CUDA_GLOBAL void k_total_forces( storage p_workspace, reax_list p_bonds,
 	workspace = &p_workspace;
 
 
-	//if (i < 20)
-		//printf("Before %d,%f,%f,%f\n", my_atoms[i].orig_id, workspace->f[i][0],workspace->f[i][1],workspace->f[i][2] );
+	if (i < 20 && my_atoms[i].orig_id == 13)
+		printf("Before %d,%f,%f,%f\n", my_atoms[i].orig_id, workspace->f[i][0],workspace->f[i][1],workspace->f[i][2] );
 
 	for ( pj = Cuda_Start_Index(i, bonds); pj < Cuda_End_Index(i, bonds); ++pj )
 	{
 		//if ( i < bonds->bond_list[pj].nbr ) {
 		if ( control->virial == 0 )
 		{
-			Cuda_Add_dBond_to_Forces( i, pj, workspace, bonds,my_atoms );
+			//if (i < 20 && my_atoms[i].orig_id == 13)
+				//printf("%d,%d\n",pj);
+
+				Cuda_Add_dBond_to_Forces( i, pj, workspace, bonds,my_atoms );
 
 		}
 		else
@@ -891,8 +950,8 @@ CUDA_GLOBAL void k_total_forces( storage p_workspace, reax_list p_bonds,
 		}
 	}
 
-	//if (i < 20)
-		//	printf("After %d,%f,%f,%f\n", my_atoms[i].orig_id, workspace->f[i][0],workspace->f[i][1],workspace->f[i][2] );
+	if (i < 20 && my_atoms[i].orig_id == 13)
+		printf("After %d,%f,%f,%f\n", my_atoms[i].orig_id, workspace->f[i][0],workspace->f[i][1],workspace->f[i][2] );
 
 }
 
@@ -918,7 +977,6 @@ void Cuda_Total_Forces( reax_system *system, control_params *control,
 	hipDeviceSynchronize( );
 	cudaCheckError( );
 
-	exit(0);
 
 
 

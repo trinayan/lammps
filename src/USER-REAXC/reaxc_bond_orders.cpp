@@ -431,6 +431,7 @@ void BO( reax_system *system, control_params * /*control*/, simulation_data * /*
 	p_boc1 = system->reax_param.gp.l[0];
 	p_boc2 = system->reax_param.gp.l[1];
 
+	printf("Bond order \n");
 	/* Calculate Deltaprime, Deltaprime_boc values */
 	for( i = 0; i < system->N; ++i ) {
 		type_i = system->my_atoms[i].type;
@@ -442,6 +443,8 @@ void BO( reax_system *system, control_params * /*control*/, simulation_data * /*
 
 		// printf("%d,%d,%f,%f,%f,%d\n", i, type_i, sbp_i->valency, workspace->Deltap[i],workspace->Deltap_boc[i], workspace->total_bond_order[i]);
 
+		if(i < 20)
+		printf("%d,%f\n", system->my_atoms[i].orig_id,workspace->total_bond_order[i] );
 
 
 		workspace->total_bond_order[i] = 0;

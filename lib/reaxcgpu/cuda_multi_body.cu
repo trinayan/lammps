@@ -329,6 +329,9 @@ CUDA_GLOBAL void Cuda_Atom_Energy( reax_atom *my_atoms, global_parameters gp,
 			e_un, data->my_en.e_ov + data->my_en.e_un );
 #endif
 	//}
+
+
+
 }
 
 
@@ -367,4 +370,7 @@ CUDA_GLOBAL void Cuda_Atom_Energy_PostProcess( reax_list p_bonds,
 			//printf("%f\n", workspace->CdDelta[i]);
 		}
 	}
+
+
+
 }

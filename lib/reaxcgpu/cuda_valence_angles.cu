@@ -109,17 +109,28 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 		prod_SBO *= EXP( -temp );
 	}
 
+	if(my_atoms[j].orig_id == 8 && j < 20)
+		printf("ds %f,%f, %f\n",dSBO2,workspace->vlpex[j],prod_SBO );
+
 	/* modifications to match Adri's code - 09/01/09 */
 	if( workspace->vlpex[j] >= 0 )
 	{
+
 		vlpadj = 0;
 		dSBO2 = prod_SBO - 1;
 	}
 	else
 	{
 		vlpadj = workspace->nlp[j];
-		dSBO2 = (prod_SBO - 1.0) * (1.0 + p_val8 * workspace->dDelta_lp[j]);
+		dSBO2 = (prod_SBO - 1.0) * (1.0 - p_val8 * workspace->dDelta_lp[j]);
+
+		if(my_atoms[j].orig_id == 8 &&  j < 20)
+				printf("%f,%f,%f,%f\n",dSBO2,prod_SBO,p_val8,workspace->dDelta_lp[j]);
 	}
+
+	if(my_atoms[j].orig_id == 8 &&  j < 20)
+		printf("%f,%f,%f,%f\n",dSBO2,prod_SBO,p_val8,workspace->dDelta_lp[j]);
+
 
 	SBO = SBOp + (1 - prod_SBO) * (-workspace->Delta_boc[j] - p_val8 * vlpadj);
 	dSBO1 = -8 * prod_SBO * ( workspace->Delta_boc[j] + p_val8 * vlpadj );
@@ -324,6 +335,11 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 
 							CEval2 = Cf7jk * f7_ij * f8_Dj * expval12theta;
 							CEval3 = Cf8j  * f7_ij * f7_jk * expval12theta;
+
+
+
+
+
 							CEval4 = -2.0 * p_val1 * p_val2 * f7_ij * f7_jk * f8_Dj *
 									expval2theta * (theta_0 - theta);
 
@@ -334,6 +350,11 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 							CEval6 = CEval5 * dSBO1;
 							CEval7 = CEval5 * dSBO2;
 							CEval8 = -CEval4 / sin_theta;
+
+
+							if(my_atoms[j].orig_id == 8)
+								printf("CEval7 %f,%f\n",CEval5,dSBO2);
+
 
 							if ( pk < pi )
 							{
@@ -357,7 +378,7 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 							f9_Dj = ( 2.0 + exp_pen3 ) / trm_pen34;
 							Cf9j = ( -p_pen3 * exp_pen3 * trm_pen34 - (2.0 + exp_pen3)
 									* ( -p_pen3 * exp_pen3 + p_pen4 * exp_pen4 ) )
-                                																																										/ SQR( trm_pen34 );
+                                																																												/ SQR( trm_pen34 );
 
 							/* very important: since each kernel generates all interactions,
                                need to prevent all energies becoming duplicates */
@@ -413,7 +434,11 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 
 
 								bo_jk->Cdbo += (CEval2 + CEpen3 + (CEcoa2 - CEcoa5));
+
 								workspace->CdDelta[j] += ((CEval3 + CEval7) + CEpen1 + CEcoa3);
+
+								if(my_atoms[j].orig_id == 8)
+									printf("Workspace %f,%f,%f,%f,%f\n", workspace->CdDelta[j],CEval3,CEval7,CEpen1,CEcoa3);
 								//                                workspace->CdDelta[i] += CEcoa4;
 								//                                workspace->CdDelta[k] += CEcoa5;
 								pbond_ij->va_CdDelta += CEcoa4;
@@ -438,10 +463,7 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 									rvec_ScaledAdd( workspace->f[j], CEval8, p_ijk->dcos_dj );
 									rvec_ScaledAdd( pbond_jk->va_f, CEval8, p_ijk->dcos_dk );
 
-									if(j == 0)
-									{
-										printf("%d,%d,%d\n",j,pi,pk);
-									}
+
 
 								}
 								else
@@ -620,7 +642,7 @@ CUDA_GLOBAL void Cuda_Valence_Angles_PostProcess( reax_atom *atoms,
 	}
 
 	//if(i < 20)
-		//printf("%d,%d,%f,%f,%f\n",i,atoms[i].orig_id, workspace->f[i][0], workspace->f[i][1], workspace->f[i][2]);
+	//printf("%d,%d,%f,%f,%f\n",i,atoms[i].orig_id, workspace->f[i][0], workspace->f[i][1], workspace->f[i][2]);
 
 	/*if(i < 5)
 	{
