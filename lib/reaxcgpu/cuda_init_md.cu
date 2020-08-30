@@ -195,5 +195,4 @@ void Cuda_Initialize( reax_system *system, control_params *control,
 
 	Cuda_Init_Lists( system, control, data, workspace, lists,cpu_lists, mpi_data );
 
-	Init_Output_Files( system, control, out_control, mpi_data );
 }

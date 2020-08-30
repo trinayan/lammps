@@ -1,1 +1,0 @@
-step           ebond         eatom           elp          eang          ecoa           ehb          etor         econj          evdw         ecoul          epol
