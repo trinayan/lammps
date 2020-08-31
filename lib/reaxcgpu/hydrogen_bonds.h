@@ -29,8 +29,7 @@
 extern "C" {
 #endif
 
-void Hydrogen_Bonds( reax_system * const, control_params * const, simulation_data * const,
-        storage * const, reax_list** const, output_controls * const );
+
 
 #ifdef __cplusplus
 }

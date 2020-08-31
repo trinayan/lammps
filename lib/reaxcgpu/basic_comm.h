@@ -38,23 +38,6 @@ enum pointer_type
 extern "C" {
 #endif
 
-void Dist( const reax_system * const, mpi_datatypes * const,
-        void*, int, MPI_Datatype );
-
-void Coll( const reax_system * const, mpi_datatypes * const,
-        void*, int, MPI_Datatype );
-
-real Parallel_Norm( const real * const, const int, MPI_Comm );
-
-real Parallel_Dot( const real * const, const real * const, const int, MPI_Comm );
-
-real Parallel_Vector_Acc( const real * const, const int, MPI_Comm );
-
-#if defined(TEST_FORCES)
-void Coll_ids_at_Master( reax_system*, storage*, mpi_datatypes* );
-
-void Coll_rvecs_at_Master( reax_system*, storage*, mpi_datatypes*, rvec* );
-#endif
 
 #ifdef __cplusplus
 }

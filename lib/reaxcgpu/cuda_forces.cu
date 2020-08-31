@@ -127,15 +127,7 @@ CUDA_GLOBAL void k_init_end_index( int * intr_cnt, int *indices, int *end_indice
 	{
 		return;
 	}
-
-
-
 	end_indices[i] = indices[i] + intr_cnt[i];
-
-	if (i == 14 || i == 0 || i == 13 )
-	{
-		printf("%d,%d,%d\n", i, indices[i],end_indices[i]);
-	}
 }
 
 
@@ -723,8 +715,7 @@ CUDA_GLOBAL void k_init_forces( reax_atom *my_atoms, single_body_parameters *sbp
 				}
 			}
 
-			if(atom_i->orig_id == 13)
-				printf("atom j orig %d\n", atom_j->orig_id);
+
 			/* uncorrected bond orders */
 			if ( nbr_pj->d <= control->bond_cut &&
 					Cuda_BOp( bonds_list, control->bo_cut, i, btop_i, nbr_pj,
@@ -823,11 +814,6 @@ CUDA_GLOBAL void k_new_fix_sym_dbond_indices( reax_list pbonds, int N, reax_atom
 		ibond = &bonds->select.bond_list[j];
 		nbr = ibond->nbr;
 
-
-
-
-
-
 		for ( k = Cuda_Start_Index(nbr, bonds); k < Cuda_End_Index(nbr, bonds); k++ )
 		{
 			jbond = &bonds->select.bond_list[k];
@@ -837,11 +823,6 @@ CUDA_GLOBAL void k_new_fix_sym_dbond_indices( reax_list pbonds, int N, reax_atom
 			{
 				if ( i > nbr )
 				{
-					if(i < 20)
-					{
-						if(k == 323 || k == 134 || k == 153 || k == 174 ||  j == 323  || j == 134 || j == 153 || j == 174 )
-							printf("Dbond %d,%d,%d,%d\n",j,k,my_atom[i].orig_id,my_atom[j].orig_id);
-					}
 					ibond->dbond_index = j;
 					jbond->dbond_index = j;
 
@@ -1817,9 +1798,6 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 			}
 
 			/* uncorrected bond orders */
-
-			if(atom_i->orig_id == 13 && i < 20)
-				printf("atom j orig %d\n", atom_j->orig_id);
 
 			//printf("calling BOP %d\n", i);
 			if ( nbr_pj->d <= control->bond_cut &&

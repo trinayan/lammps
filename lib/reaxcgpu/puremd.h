@@ -33,18 +33,6 @@
 extern "C"  {
 #endif
 
-void* setup( const char * const, const char * const,
-        const char * const );
-
-int setup_callback( const void * const, const callback_function );
-
-int simulate( const void * const );
-
-int cleanup( const void * const );
-
-reax_atom* get_atoms( const void * const );
-
-int set_output_enabled( const void * const, const int );
 
 #ifdef __cplusplus
 }

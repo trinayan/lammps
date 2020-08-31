@@ -87,17 +87,14 @@ void Cuda_Init_Simulation_Data( reax_system *system, control_params *control,
 {
 	Cuda_Allocate_Simulation_Data( data );
 
-	Reset_Simulation_Data( data );
+	Reset_Simulation_Data_Host( data );
 
 	if ( !control->restart )
 	{
 		data->step = data->prev_steps = 0;
 	}
 
-	if ( system->my_rank == MASTER_NODE )
-	{
-		data->timing.start = Get_Time( );
-	}
+
 
 }
 
@@ -112,8 +109,9 @@ void Cuda_Init_Workspace( reax_system *system, control_params *control,
 
 
 	Cuda_Reset_Workspace( system, workspace );
+	Init_Host_Taper( control, workspace->d_workspace );
 
-	Init_Taper( control, workspace->d_workspace );
+
 }
 
 
@@ -177,7 +175,6 @@ void Cuda_Initialize( reax_system *system, control_params *control,
 
 	Cuda_Init_Scratch_Space( workspace );
 
-	Init_MPI_Datatypes( system, workspace, mpi_data );
 
 	if ( Cuda_Init_System( system, control, data, workspace, mpi_data, msg ) == FAILURE )
 	{

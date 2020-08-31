@@ -29,21 +29,9 @@
 extern "C" {
 #endif
 
-void Generate_Initial_Velocities( reax_system * const, real );
+void Init_Host_Taper( control_params * const,  storage * const );
 
-void Init_MPI_Datatypes( reax_system * const, storage * const, mpi_datatypes * const );
 
-void Initialize( reax_system * const, control_params * const, simulation_data * const,
-        storage * const, reax_list** const, output_controls * const, mpi_datatypes * const );
-
-void Pure_Initialize( reax_system * const, control_params * const, simulation_data * const,
-        storage * const, reax_list** const, output_controls * const, mpi_datatypes * const );
-
-void Init_Taper( control_params * const,  storage * const );
-
-void Finalize( reax_system * const, control_params * const,
-        simulation_data * const, storage * const, reax_list ** const,
-        output_controls * const, mpi_datatypes * const, const int );
 
 #ifdef __cplusplus
 }

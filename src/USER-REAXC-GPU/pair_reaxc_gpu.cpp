@@ -723,11 +723,6 @@ void PairReaxCGPU::compute(int eflag, int vflag)
 		printf("fix species not implemented for GPU  %d\n",fixspecies_flag);
 
 	}
-
-	//exit(0);
-
-
-
 }
 
 /* ---------------------------------------------------------------------- */
@@ -819,9 +814,6 @@ int PairReaxCGPU::estimate_reax_lists()
 			}
 		}
 
-		if( i < 20)
-			printf("Before %d\n", num_nbrs);
-
 		for( itr_j = 0; itr_j < numneigh[i]; ++itr_j ){
 			j = jlist[itr_j];
 			if( i > j)
@@ -836,31 +828,7 @@ int PairReaxCGPU::estimate_reax_lists()
 			}
 		}
 
-		if( i < 20)
-			printf("After %d\n", num_nbrs);
-
 	}
-
-
-
-	/* for( itr_i = 0; itr_i < numall; ++itr_i ){
-	    i = ilist[itr_i];
-	    marked[i] = 1;
-	    ++num_marked;
-	    jlist = firstneigh[i];
-
-	    for( itr_j = 0; itr_j < numneigh[i]; ++itr_j ){
-	      j = jlist[itr_j];
-	      j &= NEIGHMASK;
-	      get_distance( x[j], x[i], &d_sqr, &dvec );
-
-	      if (d_sqr <= SQR(control->nonb_cut))
-	        ++num_nbrs;
-	    }
-
-		if( i < 20)
-				printf("%d\n", num_nbrs);
-	  }*/
 
 
 	free(marked);
@@ -971,18 +939,13 @@ void PairReaxCGPU::read_reax_forces_from_device(int /*vflag*/)
 		system->my_atoms[i].f[1] = workspace->f[i][1];
 		system->my_atoms[i].f[2] = workspace->f[i][2];
 
-		//printf("%f,%f,%f\n", system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2] );
-
-	    printf("%f,%f,%f\n", system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2] );
+		//if(i < 20)
+			//printf("%f,%f,%f\n", system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
 
 		atom->f[i][0] += -workspace->f[i][0];
 		atom->f[i][1] += -workspace->f[i][1];
 		atom->f[i][2] += -workspace->f[i][2];
-
-
 	}
-
-	exit(0);
 
 
 }

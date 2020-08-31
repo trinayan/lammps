@@ -83,12 +83,11 @@ void Cuda_Reset( reax_system *system, control_params *control,
 {
     Cuda_Reset_Atoms( system, control, workspace );
 
-    Reset_Simulation_Data( data );
+    Reset_Simulation_Data_Host( data );
 
     if ( control->virial )
     {
-    	printf("Cuda virtial \n");
-        Reset_Pressures( data );
+        Reset_Pressures_Host( data );
     }
 
     Cuda_Reset_Workspace( system, workspace );

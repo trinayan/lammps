@@ -29,22 +29,22 @@
 extern "C"  {
 #endif
 
-void Reset_Pressures( simulation_data * const );
+void Reset_Pressures_Host( simulation_data * const );
 
-void Reset_Simulation_Data( simulation_data * const );
+void Reset_Simulation_Data_Host( simulation_data * const );
 
-void Reset_Timing( reax_timing * const );
+void Reset_Timing_Host( reax_timing * const );
 
-void Reset_Workspace( reax_system * const, storage * const );
+void Reset_Workspace_Host( reax_system * const, storage * const );
 
-void Reset_Lists( reax_system * const, control_params * const,
+void Reset_Lists_Host( reax_system * const, control_params * const,
         storage * const, reax_list** const );
 
-void Reset_Grid( grid * const );
+void Reset_Grid_Host( grid * const );
 
-void Reset_Out_Buffers( mpi_out_data * const, int );
+void Reset_Out_Buffers_Host( mpi_out_data * const, int );
 
-void Reset( reax_system * const, control_params * const,
+void Reset_Host( reax_system * const, control_params * const,
         simulation_data * const, storage * const, reax_list** const );
 
 #ifdef TEST_FORCES

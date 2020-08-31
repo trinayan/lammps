@@ -147,9 +147,6 @@ CUDA_GLOBAL void Cuda_Bonds( reax_atom *my_atoms, global_parameters gp,
                     workspace->CdDelta[i] += decobdboua;
                     workspace->CdDelta[j] += decobdboub;
 
-                    if(my_atoms[i].orig_id == 8 || my_atoms[j].orig_id == 8)
-                    	printf("Bonds %d,%d,%f,%f\n",my_atoms[i].orig_id,my_atoms[j].orig_id, workspace->CdDelta[i],workspace->CdDelta[j]);
-
 #ifdef TEST_ENERGY
                     //fprintf( out_control->ebond, 
                     //  "%6d%6d%24.15e%24.15e%24.15e%24.15e\n",

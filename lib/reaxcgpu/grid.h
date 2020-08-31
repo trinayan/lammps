@@ -29,15 +29,6 @@
 extern "C" {
 #endif
 
-void Setup_New_Grid( reax_system * const, control_params * const, MPI_Comm );
-
-void Update_Grid( reax_system * const, control_params * const, MPI_Comm );
-
-void Bin_My_Atoms( reax_system * const, storage * const );
-
-void Reorder_My_Atoms( reax_system * const, storage * const );
-
-void Bin_Boundary_Atoms( reax_system * const );
 
 #ifdef __cplusplus
 }

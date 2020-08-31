@@ -109,8 +109,6 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 		prod_SBO *= EXP( -temp );
 	}
 
-	if(my_atoms[j].orig_id == 8 && j < 20)
-		printf("ds %f,%f, %f\n",dSBO2,workspace->vlpex[j],prod_SBO );
 
 	/* modifications to match Adri's code - 09/01/09 */
 	if( workspace->vlpex[j] >= 0 )
@@ -123,13 +121,8 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 	{
 		vlpadj = workspace->nlp[j];
 		dSBO2 = (prod_SBO - 1.0) * (1.0 - p_val8 * workspace->dDelta_lp[j]);
-
-		if(my_atoms[j].orig_id == 8 &&  j < 20)
-				printf("%f,%f,%f,%f\n",dSBO2,prod_SBO,p_val8,workspace->dDelta_lp[j]);
 	}
 
-	if(my_atoms[j].orig_id == 8 &&  j < 20)
-		printf("%f,%f,%f,%f\n",dSBO2,prod_SBO,p_val8,workspace->dDelta_lp[j]);
 
 
 	SBO = SBOp + (1 - prod_SBO) * (-workspace->Delta_boc[j] - p_val8 * vlpadj);
@@ -352,9 +345,6 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 							CEval8 = -CEval4 / sin_theta;
 
 
-							if(my_atoms[j].orig_id == 8)
-								printf("CEval7 %f,%f\n",CEval5,dSBO2);
-
 
 							if ( pk < pi )
 							{
@@ -437,8 +427,7 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 
 								workspace->CdDelta[j] += ((CEval3 + CEval7) + CEpen1 + CEcoa3);
 
-								if(my_atoms[j].orig_id == 8)
-									printf("Workspace %f,%f,%f,%f,%f\n", workspace->CdDelta[j],CEval3,CEval7,CEpen1,CEcoa3);
+
 								//                                workspace->CdDelta[i] += CEcoa4;
 								//                                workspace->CdDelta[k] += CEcoa5;
 								pbond_ij->va_CdDelta += CEcoa4;
@@ -616,14 +605,6 @@ CUDA_GLOBAL void Cuda_Valence_Angles_PostProcess( reax_atom *atoms,
 	bonds = &p_bonds;
 	workspace = &p_workspace;
 
-
-	/*if( i < 20 && atoms[i].orig_id == 1)
-	{
-		printf("Before %d,%d,%f,%f,%f\n",i, atoms[i].orig_id, workspace->f[0][0],workspace->f[0][1],workspace->f[0][2]);
-	}*/
-
-
-
 	for( pj = Cuda_Start_Index(i, bonds); pj < Cuda_End_Index(i, bonds); ++pj )
 	{
 		pbond = &bonds->select.bond_list[pj];
@@ -633,25 +614,7 @@ CUDA_GLOBAL void Cuda_Valence_Angles_PostProcess( reax_atom *atoms,
 
 		//rvec_Add( atoms[i].f, sym_index_bond->va_f );
 		rvec_Add( workspace->f[i], sym_index_bond->va_f);
-
-		/*if( i < 20 && atoms[i].orig_id == 1)
-		{
-			printf("Before %d,%d,%f,%f,%f\n",pj,pbond->sym_index,sym_index_bond->va_f[0],sym_index_bond->va_f[1],sym_index_bond->va_f[2]);
-		}*/
-
 	}
-
-	//if(i < 20)
-	//printf("%d,%d,%f,%f,%f\n",i,atoms[i].orig_id, workspace->f[i][0], workspace->f[i][1], workspace->f[i][2]);
-
-	/*if(i < 5)
-	{
-		printf("%f,%f,%f\n", workspace->f[i][0],workspace->f[i][1],workspace->f[i][2]);
-	}*/
-
-
-
-
 }
 
 

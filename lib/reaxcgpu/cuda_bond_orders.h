@@ -45,20 +45,7 @@ CUDA_DEVICE static inline int Cuda_BOp( reax_list bonds, real bo_cut,
 	rvec bo_ij_dBOp;
 
 	j = nbr_pj->nbr;
-
-	/*if(i == 10)
-	{
-		printf("J %d\n",j);
-	}*/
-
 	r2 = SQR( nbr_pj->d );
-
-
-	//printf("J %d\n",j);
-
-	if(i == 10)
-		printf("%d,%d\n",i, j);
-
 
 
 	if ( sbp_i->r_s > 0.0 && sbp_j->r_s > 0.0 )

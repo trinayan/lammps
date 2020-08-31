@@ -48,37 +48,7 @@ typedef struct
 extern "C" {
 #endif
 
-void Add_dBond_to_Forces( int, int, storage * const, reax_list ** const );
 
-void Add_dBond_to_Forces_NPT( int, int, simulation_data * const, storage * const,
-        reax_list ** const );
-
-int BOp( storage * const, reax_list * const, real, int, int, const far_neighbor_data * const,
-        const single_body_parameters * const, const single_body_parameters * const,
-        const two_body_parameters * const );
-
-void BO( reax_system * const, control_params * const, simulation_data * const,
-        storage * const, reax_list ** const, output_controls * const );
-
-#ifdef TEST_FORCES
-void Add_dBO( reax_system * const, reax_list ** const,
-        int, int, real, rvec * const );
-
-void Add_dBOpinpi2( reax_system * const, reax_list ** const,
-        int, int, real, real, rvec * const, rvec * const );
-
-void Add_dBO_to_Forces( reax_system * const, reax_list ** const,
-        int, int, real );
-
-void Add_dBOpinpi2_to_Forces( reax_system * const, reax_list ** const,
-        int, int, real, real );
-
-void Add_dDelta( reax_system * const, reax_list ** const, int, real,
-        rvec * const );
-
-void Add_dDelta_to_Forces( reax_system * const, reax_list ** const,
-        int, real );
-#endif
 
 #ifdef __cplusplus
 }

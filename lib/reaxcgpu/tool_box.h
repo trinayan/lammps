@@ -29,39 +29,7 @@
 extern "C" {
 #endif
 
-/* from comm_tools.h */
-int SumScan( int, int, int, MPI_Comm );
 
-void SumScanB( int, int, int, int, MPI_Comm, int* );
-
-void Fit_to_Periodic_Box( simulation_box*, rvec* );
-
-/* from geo_tools.h */
-void Make_Point( real, real, real, rvec* );
-
-int is_Valid_Serial( storage*, int );
-
-int Check_Input_Range( int, int, int, char* );
-
-void Trim_Spaces( char* );
-
-/* from system_props.h */
-real Get_Time( );
-
-real Get_Timing_Info( real );
-
-void Update_Timing_Info( real*, real* );
-
-/* from io_tools.h */
-int Get_Atom_Type( reax_interaction*, char* );
-
-char *Get_Element( reax_system*, int );
-
-char *Get_Atom_Name( reax_system*, int );
-
-void Allocate_Tokenizer_Space( char**, char**, char*** );
-
-int Tokenize( const char*, char*** );
 
 void *smalloc( size_t, const char* );
 
