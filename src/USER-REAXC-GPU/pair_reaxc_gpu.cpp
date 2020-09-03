@@ -643,6 +643,9 @@ void PairReaxCGPU::compute(int eflag, int vflag)
 
 	printf("Computing forces \n");
 	Cuda_Compute_Forces(system, control, data, workspace, gpu_lists, out_control, mpi_data);
+	printf("Computing forces finished \n");
+
+
 
 
 	read_reax_forces_from_device(vflag);
@@ -946,6 +949,8 @@ void PairReaxCGPU::read_reax_forces_from_device(int /*vflag*/)
 		atom->f[i][1] += -workspace->f[i][1];
 		atom->f[i][2] += -workspace->f[i][2];
 	}
+
+	//exit(0);
 
 
 }

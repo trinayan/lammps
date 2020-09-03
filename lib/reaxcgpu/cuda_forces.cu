@@ -1862,7 +1862,6 @@ int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 		simulation_data *data, storage *workspace,
 		reax_list **lists, output_controls *out_control )
 {
-	//TODO: implement later when figure out bond_mark usage
 
 	int i, j, pj;
 	int start_i, end_i;
@@ -1930,10 +1929,6 @@ int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 
 
 
-
-
-
-
 	/* check reallocation flags on device */
 	copy_host_device( &ret_bonds, system->d_realloc_bonds, sizeof(int),
 			hipMemcpyDeviceToHost, "Cuda_Init_Forces::d_realloc_bonds" );
@@ -1953,11 +1948,10 @@ int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 		hipDeviceSynchronize( );
 		cudaCheckError( );
 
-		//exit(0);
 
 		if ( control->hbond_cut > 0.0 && system->numH > 0 )
 		{
-			/* make hbond_list symmetric */
+			// make hbond_list symmetric
 			hblocks = (system->N * HB_KER_SYM_THREADS_PER_ATOM / HB_SYM_BLOCK_SIZE) +
 					((((system->N * HB_KER_SYM_THREADS_PER_ATOM) % HB_SYM_BLOCK_SIZE) == 0) ? 0 : 1);
 
@@ -1978,50 +1972,6 @@ int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 
 	return ret;
 
-
-
-
-	int *temp_copies = (int *) malloc(sizeof(int)*system->N);
-	hipMemcpy(temp_copies, num_bonds_per_atom,sizeof(int)*system->N,hipMemcpyDeviceToHost);
-	//copy_host_device(temp_copies, num_bonds_per_atom,sizeof(real)*system->N, hipMemcpyDeviceToHost, "mkx");
-
-	int sum = 0;
-
-	for(int i = 0; i < system->N; i++)
-	{
-		sum = sum + temp_copies[i];
-	}
-
-	//printf("%d\n", sum);
-
-
-	/*hipLaunchKernelGGL(k_reduction, dim3(blocks), dim3(DEF_BLOCK_SIZE), sizeof(real) * DEF_BLOCK_SIZE , 0,  num_bonds_per_atom,  total_num_bonds_per_atoms, system->N);
-	hipDeviceSynchronize( );
-	cudaCheckError();
-
-
-
-	double my_acc;
-
-	copy_host_device( &my_acc, total_num_bonds_per_atoms,
-			sizeof(double), hipMemcpyDeviceToHost, "charges:x" );
-
-	workspace->realloc.num_bonds = my_acc;
-
-	my_acc = 0;
-
-	hipLaunchKernelGGL(k_reduction, dim3(blocks), dim3(DEF_BLOCK_SIZE), sizeof(real) * DEF_BLOCK_SIZE , 0,  num_hbonds_per_atom,  total_num_hbonds_per_atoms, system->N);
-	hipDeviceSynchronize();
-	cudaCheckError();
-
-	copy_host_device( &my_acc, total_num_hbonds_per_atoms,
-			sizeof(double), hipMemcpyDeviceToHost, "charges:x" );
-
-	workspace->realloc.num_hbonds = my_acc;
-
-	printf("%d,%d\n", workspace->realloc.num_bonds , workspace->realloc.num_hbonds);*/
-
-	return 1;
 
 }
 
@@ -2495,9 +2445,18 @@ int Cuda_Compute_Forces( reax_system *system, control_params *control,
 		output_controls *out_control, mpi_datatypes *mpi_data )
 {
 
+
+	printf("Calling \n");
 	Cuda_Init_Forces_No_Charges(system, control, data, workspace,lists, out_control);
+	printf("Init forces\n");
 	Cuda_Compute_Bonded_Forces(system, control, data, workspace, lists, out_control);
 	Cuda_Compute_NonBonded_Forces(system, control, data, workspace, lists, out_control,mpi_data);
 	Cuda_Compute_Total_Force( system, control, data, workspace, lists, mpi_data );
+	printf("Completed forces\n");
+
+	return 1;
+
+	//exit(0);
+
 }
 
