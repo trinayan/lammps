@@ -15,7 +15,8 @@ HIPCCINCS = -I/opt/rocm/include -I/opt/rocm/hcc/include -I$(MPI_PATH)/include/op
 
 HIPCCDEFS = $(HIPCCFLAGS) $(HIPCCINCS)
 
-CCINCS =  -D__HIP_PLATFORM_HCC__=   -I/opt/rocm/include -I/opt/rocm/hcc/include  -I$(MPI_PATH)/include/openmpi -I$(MPI_PATH)/include/openmpi/opal/mca/event/libevent2022/libevent -I$(MPI_PATH)/include/openmpi/opal/mca/event/libevent2022/libevent/include -I$(MPI_PATH)/include -pthread
+CCINCS =  -D__HIP_PLATFORM_HCC__  -I/opt/rocm/include -I/opt/rocm/hcc/include  -I$(MPI_PATH)/include/openmpi -I$(MPI_PATH)/include/openmpi/opal/mca/event/libevent2022/libevent -I$(MPI_PATH)/include/openmpi/opal/mca/event/libevent2022/libevent/include -I$(MPI_PATH)/include -pthread
+
 CCFLAGS = -fpermissive  -w -ggdb
 CCDEFS =  $(CCFLAGS) $(CCINCS)
 
