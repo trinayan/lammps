@@ -55,7 +55,7 @@ public:
   typedef Kokkos::View<SNAcomplex**[3], DeviceType> t_sna_3c3;
   typedef Kokkos::View<SNAcomplex*****, DeviceType> t_sna_5c;
 
-  typedef Kokkos::View<CayleyKleinPack**, DeviceType> t_sna_2ckp; 
+  typedef Kokkos::View<CayleyKleinPack**, DeviceType> t_sna_2ckp;
 
 inline
   SNAKokkos() {};
@@ -77,6 +77,7 @@ inline
   double memory_usage();
 
   int ncoeff;
+  int host_flag;
 
   // functions for bispectrum coefficients, GPU only
   KOKKOS_INLINE_FUNCTION

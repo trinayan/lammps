@@ -13,7 +13,7 @@ DEPFLAGS =	-M
 
 HIP_PATH ?= $(wildcard /opt/rocm/hip)
 LINK =		$(HIP_PATH)/bin/hipcc
-LINKFLAGS =	-g -O3 $(shell mpicxx --showme:link)
+LINKFLAGS =	-g -O3 $(shell mpicxx --showme:link)  -L../../lib/reaxcgpu -lreaxcgpu
 LIB = 
 SIZE =		size
 

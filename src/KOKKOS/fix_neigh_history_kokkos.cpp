@@ -12,13 +12,13 @@
 ------------------------------------------------------------------------- */
 
 #include "fix_neigh_history_kokkos.h"
+
 #include "atom_kokkos.h"
 #include "error.h"
 #include "memory_kokkos.h"
+#include "modify.h"
 #include "neigh_list_kokkos.h"
 #include "pair_kokkos.h"
-#include "comm.h"
-#include "modify.h"
 
 using namespace LAMMPS_NS;
 
@@ -284,7 +284,7 @@ void FixNeighHistoryKokkos<DeviceType>::grow_arrays(int nmax)
 ------------------------------------------------------------------------- */
 
 template<class DeviceType>
-void FixNeighHistoryKokkos<DeviceType>::copy_arrays(int i, int j, int delflag)
+void FixNeighHistoryKokkos<DeviceType>::copy_arrays(int i, int j, int /*delflag*/)
 {
   k_npartner.template sync<LMPHostType>();
   k_partner.template sync<LMPHostType>();
