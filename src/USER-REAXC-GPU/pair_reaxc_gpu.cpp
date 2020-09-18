@@ -201,54 +201,51 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 
 PairReaxCGPU::~PairReaxCGPU()
 {
-	printf(" Destructor Unimpl \n");
-	exit(0);
-	/* if (copymode) return;
+	if (copymode) return;
 
-  if (fix_reax) modify->delete_fix(fix_id);
-  delete[] fix_id;
+		if (fix_reax) modify->delete_fix(fix_id);
+		delete[] fix_id;
 
-  if (setup_flag) {
-    Close_Output_Files( system, control, out_control, mpi_data );
+		if (setup_flag) {
+			Close_Output_Files( system, control, out_control, mpi_data );
 
-    // deallocate reax data-structures
+			// deallocate reax data-structures
 
-    if (control->tabulate ) Deallocate_Lookup_Tables( system);
+			if (control->tabulate ) Deallocate_Lookup_Tables( system);
 
-    if (control->hbond_cut > 0 )  Delete_List( lists+HBONDS );
-    Delete_List( lists+BONDS );
-    Delete_List( lists+THREE_BODIES );
-    Delete_List( lists+FAR_NBRS );
+			if (control->hbond_cut > 0 )  Delete_List( cpu_lists+HBONDS );
+			Delete_List( cpu_lists+BONDS );
+			Delete_List( cpu_lists+THREE_BODIES );
+			Delete_List( cpu_lists+FAR_NBRS );
 
-    DeAllocate_Workspace( control, workspace );
-    DeAllocate_System( system );
-  }
+			DeAllocate_Workspace( control, workspace );
+			DeAllocate_System( system );
+		}
 
-  memory->destroy( system );
-  memory->destroy( control );
-  memory->destroy( data );
-  memory->destroy( workspace );
-  memory->destroy( lists );
-  memory->destroy( out_control );
-  memory->destroy( mpi_data );
+		memory->destroy( system );
+		memory->destroy( control );
+		memory->destroy( data );
+		memory->destroy( workspace );
+		memory->destroy( cpu_lists );
+		memory->destroy( out_control );
+		memory->destroy( mpi_data );
 
-  // deallocate interface storage
-  if (allocated) {
-    memory->destroy(setflag);
-    memory->destroy(cutsq);
-    memory->destroy(cutghost);
-    delete [] map;
+		// deallocate interface storage
+		if (allocated) {
+			memory->destroy(setflag);
+			memory->destroy(cutsq);
+			memory->destroy(cutghost);
+			delete [] map;
 
-    delete [] chi;
-    delete [] eta;
-    delete [] gamma;
-  }
+			delete [] chi;
+			delete [] eta;
+			delete [] gamma;
+		}
 
-  memory->destroy(tmpid);
-  memory->destroy(tmpbo);
+		memory->destroy(tmpid);
+		memory->destroy(tmpbo);
 
-  delete [] pvector;
-	 */
+		delete [] pvector;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -534,7 +531,7 @@ void PairReaxCGPU::setup( )
 		int num_nbrs = estimate_reax_lists(); //TB:: Should this be moved to GPU?
 		system->total_far_nbrs = num_nbrs;
 
-		printf("Num nbrs %d \n", num_nbrs);
+		//printf("Num nbrs %d \n", num_nbrs);
 
 		if(!Make_List(system->total_cap, num_nbrs, TYP_FAR_NEIGHBOR,
 				(cpu_lists+FAR_NBRS)))
@@ -565,12 +562,12 @@ void PairReaxCGPU::setup( )
 		//update_and_copy_reax_atoms_to_device();
 
 		// reset the bond list info for new atoms
-		printf("Initial setup done. far numbers gpu %d \n", gpu_lists[FAR_NBRS]->num_intrs);
+		//printf("Initial setup done. far numbers gpu %d \n", gpu_lists[FAR_NBRS]->num_intrs);
 
 
 		Cuda_Adjust_End_Index_Before_ReAllocation(oldN, system->N, gpu_lists);
 
-		printf("Initial setup done. far numbers gpu %d \n", gpu_lists[FAR_NBRS]->num_intrs);
+		//printf("Initial setup done. far numbers gpu %d \n", gpu_lists[FAR_NBRS]->num_intrs);
 
 		// check if I need to shrink/extend my data-structs
 
@@ -641,9 +638,9 @@ void PairReaxCGPU::compute(int eflag, int vflag)
 
 	// forces
 
-	printf("Computing forces \n");
+	//printf("Computing forces \n");
 	Cuda_Compute_Forces(system, control, data, workspace, gpu_lists, out_control, mpi_data);
-	printf("Computing forces finished \n");
+	//printf("Computing forces finished \n");
 
 
 
@@ -937,6 +934,7 @@ void PairReaxCGPU::read_reax_forces_from_device(int /*vflag*/)
 
 	Output_Sync_Forces(workspace,system->total_cap);
 
+	//printf("\n\n");
 	for( int i = 0; i < system->N; ++i ) {
 		system->my_atoms[i].f[0] = workspace->f[i][0];
 		system->my_atoms[i].f[1] = workspace->f[i][1];
@@ -949,10 +947,6 @@ void PairReaxCGPU::read_reax_forces_from_device(int /*vflag*/)
 		atom->f[i][1] += -workspace->f[i][1];
 		atom->f[i][2] += -workspace->f[i][2];
 	}
-
-	//exit(0);
-
-
 }
 
 /* ---------------------------------------------------------------------- */

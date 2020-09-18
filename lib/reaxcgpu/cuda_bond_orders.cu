@@ -892,7 +892,7 @@ void Cuda_Total_Forces( reax_system *system, control_params *control,
 	blocks = system->N / DEF_BLOCK_SIZE
 			+ ((system->N % DEF_BLOCK_SIZE == 0) ? 0 : 1);
 
-	printf("virital %d \n", control->virial);
+	//printf("virital %d \n", control->virial);
 
 	hipLaunchKernelGGL(k_total_forces, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  *(workspace->d_workspace), *(lists[BONDS]),
 			(control_params *) control->d_control_params,

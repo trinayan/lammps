@@ -73,7 +73,7 @@ void Cuda_Reset_Atoms( reax_system* system, control_params *control,
 
     system->Hcap = MAX( (int)(system->numH * SAFER_ZONE), MIN_CAP );
 
-    printf("Num  H %d, %d \n", system->numH, system->Hcap);
+    //printf("Num  H %d, %d \n", system->numH, system->Hcap);
 
 }
 

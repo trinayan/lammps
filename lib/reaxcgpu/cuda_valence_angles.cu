@@ -93,12 +93,6 @@ CUDA_GLOBAL void Cuda_Valence_Angles( reax_atom *my_atoms,
 	SBOp = 0.0;
 	prod_SBO = 1.0;
 
-	if(j == 0)
-	{
-		printf("start%d,end%d\n",start_j,end_j);;
-	}
-
-
 	for( t = start_j; t < end_j; ++t )
 	{
 		bo_jt = &bonds->select.bond_list[t].bo_data;

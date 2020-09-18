@@ -565,7 +565,7 @@ void Cuda_ReAllocate( reax_system *system, control_params *control,
 
 		if (Nflag || realloc->num_far >= far_nbrs->num_intrs * DANGER_ZONE) {
 			if (realloc->num_far > far_nbrs->num_intrs) {
-				printf("Num far %d , far nbrs %d\n ", realloc->num_far, far_nbrs->num_intrs);
+				//printf("Num far %d , far nbrs %d\n ", realloc->num_far, far_nbrs->num_intrs);
 				printf("Ran out of space \n");
 				exit(0);
 			}

@@ -777,14 +777,14 @@ int PairReaxC::write_reax_lists()
 void PairReaxC::read_reax_forces(int /*vflag*/)
 {
 
-	//printf("\n\n");
+	printf("\n\n");
 	for( int i = 0; i < system->N; ++i ) {
 		system->my_atoms[i].f[0] = workspace->f[i][0];
 		system->my_atoms[i].f[1] = workspace->f[i][1];
 		system->my_atoms[i].f[2] = workspace->f[i][2];
 
-		//if(i < 20)
-			//	printf("%f,%f,%f\n", system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
+		if(i < 20)
+				printf("%f,%f,%f\n", system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
 
 
 		atom->f[i][0] += -workspace->f[i][0];

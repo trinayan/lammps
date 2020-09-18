@@ -129,7 +129,7 @@ extern "C" void copy_device( void *dest, void *src, size_t size, const char *msg
 extern "C" void compute_blocks( int *blocks, int *block_size, int count )
 {
     *block_size = CUDA_BLOCK_SIZE;
-    printf("Cuda block_size %d,%d \n", count, (int) CEIL((double) count / CUDA_BLOCK_SIZE) );
+    //printf("Cuda block_size %d,%d \n", count, (int) CEIL((double) count / CUDA_BLOCK_SIZE) );
     *blocks = (int) CEIL((double) count / CUDA_BLOCK_SIZE);
 }
 
@@ -174,7 +174,7 @@ extern "C" void Cuda_Init_Block_Sizes( reax_system *system, control_params *cont
     compute_blocks( &control->blocks, &control->block_size, system->n );
     compute_nearest_pow_2( control->blocks, &control->blocks_pow_2 );
 
-    printf("blocks %d, %d,%d \n", control->blocks, control->blocks_pow_2, system->n);
+    //printf("blocks %d, %d,%d \n", control->blocks, control->blocks_pow_2, system->n);
 
     compute_blocks( &control->blocks_n, &control->block_size, system->N );
     compute_nearest_pow_2( control->blocks_n, &control->blocks_pow_2_n );
