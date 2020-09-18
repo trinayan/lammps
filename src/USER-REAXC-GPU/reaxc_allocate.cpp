@@ -83,7 +83,7 @@ int Allocate_System( reax_system *system, int /*local_cap*/, int total_cap,
 
 void DeAllocate_System( reax_system *system )
 {
- /* int i, j, k;
+ int i, j, k;
   int ntypes;
   reax_interaction *ff_params;
 
@@ -91,7 +91,7 @@ void DeAllocate_System( reax_system *system )
   sfree(system->error_ptr,  system->my_atoms, "system->my_atoms" );
 
   // deallocate the ffield parameters storage
-  ff_params = &(system->reax_param);
+  /*ff_params = &(system->reax_param);
   ntypes = ff_params->num_atom_types;
 
   sfree(system->error_ptr,  ff_params->gp.l, "ff:globals" );
@@ -114,10 +114,10 @@ void DeAllocate_System( reax_system *system )
   sfree(system->error_ptr,  ff_params->thbp, "ff:thbp" );
   sfree(system->error_ptr,  ff_params->hbp, "ff:hbp" );
   sfree(system->error_ptr,  ff_params->tbp, "ff:tbp" );
-  sfree(system->error_ptr,  ff_params->sbp, "ff:sbp" );
-*/
+  sfree(system->error_ptr,  ff_params->sbp, "ff:sbp" );*/
+
   printf("Fix fbp incompat first\n");
-  exit(0);
+  //exit(0);
 
 }
 

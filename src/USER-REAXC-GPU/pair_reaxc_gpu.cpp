@@ -122,15 +122,15 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 	snprintf(fix_id,24,"REAXC_%d",instance_me);
 
 	system = (reax_system *)
-    																				memory->smalloc(sizeof(reax_system),"reax:system");
+    																						memory->smalloc(sizeof(reax_system),"reax:system");
 	memset(system,0,sizeof(reax_system));
 	control = (control_params *)
-    																				memory->smalloc(sizeof(control_params),"reax:control");
+    																						memory->smalloc(sizeof(control_params),"reax:control");
 	memset(control,0,sizeof(control_params));
 	data = (simulation_data *)
-    																				memory->smalloc(sizeof(simulation_data),"reax:data");
+    																						memory->smalloc(sizeof(simulation_data),"reax:data");
 	workspace = (storage *)
-    																				memory->smalloc(sizeof(storage),"reax:storage");
+    																						memory->smalloc(sizeof(storage),"reax:storage");
 
 	workspace->d_workspace = (storage *)memory->smalloc(sizeof(storage),"reax:gpu_storage");
 
@@ -145,8 +145,7 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 		gpu_lists[i]->allocated = FALSE;
 	}
 
-	cpu_lists = (reax_list *)
-    																				  memory->smalloc(LIST_N * sizeof(reax_list),"reax:lists");
+	cpu_lists = (reax_list *)memory->smalloc(LIST_N * sizeof(reax_list),"reax:lists");
 	memset(cpu_lists,0,LIST_N * sizeof(reax_list));
 
 
@@ -155,10 +154,10 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 
 
 	out_control = (output_controls *)
-    																				memory->smalloc(sizeof(output_controls),"reax:out_control");
+    																						memory->smalloc(sizeof(output_controls),"reax:out_control");
 	memset(out_control,0,sizeof(output_controls));
 	mpi_data = (mpi_datatypes *)
-    																				memory->smalloc(sizeof(mpi_datatypes),"reax:mpi");
+    																						memory->smalloc(sizeof(mpi_datatypes),"reax:mpi");
 	control->me = system->my_rank = comm->me;
 
 
@@ -201,54 +200,53 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 
 PairReaxCGPU::~PairReaxCGPU()
 {
-	printf(" Destructor Unimpl \n");
-	exit(0);
-	/* if (copymode) return;
 
-  if (fix_reax) modify->delete_fix(fix_id);
-  delete[] fix_id;
+	if (copymode) return;
 
-  if (setup_flag) {
-    Close_Output_Files( system, control, out_control, mpi_data );
+	if (fix_reax) modify->delete_fix(fix_id);
+	delete[] fix_id;
 
-    // deallocate reax data-structures
+	if (setup_flag) {
+		Close_Output_Files( system, control, out_control, mpi_data );
 
-    if (control->tabulate ) Deallocate_Lookup_Tables( system);
+		// deallocate reax data-structures
 
-    if (control->hbond_cut > 0 )  Delete_List( lists+HBONDS );
-    Delete_List( lists+BONDS );
-    Delete_List( lists+THREE_BODIES );
-    Delete_List( lists+FAR_NBRS );
+		if (control->tabulate ) Deallocate_Lookup_Tables( system);
 
-    DeAllocate_Workspace( control, workspace );
-    DeAllocate_System( system );
-  }
+		if (control->hbond_cut > 0 )  Delete_List( cpu_lists+HBONDS );
+		Delete_List( cpu_lists+BONDS );
+		Delete_List( cpu_lists+THREE_BODIES );
+		Delete_List( cpu_lists+FAR_NBRS );
 
-  memory->destroy( system );
-  memory->destroy( control );
-  memory->destroy( data );
-  memory->destroy( workspace );
-  memory->destroy( lists );
-  memory->destroy( out_control );
-  memory->destroy( mpi_data );
+		DeAllocate_Workspace( control, workspace );
+		DeAllocate_System( system );
+	}
 
-  // deallocate interface storage
-  if (allocated) {
-    memory->destroy(setflag);
-    memory->destroy(cutsq);
-    memory->destroy(cutghost);
-    delete [] map;
+	memory->destroy( system );
+	memory->destroy( control );
+	memory->destroy( data );
+	memory->destroy( workspace );
+	memory->destroy( cpu_lists );
+	memory->destroy( out_control );
+	memory->destroy( mpi_data );
 
-    delete [] chi;
-    delete [] eta;
-    delete [] gamma;
-  }
+	// deallocate interface storage
+	if (allocated) {
+		memory->destroy(setflag);
+		memory->destroy(cutsq);
+		memory->destroy(cutghost);
+		delete [] map;
 
-  memory->destroy(tmpid);
-  memory->destroy(tmpbo);
+		delete [] chi;
+		delete [] eta;
+		delete [] gamma;
+	}
 
-  delete [] pvector;
-	 */
+	memory->destroy(tmpid);
+	memory->destroy(tmpbo);
+
+	delete [] pvector;
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -342,7 +340,7 @@ void PairReaxCGPU::settings(int narg, char **arg)
 			iarg += 2;
 		} else if (strcmp(arg[iarg],"mincap") == 0) {
 			if (iarg+2 > narg) error->all(FLERR,"Illegal pair_style reax/c command");
-		      system->mincap = utils::inumeric(FLERR,arg[iarg+1],false,lmp);
+			system->mincap = utils::inumeric(FLERR,arg[iarg+1],false,lmp);
 			if (system->mincap < 0)
 				error->all(FLERR,"Illegal pair_style reax/c mincap command");
 			iarg += 2;
@@ -365,69 +363,69 @@ void PairReaxCGPU::coeff( int nargs, char **args )
 {
 	if (!allocated) allocate();
 
-	  if (nargs != 3 + atom->ntypes)
-	    error->all(FLERR,"Incorrect args for pair coefficients");
+	if (nargs != 3 + atom->ntypes)
+		error->all(FLERR,"Incorrect args for pair coefficients");
 
-	  // insure I,J args are * *
+	// insure I,J args are * *
 
-	  if (strcmp(args[0],"*") != 0 || strcmp(args[1],"*") != 0)
-	    error->all(FLERR,"Incorrect args for pair coefficients");
+	if (strcmp(args[0],"*") != 0 || strcmp(args[1],"*") != 0)
+		error->all(FLERR,"Incorrect args for pair coefficients");
 
-	  // read ffield file
+	// read ffield file
 
-	  char *file = args[2];
-	  FILE *fp;
-	  fp = utils::open_potential(file,lmp,nullptr);
-	  if (fp != NULL)
-	    Read_Force_Field(fp, &(system->reax_param), control);
-	  else {
-	      char str[128];
-	      snprintf(str,128,"Cannot open ReaxFF potential file %s",file);
-	      error->all(FLERR,str);
-	  }
+	char *file = args[2];
+	FILE *fp;
+	fp = utils::open_potential(file,lmp,nullptr);
+	if (fp != NULL)
+		Read_Force_Field(fp, &(system->reax_param), control);
+	else {
+		char str[128];
+		snprintf(str,128,"Cannot open ReaxFF potential file %s",file);
+		error->all(FLERR,str);
+	}
 
-	  // read args that map atom types to elements in potential file
-	  // map[i] = which element the Ith atom type is, -1 if NULL
+	// read args that map atom types to elements in potential file
+	// map[i] = which element the Ith atom type is, -1 if NULL
 
-	  int itmp = 0;
-	  int nreax_types = system->reax_param.num_atom_types;
-	  for (int i = 3; i < nargs; i++) {
-	    if (strcmp(args[i],"NULL") == 0) {
-	      map[i-2] = -1;
-	      itmp ++;
-	      continue;
-	    }
-	  }
+	int itmp = 0;
+	int nreax_types = system->reax_param.num_atom_types;
+	for (int i = 3; i < nargs; i++) {
+		if (strcmp(args[i],"NULL") == 0) {
+			map[i-2] = -1;
+			itmp ++;
+			continue;
+		}
+	}
 
-	  int n = atom->ntypes;
+	int n = atom->ntypes;
 
-	  // pair_coeff element map
-	  for (int i = 3; i < nargs; i++)
-	    for (int j = 0; j < nreax_types; j++)
-	      if (strcasecmp(args[i],system->reax_param.sbp[j].name) == 0) {
-	        map[i-2] = j;
-	        itmp ++;
-	      }
+	// pair_coeff element map
+	for (int i = 3; i < nargs; i++)
+		for (int j = 0; j < nreax_types; j++)
+			if (strcasecmp(args[i],system->reax_param.sbp[j].name) == 0) {
+				map[i-2] = j;
+				itmp ++;
+			}
 
-	  // error check
-	  if (itmp != n)
-	    error->all(FLERR,"Non-existent ReaxFF type");
+	// error check
+	if (itmp != n)
+		error->all(FLERR,"Non-existent ReaxFF type");
 
-	  for (int i = 1; i <= n; i++)
-	    for (int j = i; j <= n; j++)
-	      setflag[i][j] = 0;
+	for (int i = 1; i <= n; i++)
+		for (int j = i; j <= n; j++)
+			setflag[i][j] = 0;
 
-	  // set setflag i,j for type pairs where both are mapped to elements
+	// set setflag i,j for type pairs where both are mapped to elements
 
-	  int count = 0;
-	  for (int i = 1; i <= n; i++)
-	    for (int j = i; j <= n; j++)
-	      if (map[i] >= 0 && map[j] >= 0) {
-	        setflag[i][j] = 1;
-	        count++;
-	      }
+	int count = 0;
+	for (int i = 1; i <= n; i++)
+		for (int j = i; j <= n; j++)
+			if (map[i] >= 0 && map[j] >= 0) {
+				setflag[i][j] = 1;
+				count++;
+			}
 
-	  if (count == 0) error->all(FLERR,"Incorrect args for pair coefficients");
+	if (count == 0) error->all(FLERR,"Incorrect args for pair coefficients");
 
 
 }

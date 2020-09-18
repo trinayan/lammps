@@ -26,6 +26,8 @@ extern "C" void Setup_Cuda_Environment(int rank, int nprocs, int gpus_per_node)
     //Calculate the # of GPUs per processor
     //and assign the GPU for each process
     //TODO: handle condition where # CPU procs > # GPUs
+
+    printf("GPU ID %d\n", rank % gpus_per_node);
     hipSetDevice( rank % gpus_per_node );
 
 #if defined(__CUDA_DEBUG__)
