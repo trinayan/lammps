@@ -834,7 +834,7 @@ CUDA_GLOBAL void k_total_forces_postprocess( reax_atom *my_atoms,
 	Cuda_dbond_to_Forces_postprocess( i, my_atoms, bonds, workspace );
 
 	//if( i < 20)
-	//	printf("Forces %d,%f,%f,%f\n",my_atoms[i].orig_id, workspace->f[i][0],workspace->f[i][1],workspace->f[i][2]);
+		//printf("Forces %d,%f,%f,%f\n",my_atoms[i].orig_id, workspace->f[i][0],workspace->f[i][1],workspace->f[i][2]);
 
 }
 
@@ -892,7 +892,7 @@ void Cuda_Total_Forces( reax_system *system, control_params *control,
 	blocks = system->N / DEF_BLOCK_SIZE
 			+ ((system->N % DEF_BLOCK_SIZE == 0) ? 0 : 1);
 
-	printf("virital %d \n", control->virial);
+	//printf("virital %d \n", control->virial);
 
 	hipLaunchKernelGGL(k_total_forces, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  *(workspace->d_workspace), *(lists[BONDS]),
 			(control_params *) control->d_control_params,
@@ -920,7 +920,6 @@ void Cuda_Total_Forces( reax_system *system, control_params *control,
 	hipLaunchKernelGGL(k_total_forces_postprocess, dim3(blocks), dim3(DEF_BLOCK_SIZE ), 0, 0,  system->d_my_atoms, *(lists[BONDS]), *(workspace->d_workspace), system->N );
 	hipDeviceSynchronize( );
 	cudaCheckError( );
-
 
 }
 

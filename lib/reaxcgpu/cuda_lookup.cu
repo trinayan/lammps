@@ -27,7 +27,7 @@ CUDA_GLOBAL void kvdW_coulomb_energy(
 	LR_lookup_table *t;
 	t = &t_LR[3];
 
-	printf("t %f \n", t->inv_dx);
+	//printf("t %f \n", t->inv_dx);
 
 
 }
@@ -42,7 +42,7 @@ void copy_LR_table_to_device( reax_system *system, control_params *control,
 
 	num_atom_types = system->reax_param.num_atom_types;
 
-	printf("atom types %d \n",num_atom_types);
+	//printf("atom types %d \n",num_atom_types);
 
 	cuda_malloc( (void **) &workspace->d_LR,
 			sizeof(LR_lookup_table) * ( num_atom_types * num_atom_types ),

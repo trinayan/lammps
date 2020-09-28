@@ -362,10 +362,10 @@ CUDA_GLOBAL void k_estimate_storages( reax_atom *my_atoms,
 					BO = BO_s + BO_pi + BO_pi2;
 
 
-					if(i == 1)
+					/*if(i == 1)
 					{
-						//printf("%f,%f,%f,%f,%f,%f\n", BO,BO_s, BO_pi, BO_pi2, sbp_i->r_pi_pi, sbp_j->r_pi_pi );
-					}
+						printf("%f,%f,%f,%f,%f,%f\n", BO,BO_s, BO_pi, BO_pi2, sbp_i->r_pi_pi, sbp_j->r_pi_pi );
+					}*/
 
 					if ( BO >= control->bo_cut )
 					{
@@ -375,17 +375,13 @@ CUDA_GLOBAL void k_estimate_storages( reax_atom *my_atoms,
 			}
 		}
 	}
-
-
-
-
 	bonds[i] = num_bonds;
 	max_bonds[i] = MAX( (int)(num_bonds * 2), MIN_BONDS );
 
-	if( i < 20 && my_atoms[i].orig_id == 1)
+	/*if( i < 20 && my_atoms[i].orig_id == 1)
 	{
 		printf("Num bonds %d,%d,%d\n",my_atoms[i].orig_id,bonds[i],max_bonds[i]);
-	}
+	}*/
 
 	//
 
@@ -430,7 +426,7 @@ CUDA_GLOBAL void k_print_hbond_info( reax_atom *my_atoms, single_body_parameters
 		}
 	}
 
-	printf( "atom %6d: ihb = %2d, ihb_top = %2d\n", i, ihb, ihb_top );
+	//printf( "atom %6d: ihb = %2d, ihb_top = %2d\n", i, ihb, ihb_top );
 }
 
 
@@ -1400,7 +1396,7 @@ void Cuda_Estimate_Storages( reax_system *system, control_params *control,
 			(((system->total_cap % ST_BLOCK_SIZE == 0)) ? 0 : 1);
 
 
-	printf("%d,%d,%d\n",system->n, system->N, system->total_cap);
+	//printf("%d,%d,%d\n",system->n, system->N, system->total_cap);
 
 	hipLaunchKernelGGL(k_estimate_storages, dim3(blocks), dim3(ST_BLOCK_SIZE ), 0, 0,  system->d_my_atoms, system->reax_param.d_sbp, system->reax_param.d_tbp,
 			(control_params *)control->d_control_params,
@@ -1624,8 +1620,8 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 
 	//printf("%d,%d\n",i,ihb_top);
 
-	if(i == 10)
-		printf(" is 10 start %d, end %d\n", start_i,end_i);
+	//if(i == 10)
+		//printf(" is 10 start %d, end %d\n", start_i,end_i);
 
 	for ( pj = start_i; pj < end_i; ++pj )
 	{
@@ -1906,7 +1902,7 @@ int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 			"Cuda_Init_Forces::d_realloc_hbonds" );
 
 
-	printf("System small n %d, N %d \n", system->n, system->N);
+	//printf("System small n %d, N %d \n", system->n, system->N);
 
 
 	blocks = (system->N) / DEF_BLOCK_SIZE +
@@ -1937,10 +1933,10 @@ int Cuda_Init_Forces_No_Charges( reax_system *system, control_params *control,
 
 	ret = (ret_bonds == FALSE && ret_hbonds == FALSE) ? SUCCESS : FAILURE;
 
-	printf(" %d,%d,%d\n", ret_bonds,ret_hbonds,ret_cm );
-	printf("%d\n", ret);
+	//printf(" %d,%d,%d\n", ret_bonds,ret_hbonds,ret_cm );
+	//printf("%d\n", ret);
 
-	printf("\n\n\n");
+	//printf("\n\n\n");
 	if ( ret == SUCCESS )
 	{
 		/* fix sym_index and dbond_index */
@@ -2005,7 +2001,7 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 #endif
 
 
-		printf("BO init \n");
+		//printf("BO init \n");
 		hipLaunchKernelGGL(Cuda_Calculate_BO_init, dim3(control->blocks_n), dim3(control->block_size ), 0, 0,  system->d_my_atoms, system->reax_param.d_sbp,
 				*(workspace->d_workspace), system->N );
 		hipDeviceSynchronize( );
@@ -2067,11 +2063,6 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 				system->n, system->reax_param.num_atom_types, spad );
 		hipDeviceSynchronize( );
 		cudaCheckError();
-
-
-
-
-
 
 
 
@@ -2159,11 +2150,11 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 
 	thbody = (int *) workspace->scratch;
 
-	printf("data step %d,%d\n", data->step,data->prev_steps);
+	//printf("data step %d,%d\n", data->step,data->prev_steps);
 	ret = Cuda_Estimate_Storage_Three_Body( system, control, workspace,
 			data->step, lists, thbody );
 
-	printf("ret %d \n", ret);
+	//printf("ret %d \n", ret);
 
 
 #if defined(DEBUG_FOCUS)
@@ -2182,7 +2173,7 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 				"Cuda_Compute_Bonded_Forces::spad" );
 
 
-		printf("Valence angels \n");
+//		printf("Valence angels \n");
 		hipLaunchKernelGGL(Cuda_Valence_Angles, dim3(control->blocks_n), dim3(control->block_size ), 0, 0,  system->d_my_atoms, system->reax_param.d_gp,
 				system->reax_param.d_sbp, system->reax_param.d_thbp,
 				(control_params *)control->d_control_params,
@@ -2240,7 +2231,7 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 		hipDeviceSynchronize( );
 		cudaCheckError( );
 
-		printf("Post process \n");
+		//printf("Post process \n");
 		//exit(0);
 
 
@@ -2300,11 +2291,12 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 				&((simulation_data *)data->d_simulation_data)->my_ext_press, control->blocks );
 		hipDeviceSynchronize( );
 		cudaCheckError( );
+
 		//        Cuda_Reduction_Sum( rvec_spad,
 		//                &((simulation_data *)data->d_simulation_data)->my_ext_press,
 		//                system->n );
 
-		printf("Torsion angles post process \n");
+		//printf("Torsion angles post process \n");
 		hipLaunchKernelGGL(Cuda_Torsion_Angles_PostProcess, dim3(control->blocks_n), dim3(control->block_size ), 0, 0,  system->d_my_atoms, *(workspace->d_workspace), *(lists[BONDS]),
 				system->N );
 		hipDeviceSynchronize( );
@@ -2334,7 +2326,7 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 			//                (((system->n * HB_KER_THREADS_PER_ATOM) % HB_BLOCK_SIZE) == 0 ? 0 : 1);
 
 
-			printf("Launching hydrogen bonds kernel \n");
+			//printf("Launching hydrogen bonds kernel \n");
 			hipLaunchKernelGGL(Cuda_Hydrogen_Bonds, dim3(control->blocks), dim3(control->block_size ), 0, 0,  system->d_my_atoms, system->reax_param.d_sbp,
 					system->reax_param.d_hbp, system->reax_param.d_gp,
 					(control_params *) control->d_control_params,
@@ -2347,7 +2339,7 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 
 
 
-			printf("Completed hydrogen bonds kernel \n");
+			//printf("Completed hydrogen bonds kernel \n");
 
 
 			//            if ( data->step == 10 )
@@ -2446,13 +2438,13 @@ int Cuda_Compute_Forces( reax_system *system, control_params *control,
 {
 
 
-	printf("Calling \n");
+	//printf("Calling \n");
 	Cuda_Init_Forces_No_Charges(system, control, data, workspace,lists, out_control);
-	printf("Init forces\n");
+	//printf("Init forces\n");
 	Cuda_Compute_Bonded_Forces(system, control, data, workspace, lists, out_control);
 	Cuda_Compute_NonBonded_Forces(system, control, data, workspace, lists, out_control,mpi_data);
 	Cuda_Compute_Total_Force( system, control, data, workspace, lists, mpi_data );
-	printf("Completed forces\n");
+	//printf("Completed forces\n");
 
 	return 1;
 

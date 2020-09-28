@@ -194,7 +194,7 @@ void Output_Sync_Lists( reax_list *l, reax_list *device_list, int type )
 	}
 
 
-	printf("List allocated\n");
+	//printf("List allocated\n");
 
 
 	copy_host_device( l->index, device_list->index, sizeof(int) *  device_list->n,
@@ -237,6 +237,6 @@ void Output_Sync_Lists( reax_list *l, reax_list *device_list, int type )
             break;
     }
 
-	printf("Copy finish\n");
+	//printf("Copy finish\n");
 
 }

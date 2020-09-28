@@ -35,7 +35,7 @@ static void Cuda_Init_Scratch_Space( storage *workspace )
 	cuda_malloc( (void **)&workspace->scratch, DEVICE_SCRATCH_SIZE, TRUE,
 			"Cuda_Init_Scratch_Space::workspace->scratch" );
 
-	printf("Scratch size %d \n", DEVICE_SCRATCH_SIZE);
+	//printf("Scratch size %d \n", DEVICE_SCRATCH_SIZE);
 
 	workspace->host_scratch = (void *) smalloc( HOST_SCRATCH_SIZE,
 			"Cuda_Init_Scratch_Space::workspace->host_scratch" );
@@ -132,7 +132,7 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
 
 	/* bonds list */
 
-	printf("total bonds %d, %d \n",system->total_bonds,system->total_hbonds);
+	//printf("total bonds %d, %d \n",system->total_bonds,system->total_hbonds);
 	Cuda_Make_List( system->total_cap, system->total_bonds, TYP_BOND, lists[BONDS]);
 	Cuda_Init_Bond_Indices( system, lists );
 
@@ -192,4 +192,9 @@ void Cuda_Initialize( reax_system *system, control_params *control,
 
 	Cuda_Init_Lists( system, control, data, workspace, lists,cpu_lists, mpi_data );
 
+
+	int deviceID;
+	hipGetDevice(&deviceID);
+
+	//printf("Device id %d \n", deviceID)
 }
