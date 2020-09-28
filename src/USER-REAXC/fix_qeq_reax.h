@@ -122,7 +122,7 @@ class FixQEqReax : public Fix {
 
   virtual int CG(double*,double*);
   //int GMRES(double*,double*);
-  virtual void sparse_matvec(sparse_matrix*,double*,double*);
+  virtual void sparse_matvec(sparse_matrix*,double*,double*, int flag);
 
   virtual int pack_forward_comm(int, int *, double *, int, int *);
   virtual void unpack_forward_comm(int, int, double *);

@@ -122,15 +122,15 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 	snprintf(fix_id,24,"REAXC_%d",instance_me);
 
 	system = (reax_system *)
-    																						memory->smalloc(sizeof(reax_system),"reax:system");
+    																																memory->smalloc(sizeof(reax_system),"reax:system");
 	memset(system,0,sizeof(reax_system));
 	control = (control_params *)
-    																						memory->smalloc(sizeof(control_params),"reax:control");
+    																																memory->smalloc(sizeof(control_params),"reax:control");
 	memset(control,0,sizeof(control_params));
 	data = (simulation_data *)
-    																						memory->smalloc(sizeof(simulation_data),"reax:data");
+    																																memory->smalloc(sizeof(simulation_data),"reax:data");
 	workspace = (storage *)
-    																						memory->smalloc(sizeof(storage),"reax:storage");
+    																																memory->smalloc(sizeof(storage),"reax:storage");
 
 	workspace->d_workspace = (storage *)memory->smalloc(sizeof(storage),"reax:gpu_storage");
 
@@ -149,15 +149,10 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 	memset(cpu_lists,0,LIST_N * sizeof(reax_list));
 
 
-	printf("Hbonds %d \n", gpu_lists[HBONDS]->allocated);
 
-
-
-	out_control = (output_controls *)
-    																						memory->smalloc(sizeof(output_controls),"reax:out_control");
+	out_control = (output_controls *)memory->smalloc(sizeof(output_controls),"reax:out_control");
 	memset(out_control,0,sizeof(output_controls));
-	mpi_data = (mpi_datatypes *)
-    																						memory->smalloc(sizeof(mpi_datatypes),"reax:mpi");
+	mpi_data = (mpi_datatypes *)memory->smalloc(sizeof(mpi_datatypes),"reax:mpi");
 	control->me = system->my_rank = comm->me;
 
 
@@ -533,7 +528,7 @@ void PairReaxCGPU::setup( )
 		int num_nbrs = estimate_reax_lists(); //TB:: Should this be moved to GPU?
 		system->total_far_nbrs = num_nbrs;
 
-		printf("Num nbrs %d \n", num_nbrs);
+		//printf("Num nbrs %d \n", num_nbrs);
 
 		if(!Make_List(system->total_cap, num_nbrs, TYP_FAR_NEIGHBOR,
 				(cpu_lists+FAR_NBRS)))
@@ -564,12 +559,12 @@ void PairReaxCGPU::setup( )
 		//update_and_copy_reax_atoms_to_device();
 
 		// reset the bond list info for new atoms
-		printf("Initial setup done. far numbers gpu %d \n", gpu_lists[FAR_NBRS]->num_intrs);
+		//printf("Initial setup done. far numbers gpu %d \n", gpu_lists[FAR_NBRS]->num_intrs);
 
 
 		Cuda_Adjust_End_Index_Before_ReAllocation(oldN, system->N, gpu_lists);
 
-		printf("Initial setup done. far numbers gpu %d \n", gpu_lists[FAR_NBRS]->num_intrs);
+		//printf("Initial setup done. far numbers gpu %d \n", gpu_lists[FAR_NBRS]->num_intrs);
 
 		// check if I need to shrink/extend my data-structs
 
@@ -639,12 +634,7 @@ void PairReaxCGPU::compute(int eflag, int vflag)
 
 
 	// forces
-
-	printf("Computing forces \n");
 	Cuda_Compute_Forces(system, control, data, workspace, gpu_lists, out_control, mpi_data);
-	printf("Computing forces finished \n");
-
-
 
 
 	read_reax_forces_from_device(vflag);
@@ -936,13 +926,23 @@ void PairReaxCGPU::read_reax_forces_from_device(int /*vflag*/)
 
 	Output_Sync_Forces(workspace,system->total_cap);
 
+
+	int world_rank;
+	MPI_Comm_rank(world, &world_rank);
+
+
+
+
 	for( int i = 0; i < system->N; ++i ) {
 		system->my_atoms[i].f[0] = workspace->f[i][0];
 		system->my_atoms[i].f[1] = workspace->f[i][1];
 		system->my_atoms[i].f[2] = workspace->f[i][2];
 
+
+
 		//if(i < 20)
-		//printf("%f,%f,%f\n", system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
+		 //printf("%d,%f,%f,%f\n",system->my_atoms[i].orig_id, system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
+
 
 		atom->f[i][0] += -workspace->f[i][0];
 		atom->f[i][1] += -workspace->f[i][1];

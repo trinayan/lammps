@@ -49,4 +49,4 @@ timestep	0.25
 #		axes yes 0.8 0.02 view 60 -30
 #dump_modify	3 pad 3
 
-run		2
+run		100
