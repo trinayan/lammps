@@ -15,42 +15,40 @@
    Contributing author: Markus Hohnerbach (RWTH)
 ------------------------------------------------------------------------- */
 
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
-#include <unistd.h>
-#include <cstdlib>
-#include <cstring>
-#include <cmath>
-#include <cstdio>
-#include <stdint.h> // <cstdint> requires C++-11
+#include "pair_airebo_intel.h"
+
+#include "atom.h"
+#include "comm.h"
+#include "error.h"
+#include "math_const.h"
+#include "memory.h"
+#include "modify.h"
+#include "neigh_list.h"
+#include "neigh_request.h"
+#include "neighbor.h"
+#include "suffix.h"
+
 #include <cassert>
-#include <cstddef>
-#include "lmptype.h"
+#include <cmath>
+#include <cstring>
+
 #include "intel_preprocess.h"
 #include "intel_intrinsics_airebo.h"
+
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif
+
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(push, target(mic))
 #endif
 
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
-#include "pair_airebo_intel.h"
-#include "atom.h"
-#include "neighbor.h"
-#include "neigh_list.h"
-#include "neigh_request.h"
-#include "force.h"
-#include "comm.h"
-#include "memory.h"
-#include "error.h"
-#include "group.h"
-#include "kspace.h"
-#include "modify.h"
-#include "suffix.h"
 
 using namespace LAMMPS_NS;
+using namespace MathConst;
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
@@ -637,8 +635,6 @@ namespace overloaded {
     compared to original code.
    ---------------------------------------------------------------------- */
 
-#define M_PI           3.14159265358979323846  /* pi */
-
 #define CARBON 0
 #define HYDROGEN 1
 #define TOL 1.0e-9
@@ -662,8 +658,8 @@ inline flt_t Sp(flt_t r, flt_t lo, flt_t hi, flt_t * del) {
     if (del) *del = 0;
     return 0;
   } else {
-    t *= static_cast<flt_t>(M_PI);
-    if (del) *del = static_cast<flt_t>(-0.5 * M_PI)
+    t *= static_cast<flt_t>(MY_PI);
+    if (del) *del = static_cast<flt_t>(-0.5 * MY_PI)
                   * overloaded::sin(t) / (hi - lo);
     return static_cast<flt_t>(0.5) * (1 + overloaded::cos(t));
   }
@@ -2248,7 +2244,7 @@ static fvec aut_Sp_deriv(fvec r, fvec lo, fvec hi, fvec * d) {
   fvec c_1 = fvec::set1(1);
   fvec c_0_5 = fvec::set1(0.5);
   fvec c_m0_5 = fvec::set1(-0.5);
-  fvec c_PI = fvec::set1(M_PI);
+  fvec c_PI = fvec::set1(MY_PI);
   bvec m_lo = fvec::cmple(r, lo);
   bvec m_hi = fvec::cmpnlt(r, hi); // nlt == ge
   bvec m_tr = bvec::kandn(m_lo, ~ m_hi);
@@ -2273,7 +2269,7 @@ static fvec aut_Sp_deriv(fvec r, fvec lo, fvec hi, fvec * d) {
 static fvec aut_mask_Sp(bvec mask, fvec r, fvec lo, fvec hi) {
   fvec c_1 = fvec::set1(1);
   fvec c_0_5 = fvec::set1(0.5);
-  fvec c_PI = fvec::set1(M_PI);
+  fvec c_PI = fvec::set1(MY_PI);
   bvec m_lo = fvec::mask_cmple(mask, r, lo);
   bvec m_hi = fvec::mask_cmpnlt(mask, r, hi); // nlt == ge
   bvec m_tr = bvec::kandn(m_lo, bvec::kandn(m_hi, mask));
@@ -4480,7 +4476,7 @@ exceed_limits:
  * Calculate the lennard-jones interaction.
  * Uses the above hash-map, and outlines the calculation if the bondorder is
  *  needed.
- * Agressively compresses to get the most values calculated.
+ * Aggressively compresses to get the most values calculated.
  */
 template<int MORSEFLAG>
 static void aut_lennard_jones(KernelArgsAIREBOT<flt_t,acc_t> * ka) {

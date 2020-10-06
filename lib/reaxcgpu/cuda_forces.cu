@@ -362,10 +362,10 @@ CUDA_GLOBAL void k_estimate_storages( reax_atom *my_atoms,
 					BO = BO_s + BO_pi + BO_pi2;
 
 
-					if(i == 1)
+					/*if(i == 1)
 					{
-						//printf("%f,%f,%f,%f,%f,%f\n", BO,BO_s, BO_pi, BO_pi2, sbp_i->r_pi_pi, sbp_j->r_pi_pi );
-					}
+						printf("%f,%f,%f,%f,%f,%f\n", BO,BO_s, BO_pi, BO_pi2, sbp_i->r_pi_pi, sbp_j->r_pi_pi );
+					}*/
 
 					if ( BO >= control->bo_cut )
 					{
@@ -375,17 +375,13 @@ CUDA_GLOBAL void k_estimate_storages( reax_atom *my_atoms,
 			}
 		}
 	}
-
-
-
-
 	bonds[i] = num_bonds;
 	max_bonds[i] = MAX( (int)(num_bonds * 2), MIN_BONDS );
 
-	if( i < 20 && my_atoms[i].orig_id == 1)
+	/*if( i < 20 && my_atoms[i].orig_id == 1)
 	{
-	//	printf("Num bonds %d,%d,%d\n",my_atoms[i].orig_id,bonds[i],max_bonds[i]);
-	}
+		printf("Num bonds %d,%d,%d\n",my_atoms[i].orig_id,bonds[i],max_bonds[i]);
+	}*/
 
 	//
 
@@ -1624,6 +1620,8 @@ CUDA_GLOBAL void k_init_forces_no_qeq (reax_atom *my_atoms, single_body_paramete
 
 	//printf("%d,%d\n",i,ihb_top);
 
+	//if(i == 10)
+		//printf(" is 10 start %d, end %d\n", start_i,end_i);
 
 	for ( pj = start_i; pj < end_i; ++pj )
 	{
@@ -2068,11 +2066,6 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 
 
 
-
-
-
-
-
 		/* reduction for E_BE */
 		if ( update_energy == TRUE )
 		{
@@ -2180,7 +2173,7 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 				"Cuda_Compute_Bonded_Forces::spad" );
 
 
-		//printf("Valence angels \n");
+//		printf("Valence angels \n");
 		hipLaunchKernelGGL(Cuda_Valence_Angles, dim3(control->blocks_n), dim3(control->block_size ), 0, 0,  system->d_my_atoms, system->reax_param.d_gp,
 				system->reax_param.d_sbp, system->reax_param.d_thbp,
 				(control_params *)control->d_control_params,
@@ -2298,6 +2291,7 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 				&((simulation_data *)data->d_simulation_data)->my_ext_press, control->blocks );
 		hipDeviceSynchronize( );
 		cudaCheckError( );
+
 		//        Cuda_Reduction_Sum( rvec_spad,
 		//                &((simulation_data *)data->d_simulation_data)->my_ext_press,
 		//                system->n );

@@ -16,7 +16,7 @@
 ------------------------------------------------------------------------- */
 
 #include "fix_rattle.h"
-#include <mpi.h>
+
 #include <cmath>
 #include <cstring>
 #include "atom.h"
@@ -119,7 +119,7 @@ int FixRattle::setmask()
 
 void FixRattle::init() {
 
-  // initialise SHAKE first
+  // initialize SHAKE first
 
   FixShake::init();
 

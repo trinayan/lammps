@@ -57,12 +57,13 @@ class FixQEqReax : public Fix {
 
  protected:
   int nevery,reaxflag;
-  int n, N, m_fill;
+  int nn, NN, m_fill;
   int n_cap, nmax, m_cap;
   int pack_flag;
   int nlevels_respa;
   class NeighList *list;
   class PairReaxC *reaxc;
+  int *ilist, *jlist, *numneigh, **firstneigh;
 
   double swa, swb;      // lower/upper Taper cutoff radius
   double Tap[8];        // Taper function
@@ -94,6 +95,7 @@ class FixQEqReax : public Fix {
 
   //CG storage
   double *p, *q, *r, *d;
+  int imax;
 
   //GMRES storage
   //double *g,*y;
@@ -120,7 +122,7 @@ class FixQEqReax : public Fix {
 
   virtual int CG(double*,double*);
   //int GMRES(double*,double*);
-  virtual void sparse_matvec(sparse_matrix*,double*,double*);
+  virtual void sparse_matvec(sparse_matrix*,double*,double*, int flag);
 
   virtual int pack_forward_comm(int, int *, double *, int, int *);
   virtual void unpack_forward_comm(int, int, double *);

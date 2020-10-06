@@ -174,7 +174,7 @@ extern "C" void Cuda_Init_Block_Sizes( reax_system *system, control_params *cont
     compute_blocks( &control->blocks, &control->block_size, system->n );
     compute_nearest_pow_2( control->blocks, &control->blocks_pow_2 );
 
-    //printf("blocks %d, %d,%d \n", control->blocks, control->blocks_pow_2, system->n);
+   // printf("blocks %d, %d,%d \n", control->blocks, control->blocks_pow_2, system->n);
 
     compute_blocks( &control->blocks_n, &control->block_size, system->N );
     compute_nearest_pow_2( control->blocks_n, &control->blocks_pow_2_n );

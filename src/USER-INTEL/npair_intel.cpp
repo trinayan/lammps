@@ -15,12 +15,13 @@
    Contributing author: W. Michael Brown (Intel)
 ------------------------------------------------------------------------- */
 
+#include "npair_intel.h"
+
 #include "comm.h"
 #include "domain.h"
-#include "timer.h"
 #include "modify.h"
-#include "npair_intel.h"
-#include "nstencil.h"
+
+#include "omp_compat.h"
 
 using namespace LAMMPS_NS;
 
@@ -263,7 +264,7 @@ void NPairIntel::bin_newton(const int offload, NeighList *list,
     }
 
     #if defined(_OPENMP)
-    #pragma omp parallel default(none) \
+    #pragma omp parallel LMP_DEFAULT_NONE \
       shared(overflow, nstencilp, binstart, binend)
     #endif
     {

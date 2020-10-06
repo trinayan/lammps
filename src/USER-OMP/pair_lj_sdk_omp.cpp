@@ -13,17 +13,18 @@
    This style is a simplified re-implementation of the CG/CMM pair style
 ------------------------------------------------------------------------- */
 
-#include <cmath>
 #include "pair_lj_sdk_omp.h"
+#include "lj_sdk_common.h"
+
 #include "atom.h"
 #include "comm.h"
 #include "force.h"
-#include "neighbor.h"
 #include "neigh_list.h"
-
-#include "lj_sdk_common.h"
-
 #include "suffix.h"
+
+#include <cmath>
+
+#include "omp_compat.h"
 using namespace LAMMPS_NS;
 using namespace LJSDKParms;
 
@@ -47,7 +48,7 @@ void PairLJSDKOMP::compute(int eflag, int vflag)
   const int inum = list->inum;
 
 #if defined(_OPENMP)
-#pragma omp parallel default(none) shared(eflag,vflag)
+#pragma omp parallel LMP_DEFAULT_NONE LMP_SHARED(eflag,vflag)
 #endif
   {
     int ifrom, ito, tid;

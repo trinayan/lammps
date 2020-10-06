@@ -12,12 +12,12 @@
 ------------------------------------------------------------------------- */
 
 /* ----------------------------------------------------------------------
-   Contributing author: Markus Höhnerbach (RWTH)
+   Contributing author: Markus HÃ¶hnerbach (RWTH)
 ------------------------------------------------------------------------- */
 
 #include <cmath>
 #include <cstdio>
-#include <cstdlib>
+
 #include <cstring>
 #include "pair_tersoff_intel.h"
 #include "atom.h"

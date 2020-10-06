@@ -12,23 +12,22 @@
    Contributing author: Axel Kohlmeyer (Temple U)
 ------------------------------------------------------------------------- */
 
-#include <cmath>
 #include "pair_lubricate_omp.h"
+
 #include "atom.h"
 #include "comm.h"
 #include "domain.h"
+#include "fix_wall.h"
 #include "force.h"
 #include "input.h"
-#include "neighbor.h"
-#include "neigh_list.h"
-#include "update.h"
-#include "variable.h"
-#include "random_mars.h"
-#include "fix_wall.h"
-#include "fix_deform.h"
 #include "math_const.h"
-
+#include "neigh_list.h"
 #include "suffix.h"
+#include "variable.h"
+
+#include <cmath>
+
+#include "omp_compat.h"
 using namespace LAMMPS_NS;
 using namespace MathConst;
 
@@ -109,7 +108,7 @@ void PairLubricateOMP::compute(int eflag, int vflag)
 
 
 #if defined(_OPENMP)
-#pragma omp parallel default(none) shared(eflag,vflag)
+#pragma omp parallel LMP_DEFAULT_NONE LMP_SHARED(eflag,vflag)
 #endif
   {
     int ifrom, ito, tid;

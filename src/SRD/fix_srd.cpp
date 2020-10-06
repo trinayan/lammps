@@ -16,7 +16,7 @@
 ------------------------------------------------------------------------- */
 
 #include "fix_srd.h"
-#include <mpi.h>
+
 #include <cmath>
 #include <cstring>
 #include "math_extra.h"
@@ -94,15 +94,15 @@ FixSRD::FixSRD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
   global_freq = 1;
   extvector = 0;
 
-  nevery = force->inumeric(FLERR,arg[3]);
+  nevery = utils::inumeric(FLERR,arg[3],false,lmp);
 
   bigexist = 1;
   if (strcmp(arg[4],"NULL") == 0) bigexist = 0;
   else biggroup = group->find(arg[4]);
 
-  temperature_srd = force->numeric(FLERR,arg[5]);
-  gridsrd = force->numeric(FLERR,arg[6]);
-  int seed = force->inumeric(FLERR,arg[7]);
+  temperature_srd = utils::numeric(FLERR,arg[5],false,lmp);
+  gridsrd = utils::numeric(FLERR,arg[6],false,lmp);
+  int seed = utils::inumeric(FLERR,arg[7],false,lmp);
 
   // parse options
 
@@ -125,7 +125,7 @@ FixSRD::FixSRD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
   while (iarg < narg) {
     if (strcmp(arg[iarg],"lamda") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal fix srd command");
-      lamda = force->numeric(FLERR,arg[iarg+1]);
+      lamda = utils::numeric(FLERR,arg[iarg+1],false,lmp);
       lamdaflag = 1;
       iarg += 2;
     } else if (strcmp(arg[iarg],"collision") == 0) {
@@ -155,22 +155,22 @@ FixSRD::FixSRD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
       iarg += 2;
     } else if (strcmp(arg[iarg],"radius") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal fix srd command");
-      radfactor = force->numeric(FLERR,arg[iarg+1]);
+      radfactor = utils::numeric(FLERR,arg[iarg+1],false,lmp);
       iarg += 2;
     } else if (strcmp(arg[iarg],"bounce") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal fix srd command");
-      maxbounceallow = force->inumeric(FLERR,arg[iarg+1]);
+      maxbounceallow = utils::inumeric(FLERR,arg[iarg+1],false,lmp);
       iarg += 2;
     } else if (strcmp(arg[iarg],"search") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal fix srd command");
-      gridsearch = force->numeric(FLERR,arg[iarg+1]);
+      gridsearch = utils::numeric(FLERR,arg[iarg+1],false,lmp);
       iarg += 2;
     } else if (strcmp(arg[iarg],"cubic") == 0) {
       if (iarg+3 > narg) error->all(FLERR,"Illegal fix srd command");
       if (strcmp(arg[iarg+1],"error") == 0) cubicflag = CUBIC_ERROR;
       else if (strcmp(arg[iarg+1],"warn") == 0) cubicflag = CUBIC_WARN;
       else error->all(FLERR,"Illegal fix srd command");
-      cubictol = force->numeric(FLERR,arg[iarg+2]);
+      cubictol = utils::numeric(FLERR,arg[iarg+2],false,lmp);
       iarg += 3;
     } else if (strcmp(arg[iarg],"shift") == 0) {
       if (iarg+3 > narg) error->all(FLERR,"Illegal fix srd command");
@@ -178,7 +178,7 @@ FixSRD::FixSRD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
       else if (strcmp(arg[iarg+1],"yes") == 0) shiftuser = SHIFT_YES;
       else if (strcmp(arg[iarg+1],"possible") == 0) shiftuser = SHIFT_POSSIBLE;
       else error->all(FLERR,"Illegal fix srd command");
-      shiftseed = force->inumeric(FLERR,arg[iarg+2]);
+      shiftseed = utils::inumeric(FLERR,arg[iarg+2],false,lmp);
       iarg += 3;
     } else if (strcmp(arg[iarg],"tstat") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal fix srd command");
@@ -375,13 +375,16 @@ void FixSRD::init()
 
   change_size = change_shape = deformflag = 0;
   if (domain->nonperiodic == 2) change_size = 1;
+
+  Fix **fixes = modify->fix;
   for (int i = 0; i < modify->nfix; i++) {
-    if (modify->fix[i]->box_change_size) change_size = 1;
-    if (modify->fix[i]->box_change_shape) change_shape = 1;
-    if (strcmp(modify->fix[i]->style,"deform") == 0) {
+    if (fixes[i]->box_change & BOX_CHANGE_SIZE)  change_size = 1;
+    if (fixes[i]->box_change & BOX_CHANGE_SHAPE) change_shape = 1;
+    if (strcmp(fixes[i]->style,"deform") == 0) {
       deformflag = 1;
       FixDeform *deform = (FixDeform *) modify->fix[i];
-      if (deform->box_change_shape && deform->remapflag != Domain::V_REMAP)
+      if ((deform->box_change & BOX_CHANGE_SHAPE)
+          && deform->remapflag != Domain::V_REMAP)
         error->all(FLERR,"Using fix srd with inconsistent "
                    "fix deform remap option");
     }
@@ -454,7 +457,7 @@ void FixSRD::setup(int /*vflag*/)
     setup_search_stencil();
   } else nbins2 = 0;
 
-  // perform first bining of SRD and big particles and walls
+  // perform first binning of SRD and big particles and walls
   // set reneighflag to turn off SRD rotation
   // don't do SRD rotation in setup, only during timestepping
 
@@ -1067,7 +1070,7 @@ void FixSRD::vbin_comm(int ishift)
 
   // send/recv bins in both directions in each dimension
   // don't send if nsend = 0
-  //   due to static bins aliging with proc boundary
+  //   due to static bins aligning with proc boundary
   //   due to dynamic bins across non-periodic global boundary
   // copy to self if sendproc = me
   // MPI send to another proc if sendproc != me
@@ -1169,7 +1172,7 @@ void FixSRD::xbin_comm(int ishift, int nval)
 
   // send/recv bins in both directions in each dimension
   // don't send if nsend = 0
-  //   due to static bins aliging with proc boundary
+  //   due to static bins aligning with proc boundary
   //   due to dynamic bins across non-periodic global boundary
   // copy to self if sendproc = me
   // MPI send to another proc if sendproc != me

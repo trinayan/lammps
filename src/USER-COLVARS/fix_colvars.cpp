@@ -2,7 +2,7 @@
 
 // This file is part of the Collective Variables module (Colvars).
 // The original version of Colvars and its updates are located at:
-// https://github.com/colvars/colvars
+// https://github.com/Colvars/colvars
 // Please update all Colvars source files before making any changes.
 // If you wish to distribute your changes, please submit them to the
 // Colvars repository at GitHub.
@@ -25,28 +25,25 @@
 ------------------------------------------------------------------------- */
 
 #include "fix_colvars.h"
-#include <mpi.h>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <string>
-#include <vector>
-#include <memory>
 
 #include "atom.h"
+#include "citeme.h"
 #include "comm.h"
 #include "domain.h"
 #include "error.h"
-#include "force.h"
 #include "memory.h"
 #include "modify.h"
 #include "respa.h"
 #include "universe.h"
 #include "update.h"
-#include "citeme.h"
 
 #include "colvarproxy_lammps.h"
 #include "colvarmodule.h"
+
+#include <cstring>
+#include <iostream>
+#include <memory>
+#include <vector>
 
 static const char colvars_pub[] =
   "fix colvars command:\n\n"
@@ -324,7 +321,7 @@ FixColvars::FixColvars(LAMMPS *lmp, int narg, char **arg) :
     } else if (0 == strcmp(arg[argsdone], "output")) {
       out_name = strdup(arg[argsdone+1]);
     } else if (0 == strcmp(arg[argsdone], "seed")) {
-      rng_seed = force->inumeric(FLERR,arg[argsdone+1]);
+      rng_seed = utils::inumeric(FLERR,arg[argsdone+1],false,lmp);
     } else if (0 == strcmp(arg[argsdone], "unwrap")) {
       if (0 == strcmp(arg[argsdone+1], "yes")) {
         unwrap_flag = 1;
@@ -502,7 +499,7 @@ int FixColvars::modify_param(int narg, char **arg)
     if (me == 0) {
       if (! proxy)
         error->one(FLERR,"Cannot use fix_modify before initialization");
-      proxy->add_config_file(arg[1]);
+      return proxy->add_config_file(arg[1]) == COLVARS_OK ? 0 : 2;
     }
     return 2;
   } else if (strcmp(arg[0],"config") == 0) {
@@ -510,8 +507,16 @@ int FixColvars::modify_param(int narg, char **arg)
     if (me == 0) {
       if (! proxy)
         error->one(FLERR,"Cannot use fix_modify before initialization");
-      std::string conf(arg[1]);
-      proxy->add_config_string(conf);
+      std::string const conf(arg[1]);
+      return proxy->add_config_string(conf) == COLVARS_OK ? 0 : 2;
+    }
+    return 2;
+  } else if (strcmp(arg[0],"load") == 0) {
+    if (narg < 2) error->all(FLERR,"Illegal fix_modify command");
+    if (me == 0) {
+      if (! proxy)
+        error->one(FLERR,"Cannot use fix_modify before initialization");
+      return proxy->read_state_file(arg[1]) == COLVARS_OK ? 0 : 2;
     }
     return 2;
   }

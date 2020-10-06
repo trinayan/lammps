@@ -12,21 +12,22 @@
    Contributing author: Axel Kohlmeyer (Temple U)
 ------------------------------------------------------------------------- */
 
-#include <cmath>
 #include "pair_hbond_dreiding_morse_omp.h"
+
 #include "atom.h"
 #include "atom_vec.h"
-#include "molecule.h"
 #include "comm.h"
 #include "domain.h"
 #include "force.h"
-#include "neighbor.h"
-#include "neigh_list.h"
-
 #include "math_const.h"
 #include "math_special.h"
-
+#include "molecule.h"
+#include "neigh_list.h"
 #include "suffix.h"
+
+#include <cmath>
+
+#include "omp_compat.h"
 using namespace LAMMPS_NS;
 using namespace MathConst;
 using namespace MathSpecial;
@@ -74,7 +75,7 @@ void PairHbondDreidingMorseOMP::compute(int eflag, int vflag)
   }
 
 #if defined(_OPENMP)
-#pragma omp parallel default(none) shared(eflag,vflag)
+#pragma omp parallel LMP_DEFAULT_NONE LMP_SHARED(eflag,vflag)
 #endif
   {
     int ifrom, ito, tid;

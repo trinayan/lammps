@@ -12,16 +12,19 @@
    Contributing author: Axel Kohlmeyer (Temple U)
 ------------------------------------------------------------------------- */
 
-#include <cmath>
 #include "pair_lj_long_coul_long_omp.h"
+
 #include "atom.h"
 #include "comm.h"
-#include "math_vector.h"
 #include "force.h"
-#include "neighbor.h"
+#include "math_vector.h"
 #include "neigh_list.h"
-
 #include "suffix.h"
+
+#include <cmath>
+#include <cstring>
+
+#include "omp_compat.h"
 using namespace LAMMPS_NS;
 
 #define EWALD_F   1.12837917
@@ -56,7 +59,7 @@ void PairLJLongCoulLongOMP::compute(int eflag, int vflag)
   const int inum = list->inum;
 
 #if defined(_OPENMP)
-#pragma omp parallel default(none) shared(eflag,vflag)
+#pragma omp parallel LMP_DEFAULT_NONE LMP_SHARED(eflag,vflag)
 #endif
   {
     int ifrom, ito, tid;
@@ -318,7 +321,7 @@ void PairLJLongCoulLongOMP::compute_inner()
   const int nthreads = comm->nthreads;
   const int inum = list->inum_inner;
 #if defined(_OPENMP)
-#pragma omp parallel default(none)
+#pragma omp parallel LMP_DEFAULT_NONE
 #endif
   {
     int ifrom, ito, tid;
@@ -343,7 +346,7 @@ void PairLJLongCoulLongOMP::compute_middle()
   const int inum = list->inum_middle;
 
 #if defined(_OPENMP)
-#pragma omp parallel default(none)
+#pragma omp parallel LMP_DEFAULT_NONE
 #endif
   {
     int ifrom, ito, tid;
@@ -373,7 +376,7 @@ void PairLJLongCoulLongOMP::compute_outer(int eflag, int vflag)
   const int inum = list->inum;
 
 #if defined(_OPENMP)
-#pragma omp parallel default(none) shared(eflag,vflag)
+#pragma omp parallel LMP_DEFAULT_NONE LMP_SHARED(eflag,vflag)
 #endif
   {
     int ifrom, ito, tid;

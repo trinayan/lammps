@@ -12,17 +12,17 @@
    Contributing author: Axel Kohlmeyer (Temple U)
 ------------------------------------------------------------------------- */
 
-#include <cmath>
 #include "pair_tersoff_table_omp.h"
+
 #include "atom.h"
 #include "comm.h"
-#include "error.h"
-#include "force.h"
 #include "memory.h"
-#include "neighbor.h"
 #include "neigh_list.h"
-
 #include "suffix.h"
+
+#include <cmath>
+
+#include "omp_compat.h"
 using namespace LAMMPS_NS;
 
 #define GRIDSTART 0.1
@@ -68,7 +68,7 @@ void PairTersoffTableOMP::compute(int eflag, int vflag)
   const int inum = list->inum;
 
 #if defined(_OPENMP)
-#pragma omp parallel default(none) shared(eflag,vflag)
+#pragma omp parallel LMP_DEFAULT_NONE LMP_SHARED(eflag,vflag)
 #endif
   {
     int ifrom, ito, tid;

@@ -21,9 +21,9 @@
 ------------------------------------------------------------------------- */
 
 #include "pair_reaxc.h"
-#include <mpi.h>
+
 #include <cmath>
-#include <cstdlib>
+
 #include <cstring>
 #include <strings.h>
 #include "atom.h"
@@ -39,7 +39,7 @@
 #include "citeme.h"
 #include "memory.h"
 #include "error.h"
-#include "utils.h"
+
 
 #include "reaxc_defs.h"
 #include "reaxc_types.h"
@@ -244,9 +244,10 @@ void PairReaxC::settings(int narg, char **arg)
 	qeqflag = 1;
 	control->lgflag = 0;
 	control->enobondsflag = 1;
-	system->mincap = MIN_CAP;
-	system->safezone = SAFE_ZONE;
-	system->saferzone = SAFER_ZONE;
+	system->mincap = REAX_MIN_CAP;
+	system->minhbonds = REAX_MIN_HBONDS;
+	system->safezone = REAX_SAFE_ZONE;
+	system->saferzone = REAX_SAFER_ZONE;
 
 	// process optional keywords
 
@@ -273,16 +274,22 @@ void PairReaxC::settings(int narg, char **arg)
 			iarg += 2;
 		} else if (strcmp(arg[iarg],"safezone") == 0) {
 			if (iarg+2 > narg) error->all(FLERR,"Illegal pair_style reax/c command");
-			system->safezone = force->numeric(FLERR,arg[iarg+1]);
+			system->safezone = utils::numeric(FLERR,arg[iarg+1],false,lmp);
 			if (system->safezone < 0.0)
 				error->all(FLERR,"Illegal pair_style reax/c safezone command");
 			system->saferzone = system->safezone*1.2 + 0.2;
 			iarg += 2;
 		} else if (strcmp(arg[iarg],"mincap") == 0) {
 			if (iarg+2 > narg) error->all(FLERR,"Illegal pair_style reax/c command");
-			system->mincap = force->inumeric(FLERR,arg[iarg+1]);
+			system->mincap = utils::inumeric(FLERR,arg[iarg+1],false,lmp);
 			if (system->mincap < 0)
 				error->all(FLERR,"Illegal pair_style reax/c mincap command");
+			iarg += 2;
+		} else if (strcmp(arg[iarg],"minhbonds") == 0) {
+			if (iarg+2 > narg) error->all(FLERR,"Illegal pair_style reax/c command");
+			system->minhbonds = utils::inumeric(FLERR,arg[iarg+1],false,lmp);
+			if (system->minhbonds < 0)
+				error->all(FLERR,"Illegal pair_style reax/c minhbonds command");
 			iarg += 2;
 		} else error->all(FLERR,"Illegal pair_style reax/c command");
 	}
@@ -310,7 +317,7 @@ void PairReaxC::coeff( int nargs, char **args )
 
 	char *file = args[2];
 	FILE *fp;
-	fp = force->open_potential(file);
+	fp = utils::open_potential(file,lmp,nullptr);
 	if (fp != NULL)
 		Read_Force_Field(fp, &(system->reax_param), control);
 	else {
@@ -461,9 +468,11 @@ void PairReaxC::setup( )
 		write_reax_atoms();
 
 		int num_nbrs = estimate_reax_lists();
+		if (num_nbrs < 0)
+			error->all(FLERR,"Too many neighbors for pair style reax/c");
 		if(!Make_List(system->total_cap, num_nbrs, TYP_FAR_NEIGHBOR,
 				lists+FAR_NBRS))
-			error->one(FLERR,"Pair reax/c problem in far neighbor list");
+			error->all(FLERR,"Pair reax/c problem in far neighbor list");
 		(lists+FAR_NBRS)->error_ptr=error;
 
 		write_reax_lists();
@@ -596,7 +605,6 @@ void PairReaxC::compute(int eflag, int vflag)
 		pvector[13] = data->my_en.e_pol;
 	}
 
-
 	if (vflag_fdotr) virial_fdotr_compute();
 
 	// Set internal timestep counter to that of LAMMPS
@@ -713,7 +721,7 @@ int PairReaxC::estimate_reax_lists()
 
 	free( marked );
 
-	return static_cast<int> (MAX( num_nbrs*safezone, mincap*MIN_NBRS ));
+	return static_cast<int> (MAX(num_nbrs*safezone, mincap*REAX_MIN_NBRS));
 }
 
 /* ---------------------------------------------------------------------- */
@@ -776,25 +784,38 @@ int PairReaxC::write_reax_lists()
 
 void PairReaxC::read_reax_forces(int /*vflag*/)
 {
+	int world_rank;
+	MPI_Comm_rank(world, &world_rank);
 
+<<<<<<< HEAD
 	printf("\n\n");
+=======
+>>>>>>> update_reax_to_latest_lammps
 	for( int i = 0; i < system->N; ++i ) {
 		system->my_atoms[i].f[0] = workspace->f[i][0];
 		system->my_atoms[i].f[1] = workspace->f[i][1];
 		system->my_atoms[i].f[2] = workspace->f[i][2];
 
+<<<<<<< HEAD
 		if(i < 20)
 				printf("%f,%f,%f\n", system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
 
 
+=======
+		if(world_rank == 1)
+		{
+			if(i < 20)
+				printf("%d,%f,%f,%f\n",system->my_atoms[i].orig_id, system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
+		}
+>>>>>>> update_reax_to_latest_lammps
 		atom->f[i][0] += -workspace->f[i][0];
 		atom->f[i][1] += -workspace->f[i][1];
 		atom->f[i][2] += -workspace->f[i][2];
+
 	}
 
-//	exit(0);
-
-
+	printf("\n\n");
+	//exit(0);
 
 }
 

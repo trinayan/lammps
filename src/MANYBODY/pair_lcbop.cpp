@@ -17,7 +17,7 @@
 ------------------------------------------------------------------------- */
 
 #include "pair_lcbop.h"
-#include <mpi.h>
+
 #include <cmath>
 #include <cstring>
 #include "atom.h"
@@ -29,7 +29,7 @@
 #include "my_page.h"
 #include "memory.h"
 #include "error.h"
-#include "utils.h"
+
 
 using namespace LAMMPS_NS;
 
@@ -256,7 +256,7 @@ void PairLCBOP::SR_neigh()
 
   double **x = atom->x;
 
-  if (atom->nmax > maxlocal) {  // ensure ther is enough space
+  if (atom->nmax > maxlocal) {  // ensure there is enough space
     maxlocal = atom->nmax;      // for atoms and ghosts allocated
     memory->destroy(SR_numneigh);
     memory->sfree(SR_firstneigh);
@@ -969,7 +969,7 @@ void PairLCBOP::read_file(char *filename)
   // read file on proc 0
 
   if (me == 0) {
-    FILE *fp = force->open_potential(filename);
+    FILE *fp = utils::open_potential(filename,lmp,nullptr);
     if (fp == NULL) {
       char str[128];
       snprintf(str,128,"Cannot open LCBOP potential file %s",filename);

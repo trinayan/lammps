@@ -13,24 +13,24 @@
 ------------------------------------------------------------------------- */
 
 #include "pair_brownian_omp.h"
-#include <cmath>
+
 #include "atom.h"
 #include "comm.h"
 #include "domain.h"
+#include "fix_wall.h"
 #include "force.h"
 #include "input.h"
-#include "neighbor.h"
-#include "neigh_list.h"
-#include "update.h"
-#include "variable.h"
-#include "random_mars.h"
 #include "math_const.h"
 #include "math_special.h"
-#include "timer.h"
-
-#include "fix_wall.h"
-
+#include "neigh_list.h"
+#include "random_mars.h"
 #include "suffix.h"
+#include "update.h"
+#include "variable.h"
+
+#include <cmath>
+
+#include "omp_compat.h"
 using namespace LAMMPS_NS;
 using namespace MathConst;
 using namespace MathSpecial;
@@ -135,7 +135,7 @@ void PairBrownianOMP::compute(int eflag, int vflag)
   }
 
 #if defined(_OPENMP)
-#pragma omp parallel default(none) shared(eflag,vflag)
+#pragma omp parallel LMP_DEFAULT_NONE LMP_SHARED(eflag,vflag)
 #endif
   {
     int ifrom, ito, tid;

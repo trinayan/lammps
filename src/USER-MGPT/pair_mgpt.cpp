@@ -22,9 +22,9 @@
 ------------------------------------------------------------------------- */
 
 #include "pair_mgpt.h"
-#include <mpi.h>
+
 #include <cmath>
-#include <cstdlib>
+
 #include <cstring>
 #include <cassert>
 
@@ -118,7 +118,7 @@ void PairMGPT::make_bond(const double xx[][3],int i,int j,bond_data *bptr) {
 
   double t0,t1;
 
-  /* Check that alignment requirements for SIMD code are fullfilled */
+  /* Check that alignment requirements for SIMD code are fulfilled */
   assert( (((unsigned long long int) (bptr->H.m )) & 31) == 0 );
   assert( (((unsigned long long int) (bptr->Hx.m)) & 31) == 0 );
   assert( (((unsigned long long int) (bptr->Hy.m)) & 31) == 0 );
@@ -1904,8 +1904,8 @@ void PairMGPT::coeff(int narg, char **arg)
       printf("Volumetric pressure is %s.\n",volpres_flag ? "on" : "off");
 
     if(comm->me == 0) {
-      FILE *parmin_fp = force->open_potential(arg[2]);
-      FILE *potin_fp = force->open_potential(arg[3]);
+      FILE *parmin_fp = utils::open_potential(arg[2],lmp,nullptr);
+      FILE *potin_fp = utils::open_potential(arg[3],lmp,nullptr);
       if (parmin_fp == NULL || potin_fp == NULL) {
         char str[128];
         sprintf(str,"Cannot open MGPT potential files %s %s",arg[2],arg[3]);

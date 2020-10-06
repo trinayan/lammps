@@ -15,12 +15,13 @@
    Contributing author: Axel Kohlmeyer (Temple U)
 ------------------------------------------------------------------------- */
 
+#include "omp_compat.h"
 #include "bond_morse_omp.h"
 #include "atom.h"
 #include "comm.h"
 #include "force.h"
 #include "neighbor.h"
-#include "timer.h"
+
 
 #include <cmath>
 
@@ -46,7 +47,7 @@ void BondMorseOMP::compute(int eflag, int vflag)
   const int inum = neighbor->nbondlist;
 
 #if defined(_OPENMP)
-#pragma omp parallel default(none) shared(eflag,vflag)
+#pragma omp parallel LMP_DEFAULT_NONE LMP_SHARED(eflag,vflag)
 #endif
   {
     int ifrom, ito, tid;

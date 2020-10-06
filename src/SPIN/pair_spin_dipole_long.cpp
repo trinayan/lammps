@@ -17,21 +17,18 @@
 ------------------------------------------------------------------------- */
 
 #include "pair_spin_dipole_long.h"
-#include <mpi.h>
-#include <cmath>
-#include <cstring>
+
 #include "atom.h"
 #include "comm.h"
-#include "neigh_list.h"
-#include "fix.h"
+#include "error.h"
 #include "force.h"
 #include "kspace.h"
 #include "math_const.h"
 #include "memory.h"
-#include "modify.h"
-#include "error.h"
-#include "update.h"
-#include "utils.h"
+#include "neigh_list.h"
+
+#include <cmath>
+#include <cstring>
 
 using namespace LAMMPS_NS;
 using namespace MathConst;
@@ -69,6 +66,7 @@ PairSpinDipoleLong::~PairSpinDipoleLong()
     memory->destroy(setflag);
     memory->destroy(cut_spin_long);
     memory->destroy(cutsq);
+    memory->destroy(emag);
   }
 }
 
@@ -80,7 +78,7 @@ void PairSpinDipoleLong::settings(int narg, char **arg)
 {
   PairSpin::settings(narg,arg);
 
-  cut_spin_long_global = force->numeric(FLERR,arg[0]);
+  cut_spin_long_global = utils::numeric(FLERR,arg[0],false,lmp);
 
   // reset cutoffs that have been explicitly set
 
@@ -108,10 +106,10 @@ void PairSpinDipoleLong::coeff(int narg, char **arg)
     error->all(FLERR,"Incorrect args in pair_style command");
 
   int ilo,ihi,jlo,jhi;
-  force->bounds(FLERR,arg[0],atom->ntypes,ilo,ihi);
-  force->bounds(FLERR,arg[1],atom->ntypes,jlo,jhi);
+  utils::bounds(FLERR,arg[0],1,atom->ntypes,ilo,ihi,error);
+  utils::bounds(FLERR,arg[1],1,atom->ntypes,jlo,jhi,error);
 
-  double spin_long_cut_one = force->numeric(FLERR,arg[2]);
+  double spin_long_cut_one = utils::numeric(FLERR,arg[2],false,lmp);
 
   int count = 0;
   for (int i = ilo; i <= ihi; i++) {
@@ -212,6 +210,13 @@ void PairSpinDipoleLong::compute(int eflag, int vflag)
   numneigh = list->numneigh;
   firstneigh = list->firstneigh;
 
+  // checking size of emag
+
+  if (nlocal_max < nlocal) {                    // grow emag lists if necessary
+    nlocal_max = nlocal;
+    memory->grow(emag,nlocal_max,"pair/spin:emag");
+  }
+
   pre1 = 2.0 * g_ewald / MY_PIS;
   pre2 = 4.0 * pow(g_ewald,3.0) / MY_PIS;
   pre3 = 8.0 * pow(g_ewald,5.0) / MY_PIS;
@@ -221,16 +226,18 @@ void PairSpinDipoleLong::compute(int eflag, int vflag)
 
   for (ii = 0; ii < inum; ii++) {
     i = ilist[ii];
+    itype = type[i];
+
+    jlist = firstneigh[i];
+    jnum = numneigh[i];
     xi[0] = x[i][0];
     xi[1] = x[i][1];
     xi[2] = x[i][2];
-    jlist = firstneigh[i];
-    jnum = numneigh[i];
     spi[0] = sp[i][0];
     spi[1] = sp[i][1];
     spi[2] = sp[i][2];
     spi[3] = sp[i][3];
-    itype = type[i];
+    emag[i] = 0.0;
 
     for (jj = 0; jj < jnum; jj++) {
       j = jlist[jj];
@@ -286,17 +293,11 @@ void PairSpinDipoleLong::compute(int eflag, int vflag)
       fm[i][1] += fmi[1];
       fm[i][2] += fmi[2];
 
-      if (newton_pair || j < nlocal) {
-        f[j][0] -= fi[0];
-        f[j][1] -= fi[1];
-        f[j][2] -= fi[2];
-      }
-
       if (eflag) {
         if (rsq <= local_cut2) {
-          evdwl -= spi[0]*fmi[0] + spi[1]*fmi[1] +
-            spi[2]*fmi[2];
+          evdwl -= (spi[0]*fmi[0] + spi[1]*fmi[1] + spi[2]*fmi[2]);
           evdwl *= 0.5*hbar;
+          emag[i] += evdwl;
         }
       } else evdwl = 0.0;
 

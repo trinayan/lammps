@@ -12,7 +12,7 @@
 ------------------------------------------------------------------------- */
 
 #include "fix_hyper_global.h"
-#include <mpi.h>
+
 #include <cmath>
 #include <cstring>
 #include "atom.h"
@@ -56,10 +56,10 @@ FixHyperGlobal::FixHyperGlobal(LAMMPS *lmp, int narg, char **arg) :
   extscalar = 0;
   extvector = 0;
 
-  cutbond = force->numeric(FLERR,arg[3]);
-  qfactor = force->numeric(FLERR,arg[4]);
-  vmax = force->numeric(FLERR,arg[5]);
-  tequil = force->numeric(FLERR,arg[6]);
+  cutbond = utils::numeric(FLERR,arg[3],false,lmp);
+  qfactor = utils::numeric(FLERR,arg[4],false,lmp);
+  vmax = utils::numeric(FLERR,arg[5],false,lmp);
+  tequil = utils::numeric(FLERR,arg[6],false,lmp);
 
   if (cutbond < 0.0 || qfactor <= 0.0 || vmax < 0.0 || tequil <= 0.0)
     error->all(FLERR,"Illegal fix hyper/global command");
@@ -189,7 +189,7 @@ void FixHyperGlobal::pre_neighbor()
   //   closest current I or J atoms to old I may now be ghost atoms
   //   closest_image() returns the ghost atom index in that case
   // also compute max drift of any atom in a bond
-  //   drift = displacement from quenched coord while event has not yet occured
+  //   drift = displacement from quenched coord while event has not yet occurred
   // NOTE: drift calc is now done in bond_build(), between 2 quenched states
 
   for (i = 0; i < nall_old; i++) old2now[i] = -1;

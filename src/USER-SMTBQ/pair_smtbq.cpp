@@ -13,7 +13,7 @@
 
 /* ----------------------------------------------------------------------
    The SMTBQ code has been developed with the financial support of  CNRS and
-   of the Regional Council of Burgundy (Convention n¡ 2010-9201AAO037S03129)
+   of the Regional Council of Burgundy (Convention nÂ¡ 2010-9201AAO037S03129)
 
    Copyright (2015)
    Universite de Bourgogne : Nicolas SALLES, Olivier POLITANO
@@ -39,9 +39,9 @@
    ------------------------------------------------------------------------- */
 
 #include "pair_smtbq.h"
-#include <mpi.h>
+
 #include <cmath>
-#include <cstdlib>
+
 #include <cstring>
 #include <algorithm>
 #include <vector>
@@ -410,7 +410,7 @@ void PairSMTBQ::read_file(char *file)
 
       // open file on all processors
   FILE *fp;
-  fp = force->open_potential(file);
+  fp = utils::open_potential(file,lmp,nullptr);
   if ( fp  == NULL ) {
     char str[128];
     snprintf(str,128,"Cannot open SMTBQ potential file %s",file);
@@ -943,7 +943,7 @@ void PairSMTBQ::compute(int eflag, int vflag)
      3 -> Short int. Ox-Ox
      4 -> Short int. SMTB (repulsion)
      5 -> Covalent energy SMTB
-     6 -> Somme des Q(i)²
+     6 -> Somme des Q(i)Â²
      ------------------------------------------------------------------------- */
 
   /* -------------- N-body forces Calcul --------------- */
@@ -3022,7 +3022,7 @@ void PairSMTBQ::groupQEqAllParallel_QEq()
 
   ngp = igp = 0; nelt[ngp] = 0;
 
-  // On prend un oxygène
+  // On prend un oxygÃ¨ne
   //   printf ("[me %d] On prend un oxygene\n",me);
 
   for (ii = 0; ii < inum; ii++) {

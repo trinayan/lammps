@@ -12,7 +12,7 @@
 ------------------------------------------------------------------------- */
 
 #include "pair_thole.h"
-#include <mpi.h>
+
 #include <cmath>
 #include <cstring>
 #include "atom.h"
@@ -22,7 +22,7 @@
 #include "neigh_list.h"
 #include "memory.h"
 #include "error.h"
-#include "utils.h"
+
 #include "fix.h"
 #include "fix_drude.h"
 #include "domain.h"
@@ -192,8 +192,8 @@ void PairThole::settings(int narg, char **arg)
 {
   if (narg != 2) error->all(FLERR,"Illegal pair_style command");
 
-  thole_global = force->numeric(FLERR,arg[0]);
-  cut_global = force->numeric(FLERR,arg[1]);
+  thole_global = utils::numeric(FLERR,arg[0],false,lmp);
+  cut_global = utils::numeric(FLERR,arg[1],false,lmp);
 
   // reset cutoffs that have been explicitly set
 
@@ -219,14 +219,14 @@ void PairThole::coeff(int narg, char **arg)
   if (!allocated) allocate();
 
   int ilo,ihi,jlo,jhi;
-  force->bounds(FLERR,arg[0],atom->ntypes,ilo,ihi);
-  force->bounds(FLERR,arg[1],atom->ntypes,jlo,jhi);
+  utils::bounds(FLERR,arg[0],1,atom->ntypes,ilo,ihi,error);
+  utils::bounds(FLERR,arg[1],1,atom->ntypes,jlo,jhi,error);
 
-  double polar_one = force->numeric(FLERR,arg[2]);
+  double polar_one = utils::numeric(FLERR,arg[2],false,lmp);
   double thole_one = thole_global;
   double cut_one = cut_global;
-  if (narg >=4) thole_one = force->numeric(FLERR,arg[3]);
-  if (narg == 5) cut_one = force->numeric(FLERR,arg[4]);
+  if (narg >=4) thole_one = utils::numeric(FLERR,arg[3],false,lmp);
+  if (narg == 5) cut_one = utils::numeric(FLERR,arg[4],false,lmp);
 
   int count = 0;
   for (int i = ilo; i <= ihi; i++) {
@@ -367,30 +367,12 @@ double PairThole::single(int i, int j, int itype, int jtype,
 {
   double r2inv,rinv,r,phicoul;
   double qi,qj,factor_f,factor_e,dcoul,asr,exp_asr;
-  int di, dj;
 
-  int *drudetype = fix_drude->drudetype;
-  tagint *drudeid = fix_drude->drudeid;
-  int *type = atom->type;
+  // single() has no information about topology or Drude particles.
+  // Charges qi and qj are defined by the user (or 1.0 by default)
 
-  // only on core-drude pair, but not on the same pair
-  if (drudetype[type[i]] == NOPOL_TYPE || drudetype[type[j]] == NOPOL_TYPE ||
-      j == i)
-    return 0.0;
-
-  // get dq of the core via the drude charge
-  if (drudetype[type[i]] == DRUDE_TYPE)
-    qi = atom->q[i];
-  else {
-    di = domain->closest_image(i, atom->map(drudeid[i]));
-    qi = -atom->q[di];
-  }
-  if (drudetype[type[j]] == DRUDE_TYPE)
-    qj = atom->q[j];
-  else {
-    dj = domain->closest_image(j, atom->map(drudeid[j]));
-    qj = -atom->q[dj];
-  }
+  qi = atom->q[i];
+  qj = atom->q[j];
 
   r2inv = 1.0/rsq;
   fforce = phicoul = 0.0;

@@ -127,7 +127,7 @@ namespace LAMMPS_NS {
 
 		//int GMRES(double*,double*);
 		virtual void sparse_matvec(sparse_matrix*,double*,double*);
-		virtual void cuda_sparse_matvec(double *,double*);
+		virtual void cuda_sparse_matvec(double *,double*, int);
 
 
 		virtual int pack_forward_comm(int, int *, double *, int, int *);

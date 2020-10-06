@@ -12,17 +12,19 @@
    Contributing author: Axel Kohlmeyer (Temple U)
 ------------------------------------------------------------------------- */
 
-#include <cmath>
 #include "pair_dpd_tstat_omp.h"
+
 #include "atom.h"
 #include "comm.h"
 #include "force.h"
-#include "neighbor.h"
 #include "neigh_list.h"
-#include "update.h"
 #include "random_mars.h"
-
 #include "suffix.h"
+#include "update.h"
+
+#include <cmath>
+
+#include "omp_compat.h"
 using namespace LAMMPS_NS;
 
 #define EPSILON 1.0e-10
@@ -79,7 +81,7 @@ void PairDPDTstatOMP::compute(int eflag, int vflag)
     random_thr[0] = random;
   }
 #if defined(_OPENMP)
-#pragma omp parallel default(none) shared(eflag,vflag)
+#pragma omp parallel LMP_DEFAULT_NONE LMP_SHARED(eflag,vflag)
 #endif
   {
     int ifrom, ito, tid;

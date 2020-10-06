@@ -12,23 +12,15 @@
    ------------------------------------------------------------------------- */
 
 #include "fix_atc.h"
-#include <cstdio>
-#include <cstring>
-#include <sstream>
-#include "fix_nve.h"
+
 #include "atom.h"
-#include "force.h"
-#include "update.h"
-#include "respa.h"
-#include "error.h"
-#include "neighbor.h"
-#include "neigh_request.h"
-#include "pointers.h"
 #include "comm.h"
+#include "error.h"
 #include "group.h"
+#include "neigh_request.h"
+#include "neighbor.h"
 
 #include "ATC_Method.h"
-#include "ATC_Transfer.h"
 #include "ATC_TransferKernel.h"
 #include "ATC_TransferPartitionOfUnity.h"
 #include "ATC_CouplingEnergy.h"
@@ -36,6 +28,8 @@
 #include "ATC_CouplingMass.h"
 #include "ATC_CouplingMomentumEnergy.h"
 #include "LammpsInterface.h"
+
+#include <cstring>
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -123,7 +117,7 @@ FixATC::FixATC(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
      # be used as a localization function \n
      fix         AtC kernel quartic_sphere 10.0 \n \n
      # create a uniform 1 x 1 x 1 mesh that covers region contain the group \n
-     # with periodicity this effectively creats a system average \n
+     # with periodicity this effectively creates a system average \n
      fix_modify  AtC mesh create 1 1 1 box p p p \n\n
      # change from default lagrangian map to eulerian \n
      #   refreshed every 100 steps \n

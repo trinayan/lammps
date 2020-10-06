@@ -18,7 +18,7 @@
 #ifndef LMP_THR_DATA_H
 #define LMP_THR_DATA_H
 
-#include "timer.h"
+#include "timer.h"    // IWYU pragma: export
 
 namespace LAMMPS_NS {
 
@@ -146,7 +146,7 @@ class ThrData {
 ////////////////////////////////////////////////////////////////////////
 //  helper functions operating on data replicated for thread support  //
 ////////////////////////////////////////////////////////////////////////
-// generic per thread data reduction for continous arrays of nthreads*nmax size
+// generic per thread data reduction for continuous arrays of nthreads*nmax size
 void data_reduce_thr(double *, int, int, int, int);
 }
 #endif

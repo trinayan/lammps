@@ -122,15 +122,15 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 	snprintf(fix_id,24,"REAXC_%d",instance_me);
 
 	system = (reax_system *)
-    																		memory->smalloc(sizeof(reax_system),"reax:system");
+    																																memory->smalloc(sizeof(reax_system),"reax:system");
 	memset(system,0,sizeof(reax_system));
 	control = (control_params *)
-    																		memory->smalloc(sizeof(control_params),"reax:control");
+    																																memory->smalloc(sizeof(control_params),"reax:control");
 	memset(control,0,sizeof(control_params));
 	data = (simulation_data *)
-    																		memory->smalloc(sizeof(simulation_data),"reax:data");
+    																																memory->smalloc(sizeof(simulation_data),"reax:data");
 	workspace = (storage *)
-    																		memory->smalloc(sizeof(storage),"reax:storage");
+    																																memory->smalloc(sizeof(storage),"reax:storage");
 
 	workspace->d_workspace = (storage *)memory->smalloc(sizeof(storage),"reax:gpu_storage");
 
@@ -145,20 +145,14 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 		gpu_lists[i]->allocated = FALSE;
 	}
 
-	cpu_lists = (reax_list *)
-    																		  memory->smalloc(LIST_N * sizeof(reax_list),"reax:lists");
+	cpu_lists = (reax_list *)memory->smalloc(LIST_N * sizeof(reax_list),"reax:lists");
 	memset(cpu_lists,0,LIST_N * sizeof(reax_list));
 
 
-	printf("Hbonds %d \n", gpu_lists[HBONDS]->allocated);
 
-
-
-	out_control = (output_controls *)
-    																		memory->smalloc(sizeof(output_controls),"reax:out_control");
+	out_control = (output_controls *)memory->smalloc(sizeof(output_controls),"reax:out_control");
 	memset(out_control,0,sizeof(output_controls));
-	mpi_data = (mpi_datatypes *)
-    																		memory->smalloc(sizeof(mpi_datatypes),"reax:mpi");
+	mpi_data = (mpi_datatypes *)memory->smalloc(sizeof(mpi_datatypes),"reax:mpi");
 	control->me = system->my_rank = comm->me;
 
 
@@ -201,51 +195,53 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 
 PairReaxCGPU::~PairReaxCGPU()
 {
+
 	if (copymode) return;
 
-		if (fix_reax) modify->delete_fix(fix_id);
-		delete[] fix_id;
+	if (fix_reax) modify->delete_fix(fix_id);
+	delete[] fix_id;
 
-		if (setup_flag) {
-			Close_Output_Files( system, control, out_control, mpi_data );
+	if (setup_flag) {
+		Close_Output_Files( system, control, out_control, mpi_data );
 
-			// deallocate reax data-structures
+		// deallocate reax data-structures
 
-			if (control->tabulate ) Deallocate_Lookup_Tables( system);
+		if (control->tabulate ) Deallocate_Lookup_Tables( system);
 
-			if (control->hbond_cut > 0 )  Delete_List( cpu_lists+HBONDS );
-			Delete_List( cpu_lists+BONDS );
-			Delete_List( cpu_lists+THREE_BODIES );
-			Delete_List( cpu_lists+FAR_NBRS );
+		if (control->hbond_cut > 0 )  Delete_List( cpu_lists+HBONDS );
+		Delete_List( cpu_lists+BONDS );
+		Delete_List( cpu_lists+THREE_BODIES );
+		Delete_List( cpu_lists+FAR_NBRS );
 
-			DeAllocate_Workspace( control, workspace );
-			DeAllocate_System( system );
-		}
+		DeAllocate_Workspace( control, workspace );
+		DeAllocate_System( system );
+	}
 
-		memory->destroy( system );
-		memory->destroy( control );
-		memory->destroy( data );
-		memory->destroy( workspace );
-		memory->destroy( cpu_lists );
-		memory->destroy( out_control );
-		memory->destroy( mpi_data );
+	memory->destroy( system );
+	memory->destroy( control );
+	memory->destroy( data );
+	memory->destroy( workspace );
+	memory->destroy( cpu_lists );
+	memory->destroy( out_control );
+	memory->destroy( mpi_data );
 
-		// deallocate interface storage
-		if (allocated) {
-			memory->destroy(setflag);
-			memory->destroy(cutsq);
-			memory->destroy(cutghost);
-			delete [] map;
+	// deallocate interface storage
+	if (allocated) {
+		memory->destroy(setflag);
+		memory->destroy(cutsq);
+		memory->destroy(cutghost);
+		delete [] map;
 
-			delete [] chi;
-			delete [] eta;
-			delete [] gamma;
-		}
+		delete [] chi;
+		delete [] eta;
+		delete [] gamma;
+	}
 
-		memory->destroy(tmpid);
-		memory->destroy(tmpbo);
+	memory->destroy(tmpid);
+	memory->destroy(tmpbo);
 
-		delete [] pvector;
+	delete [] pvector;
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -332,14 +328,14 @@ void PairReaxCGPU::settings(int narg, char **arg)
 			iarg += 2;
 		} else if (strcmp(arg[iarg],"safezone") == 0) {
 			if (iarg+2 > narg) error->all(FLERR,"Illegal pair_style reax/c command");
-			system->safezone = force->numeric(FLERR,arg[iarg+1]);
+			system->safezone = utils::numeric(FLERR,arg[iarg+1],false,lmp);
 			if (system->safezone < 0.0)
 				error->all(FLERR,"Illegal pair_style reax/c safezone command");
 			system->saferzone = system->safezone*1.2 + 0.2;
 			iarg += 2;
 		} else if (strcmp(arg[iarg],"mincap") == 0) {
 			if (iarg+2 > narg) error->all(FLERR,"Illegal pair_style reax/c command");
-			system->mincap = force->inumeric(FLERR,arg[iarg+1]);
+			system->mincap = utils::inumeric(FLERR,arg[iarg+1],false,lmp);
 			if (system->mincap < 0)
 				error->all(FLERR,"Illegal pair_style reax/c mincap command");
 			iarg += 2;
@@ -374,7 +370,7 @@ void PairReaxCGPU::coeff( int nargs, char **args )
 
 	char *file = args[2];
 	FILE *fp;
-	fp = force->open_potential(file);
+	fp = utils::open_potential(file,lmp,nullptr);
 	if (fp != NULL)
 		Read_Force_Field(fp, &(system->reax_param), control);
 	else {
@@ -425,6 +421,7 @@ void PairReaxCGPU::coeff( int nargs, char **args )
 			}
 
 	if (count == 0) error->all(FLERR,"Incorrect args for pair coefficients");
+
 
 }
 
@@ -637,12 +634,7 @@ void PairReaxCGPU::compute(int eflag, int vflag)
 
 
 	// forces
-
-	//printf("Computing forces \n");
 	Cuda_Compute_Forces(system, control, data, workspace, gpu_lists, out_control, mpi_data);
-	//printf("Computing forces finished \n");
-
-
 
 
 	read_reax_forces_from_device(vflag);
@@ -934,19 +926,32 @@ void PairReaxCGPU::read_reax_forces_from_device(int /*vflag*/)
 
 	Output_Sync_Forces(workspace,system->total_cap);
 
-	//printf("\n\n");
+
+	int world_rank;
+	MPI_Comm_rank(world, &world_rank);
+
+
+
+
 	for( int i = 0; i < system->N; ++i ) {
 		system->my_atoms[i].f[0] = workspace->f[i][0];
 		system->my_atoms[i].f[1] = workspace->f[i][1];
 		system->my_atoms[i].f[2] = workspace->f[i][2];
 
+
+
 		//if(i < 20)
-			//printf("%f,%f,%f\n", system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
+		 //printf("%d,%f,%f,%f\n",system->my_atoms[i].orig_id, system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
+
 
 		atom->f[i][0] += -workspace->f[i][0];
 		atom->f[i][1] += -workspace->f[i][1];
 		atom->f[i][2] += -workspace->f[i][2];
 	}
+
+	//exit(0);
+
+
 }
 
 /* ---------------------------------------------------------------------- */

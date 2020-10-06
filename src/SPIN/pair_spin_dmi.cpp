@@ -22,19 +22,16 @@
 ------------------------------------------------------------------------- */
 
 #include "pair_spin_dmi.h"
-#include <mpi.h>
-#include <cmath>
-#include <cstring>
+
 #include "atom.h"
 #include "comm.h"
 #include "error.h"
 #include "force.h"
-#include "fix.h"
-#include "neigh_list.h"
 #include "memory.h"
-#include "modify.h"
-#include "update.h"
-#include "utils.h"
+#include "neigh_list.h"
+
+#include <cmath>
+#include <cstring>
 
 using namespace LAMMPS_NS;
 
@@ -53,6 +50,7 @@ PairSpinDmi::~PairSpinDmi()
     memory->destroy(vmech_dmy);
     memory->destroy(vmech_dmz);
     memory->destroy(cutsq);
+    memory->destroy(emag);
   }
 }
 
@@ -64,7 +62,7 @@ void PairSpinDmi::settings(int narg, char **arg)
 {
   PairSpin::settings(narg,arg);
 
-  cut_spin_dmi_global = force->numeric(FLERR,arg[0]);
+  cut_spin_dmi_global = utils::numeric(FLERR,arg[0],false,lmp);
 
   // reset cutoffs that have been explicitly set
 
@@ -97,14 +95,14 @@ void PairSpinDmi::coeff(int narg, char **arg)
     error->all(FLERR,"Incorrect args in pair_style command");
 
   int ilo,ihi,jlo,jhi;
-  force->bounds(FLERR,arg[0],atom->ntypes,ilo,ihi);
-  force->bounds(FLERR,arg[1],atom->ntypes,jlo,jhi);
+  utils::bounds(FLERR,arg[0],1,atom->ntypes,ilo,ihi,error);
+  utils::bounds(FLERR,arg[1],1,atom->ntypes,jlo,jhi,error);
 
-  const double rij = force->numeric(FLERR,arg[3]);
-  const double dm = (force->numeric(FLERR,arg[4]));
-  double dmx = force->numeric(FLERR,arg[5]);
-  double dmy = force->numeric(FLERR,arg[6]);
-  double dmz = force->numeric(FLERR,arg[7]);
+  const double rij = utils::numeric(FLERR,arg[3],false,lmp);
+  const double dm = utils::numeric(FLERR,arg[4],false,lmp);
+  double dmx = utils::numeric(FLERR,arg[5],false,lmp);
+  double dmy = utils::numeric(FLERR,arg[6],false,lmp);
+  double dmz = utils::numeric(FLERR,arg[7],false,lmp);
 
   double inorm = 1.0/(dmx*dmx+dmy*dmy+dmz*dmz);
   dmx *= inorm;
@@ -191,6 +189,13 @@ void PairSpinDmi::compute(int eflag, int vflag)
   numneigh = list->numneigh;
   firstneigh = list->firstneigh;
 
+  // checking size of emag
+
+  if (nlocal_max < nlocal) {                    // grow emag lists if necessary
+    nlocal_max = nlocal;
+    memory->grow(emag,nlocal_max,"pair/spin:emag");
+  }
+
   // dmi computation
   // loop over all atoms
 
@@ -206,7 +211,7 @@ void PairSpinDmi::compute(int eflag, int vflag)
     spi[0] = sp[i][0];
     spi[1] = sp[i][1];
     spi[2] = sp[i][2];
-
+    emag[i] = 0.0;
 
     // loop on neighbors
 
@@ -251,15 +256,10 @@ void PairSpinDmi::compute(int eflag, int vflag)
       fm[i][1] += fmi[1];
       fm[i][2] += fmi[2];
 
-      if (newton_pair || j < nlocal) {
-        f[j][0] -= fi[0];
-        f[j][1] -= fi[1];
-        f[j][2] -= fi[2];
-      }
-
       if (eflag) {
         evdwl -= (spi[0]*fmi[0] + spi[1]*fmi[1] + spi[2]*fmi[2]);
         evdwl *= 0.5*hbar;
+        emag[i] += evdwl;
       } else evdwl = 0.0;
 
       if (evflag) ev_tally_xyz(i,j,nlocal,newton_pair,

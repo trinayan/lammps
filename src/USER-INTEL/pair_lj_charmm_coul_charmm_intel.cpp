@@ -12,19 +12,22 @@
    Contributing author: W. Michael Brown (Intel)
 ------------------------------------------------------------------------- */
 
-#include <cmath>
 #include "pair_lj_charmm_coul_charmm_intel.h"
+
 #include "atom.h"
 #include "comm.h"
+#include "error.h"
 #include "force.h"
-#include "group.h"
 #include "memory.h"
 #include "modify.h"
 #include "neighbor.h"
 #include "neigh_list.h"
 #include "neigh_request.h"
-#include "memory.h"
 #include "suffix.h"
+
+#include <cmath>
+#include <cstring>
+
 using namespace LAMMPS_NS;
 
 #define LJ_T typename IntelBuffers<flt_t,flt_t>::vec4_t
@@ -487,7 +490,7 @@ void PairLJCharmmCoulCharmmIntel::pack_force_const(ForceConst<flt_t> &fc,
   // Repeat cutsq calculation because done after call to init_style
   if (cut_lj > cut_coul)
     error->all(FLERR,
-         "Intel varient of lj/charmm/coul/long expects lj cutoff<=coulombic");
+         "Intel variant of lj/charmm/coul/long expects lj cutoff<=coulombic");
   for (int i = 1; i <= atom->ntypes; i++) {
     for (int j = i; j <= atom->ntypes; j++) {
       double cut;

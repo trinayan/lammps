@@ -12,18 +12,19 @@
    Contributing author: Axel Kohlmeyer (Temple U)
 ------------------------------------------------------------------------- */
 
-#include <cmath>
-#include <cstring>
 
 #include "pair_adp_omp.h"
+
 #include "atom.h"
 #include "comm.h"
 #include "force.h"
 #include "memory.h"
-#include "neighbor.h"
 #include "neigh_list.h"
-
 #include "suffix.h"
+
+#include <cmath>
+
+#include "omp_compat.h"
 using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
@@ -62,7 +63,7 @@ void PairADPOMP::compute(int eflag, int vflag)
   }
 
 #if defined(_OPENMP)
-#pragma omp parallel default(none) shared(eflag,vflag)
+#pragma omp parallel LMP_DEFAULT_NONE LMP_SHARED(eflag,vflag)
 #endif
   {
     int ifrom, ito, tid;
