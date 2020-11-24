@@ -97,30 +97,17 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms,
 
 
 
-		if ( nbr_pj->d  <= nonb_cut)
+		if ( nbr_pj->d  <= nonb_cut &&  j < n)
 		{
 			r_ij =  nbr_pj->d;
-
-
-
 			H.entries[cm_top].j = j;
 			shld = pow( gamma[type_i] * gamma[type_j], -1.5);
-
-
 			H.entries[cm_top].val = Init_Charge_Matrix_Entry(d_Tap,
 					i, H.entries[cm_top].j, r_ij, shld);
-
-			/*if(i == 500)
-				printf("Hval %d,%d,%f,%f,%f\n",atom_i->orig_id, atom_j->orig_id, H.entries[cm_top].val,r_ij,nonb_cut);*/
-
 			//printf("%d,%.3f\n",cm_top,H.entries[cm_top].val);
-
-
 			++cm_top;
-
 		}
 	}
-
 	__syncthreads();
 
 
@@ -252,7 +239,8 @@ void  Cuda_Calculate_H_Matrix(reax_list **lists,  reax_system *system, fix_qeq_g
 	hipLaunchKernelGGL(k_init_distance, dim3(blocks), dim3(DEF_BLOCK_SIZE), 0, 0,  qeq_gpu->d_fix_my_atoms, *(lists[FAR_NBRS]), n );
 	hipDeviceSynchronize();
 
-	printf("nonb %f\n",control->nonb_cut );
+	printf("nonb %f, %d\n",control->nonb_cut,n );
+
 
 	//printf("Blocks %d , blocks size %d\n", blocks, DEF_BLOCK_SIZE);
 	//printf("N %d, h n %d \n",system->N, qeq_gpu->H.n);
@@ -260,6 +248,7 @@ void  Cuda_Calculate_H_Matrix(reax_list **lists,  reax_system *system, fix_qeq_g
 	hipLaunchKernelGGL(k_init_cm_full_fs , dim3(blocks), dim3(DEF_BLOCK_SIZE), 0, 0,  qeq_gpu->d_fix_my_atoms,
 			*(lists[FAR_NBRS]),qeq_gpu->H, control->nonb_cut, n, qeq_gpu->d_Tap,qeq_gpu->gamma,small);
 	hipDeviceSynchronize();
+
 
 
 }
