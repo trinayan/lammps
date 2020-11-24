@@ -88,6 +88,9 @@ char Read_Force_Field( FILE *fp, reax_interaction *reax,
 	control->nonb_low  = reax->gp.l[11];
 	control->nonb_cut  = reax->gp.l[12];
 
+
+
+
 	/* next line is number of atom types and some comments */
 	fgets( s, MAX_LINE, fp );
 	c = Tokenize( s, &tmp );
@@ -101,17 +104,17 @@ char Read_Force_Field( FILE *fp, reax_interaction *reax,
 	/* Allocating structures in reax_interaction */
 	/* Allocating structures in reax_interaction */
 	reax->sbp = (single_body_parameters*)
-    		scalloc(control->error_ptr,  reax->num_atom_types, sizeof(single_body_parameters), "sbp");
+    						scalloc(control->error_ptr,  reax->num_atom_types, sizeof(single_body_parameters), "sbp");
 	reax->tbp = (two_body_parameters*)
-    		scalloc(control->error_ptr,  POW(reax->num_atom_types, 2.0), sizeof(two_body_parameters), "tbp");
+    						scalloc(control->error_ptr,  POW(reax->num_atom_types, 2.0), sizeof(two_body_parameters), "tbp");
 	reax->thbp= (three_body_header*)
-    		scalloc(control->error_ptr,  POW(reax->num_atom_types, 3.0), sizeof(three_body_header), "thbp");
+    						scalloc(control->error_ptr,  POW(reax->num_atom_types, 3.0), sizeof(three_body_header), "thbp");
 	reax->hbp = (hbond_parameters*)
-    		scalloc(control->error_ptr,  POW(reax->num_atom_types, 3.0), sizeof(hbond_parameters), "hbp");
+    						scalloc(control->error_ptr,  POW(reax->num_atom_types, 3.0), sizeof(hbond_parameters), "hbp");
 	reax->fbp = (four_body_header*)
-    		scalloc(control->error_ptr, POW(reax->num_atom_types, 4.0), sizeof(four_body_header), "fbp");
+    						scalloc(control->error_ptr, POW(reax->num_atom_types, 4.0), sizeof(four_body_header), "fbp");
 	tor_flag  = (char*)
-    		scalloc(control->error_ptr,  POW(reax->num_atom_types, 4.0), sizeof(char), "tor_flag");
+    						scalloc(control->error_ptr,  POW(reax->num_atom_types, 4.0), sizeof(char), "tor_flag");
 
 
 

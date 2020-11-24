@@ -1,0 +1,5 @@
+simulation_name		RDX_example ! output files will carry this name + their specific ext
+gpus_per_node           1    ! GPUs per node
+
+
+

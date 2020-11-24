@@ -91,7 +91,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-																																																																																																																																																																																																																		  Fix(lmp, narg, arg), pertype_option(NULL)
+																																																																																																																																																																																																																																				  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (lmp->citeme) lmp->citeme->add(cite_fix_qeq_reax);
 
@@ -543,6 +543,7 @@ void FixQEqReax::pre_force(int /*vflag*/)
 
 	matvecs = matvecs_s + matvecs_t;
 
+
 	//printf("Matvecs %d \n", matvecs);
 
 	cuda_calculate_Q();
@@ -736,7 +737,7 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 	Cuda_Copy_Vector_From_Device(d,qeq_gpu->d,nn);
 	sig_new = parallel_dot(r,d,nn);
 
-	//printf("b NORM %f, sig new %f \n", b_norm, sig_new);
+	printf("b NORM %f, sig new %f \n", b_norm, sig_new);
 
 
 	for (i = 1; i < imax && sqrt(sig_new) / b_norm > tolerance; ++i) {
@@ -747,18 +748,32 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 		cuda_sparse_matvec(qeq_gpu->d, qeq_gpu->q, 0);
 
 
-
-
 		Cuda_Copy_Vector_From_Device(d,qeq_gpu->d,nn);
 		Cuda_Copy_Vector_From_Device(q,qeq_gpu->q,nn);
 
 
 		tmp = parallel_dot( d, q, nn);
 
+
+
 		alpha = sig_new / tmp;
+
 
 		Cuda_Vector_Sum_Fix(device_x , alpha,  qeq_gpu->d, 1.0, device_x, nn);
 		Cuda_Vector_Sum_Fix(qeq_gpu->r, -alpha, qeq_gpu->q, 1.0,qeq_gpu->r,nn);
+
+
+
+
+		/*Cuda_Copy_Vector_From_Device(r,qeq_gpu->r,nn);
+		Cuda_Copy_Vector_From_Device(p,qeq_gpu->p,nn);
+
+
+
+		//for(int i = 0; i < 20;i++)
+		printf("%d,%.3f,%.3f,%.3f\n",i,q[500],r[500],d[500]);
+		exit(0);*/
+
 
 
 		Cuda_CG_Preconditioner_Fix(qeq_gpu->p,qeq_gpu->r,qeq_gpu->Hdia_inv,nn);
@@ -768,10 +783,19 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 		Cuda_Copy_Vector_From_Device(r,qeq_gpu->r,nn);
 		Cuda_Copy_Vector_From_Device(p,qeq_gpu->p,nn);
 
-		sig_new = parallel_dot( r, p, nn);
 
+
+		sig_new = parallel_dot( r, p, nn);
 		beta = sig_new / sig_old;
 
+
+
+
+
+		/*printf("%f,%f,%f,%f,%f,%f\n", sqrt(sig_new) / b_norm, tolerance, sig_new,alpha,beta,sig_old);
+
+		if(i > 10)
+			exit(0);*/
 
 
 		//printf("Device d vector sum \n");
@@ -780,12 +804,15 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 
 	}
 
+
 	if (i >= imax && comm->me == 0) {
 		char str[128];
 		sprintf(str,"Fix qeq/reax CG convergence failed after %d iterations "
 				"at " BIGINT_FORMAT " step",i,update->ntimestep);
 		error->warning(FLERR,str);
 	}
+
+
 
 
 	//printf("\n\n");
@@ -977,13 +1004,7 @@ void FixQEqReax::cuda_calculate_Q()
 	int world_rank;
 	MPI_Comm_rank(world, &world_rank);
 
-	//printf("World rank %d\n", world_rank);
 
-	/*if(world_rank == 1)
-	{
-		for(int i = 0; i < 100; i++)
-			printf("Q vals %d,%d,%f\n",world_rank, i, atom->q[i]);
-	}*/
 
 
 	//Debug end
@@ -1138,6 +1159,8 @@ double FixQEqReax::parallel_dot( double *v1, double *v2, int n)
 	int ii;
 	int *ilist;
 
+	//printf("\n\n\n");
+
 	if (reaxc)
 		ilist = reaxc->list->ilist;
 	else
@@ -1149,11 +1172,17 @@ double FixQEqReax::parallel_dot( double *v1, double *v2, int n)
 	res = 0.0;
 	for (ii = 0; ii < n; ++ii) {
 		i = ilist[ii];
+		//printf("%d,%d\n",i,atom->mask[i] & groupbit);
 		if (atom->mask[i] & groupbit)
+		{
+			//printf("%f,%f,%f\n", my_dot,v1[i],v2[i]);
 			my_dot += v1[i] * v2[i];
+		}
 	}
 
 	MPI_Allreduce( &my_dot, &res, 1, MPI_DOUBLE, MPI_SUM, world);
+
+	//printf("Res %f\n", res);
 
 	return res;
 }

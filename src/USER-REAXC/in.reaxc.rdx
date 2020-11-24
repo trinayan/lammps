@@ -4,7 +4,7 @@
 units		real
 
 atom_style	charge
-read_data	data.rdx
+read_data	data_old.rdx
 
 pair_style      reax/c control.reax_c.rdx
 pair_coeff      * * ffield.reax C H O N
@@ -49,8 +49,4 @@ timestep	0.25
 #		axes yes 0.8 0.02 view 60 -30
 #dump_modify	3 pad 3
 
-<<<<<<< HEAD
-run		2
-=======
 run		1
->>>>>>> update_reax_to_latest_lammps

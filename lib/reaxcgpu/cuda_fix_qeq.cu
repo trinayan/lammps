@@ -42,8 +42,11 @@ CUDA_DEVICE real Init_Charge_Matrix_Entry(real *workspace_Tap,
  * using the far neighbors list (stored in full format) and according to
  * the full shell communication method */
 CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms,
-		reax_list far_nbrs_list, sparse_matrix H, int nonb_cut, int n, double *d_Tap, double *gamma, int small)
+		reax_list far_nbrs_list, sparse_matrix H, float nonb_cut, int n, double *d_Tap, double *gamma, int small)
 {
+
+
+
 	int i, j, pj;
 	int start_i, end_i;
 	int type_i, type_j;
@@ -74,7 +77,8 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms,
 	start_i = Cuda_Start_Index( i, &far_nbrs_list );
 	end_i = Cuda_End_Index(i, &far_nbrs_list );
 
-	/* update i-j distance - check if j is within cutoff */
+
+
 	for ( pj = start_i; pj < end_i; ++pj )
 	{
 		nbr_pj = &far_nbrs_list.select.far_nbr_list[pj];
@@ -91,9 +95,13 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms,
 
 		flag = 0;
 
+
+
 		if ( nbr_pj->d  <= nonb_cut)
 		{
 			r_ij =  nbr_pj->d;
+
+
 
 			H.entries[cm_top].j = j;
 			shld = pow( gamma[type_i] * gamma[type_j], -1.5);
@@ -101,6 +109,12 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms,
 
 			H.entries[cm_top].val = Init_Charge_Matrix_Entry(d_Tap,
 					i, H.entries[cm_top].j, r_ij, shld);
+
+			/*if(i == 500)
+				printf("Hval %d,%d,%f,%f,%f\n",atom_i->orig_id, atom_j->orig_id, H.entries[cm_top].val,r_ij,nonb_cut);*/
+
+			//printf("%d,%.3f\n",cm_top,H.entries[cm_top].val);
+
 
 			++cm_top;
 
@@ -112,16 +126,6 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms,
 
 	H.end[i] = cm_top;
 	num_cm_entries = cm_top - H.start[i];
-
-	/*if(i < 2)
-	{
-		printf(" H matrix %d,%d,%d,%d\n", i,H.start[i],cm_top,num_cm_entries);
-	}*/
-
-	//printf("Index : %d, H first number %d , m fill : %d, NumNbrs:%d \n",i,  H.start[i],cm_top,num_cm_entries);
-
-
-	//printf("Cm top %d \n", cm_)
 
 
 }
@@ -248,6 +252,7 @@ void  Cuda_Calculate_H_Matrix(reax_list **lists,  reax_system *system, fix_qeq_g
 	hipLaunchKernelGGL(k_init_distance, dim3(blocks), dim3(DEF_BLOCK_SIZE), 0, 0,  qeq_gpu->d_fix_my_atoms, *(lists[FAR_NBRS]), n );
 	hipDeviceSynchronize();
 
+	printf("nonb %f\n",control->nonb_cut );
 
 	//printf("Blocks %d , blocks size %d\n", blocks, DEF_BLOCK_SIZE);
 	//printf("N %d, h n %d \n",system->N, qeq_gpu->H.n);
@@ -255,6 +260,7 @@ void  Cuda_Calculate_H_Matrix(reax_list **lists,  reax_system *system, fix_qeq_g
 	hipLaunchKernelGGL(k_init_cm_full_fs , dim3(blocks), dim3(DEF_BLOCK_SIZE), 0, 0,  qeq_gpu->d_fix_my_atoms,
 			*(lists[FAR_NBRS]),qeq_gpu->H, control->nonb_cut, n, qeq_gpu->d_Tap,qeq_gpu->gamma,small);
 	hipDeviceSynchronize();
+
 
 }
 
@@ -501,7 +507,7 @@ CUDA_GLOBAL void k_update_buf(double *dev_buf, double *x, int nn, int offset)
 	}
 
 
-    x[i+offset] = dev_buf[i];
+	x[i+offset] = dev_buf[i];
 }
 
 
@@ -586,29 +592,32 @@ CUDA_GLOBAL void k_matvec_csr_fix( sparse_matrix H, real *vec, real *results,
 		return;
 	}
 
+
+
 	results_row = results[i];
+
 
 	for ( c = H.start[i]; c < H.end[i]; c++ )
 	{
 		col = H.entries [c].j;
 		val = H.entries[c].val;
 
+		/*if(i == 500)
+			printf("Sparse mul %d,%f,%f,%d,%f\n", c,val,results_row,col,vec[col]);*/
 		results_row += val * vec[col];
 
-		if(i == 0 && print)
-		{
-			//printf("%d,%f,%f,%f\n",col,results_row,val,vec[col]);
-			//printf("%d,%d,%f\n",i,col,results_row);
-		}
+
 	}
 
 
 
-	__syncthreads( );
+	__syncthreads();
+
+
 	results[i] = results_row;
 
 	//if (i == 0 && print)
-		//printf("Results %f \n", results[i]);
+	//printf("Results %f \n", results[i]);
 
 
 }
@@ -671,6 +680,8 @@ void Cuda_Sparse_Matvec_Compute(sparse_matrix *H,double *x, double *q, double *e
 	hipLaunchKernelGGL(k_matvec_csr_fix, dim3(blocks), dim3(DEF_BLOCK_SIZE), 0 , 0, *H, x, q, nn, print);
 	hipDeviceSynchronize();
 	cudaCheckError();
+
+	//printf("\n\n");
 }
 
 void Cuda_Vector_Sum_Fix( real *res, real a, real *x, real b, real *y, int count )

@@ -60,7 +60,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-																																																  Fix(lmp, narg, arg), pertype_option(NULL)
+																																																																								  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (narg<8 || narg>11) error->all(FLERR,"Illegal fix qeq/reax command");
 
@@ -612,6 +612,9 @@ void FixQEqReax::compute_H()
 	double **x = atom->x;
 	int *mask = atom->mask;
 
+	int flag2 = 0;
+
+
 	// fill in the H matrix
 	m_fill = 0;
 	r_sqr = 0;
@@ -622,6 +625,7 @@ void FixQEqReax::compute_H()
 			jnum = numneigh[i];
 			H.firstnbr[i] = m_fill;
 
+
 			for (jj = 0; jj < jnum; jj++) {
 				j = jlist[jj];
 				j &= NEIGHMASK;
@@ -631,7 +635,11 @@ void FixQEqReax::compute_H()
 				dz = x[j][2] - x[i][2];
 				r_sqr = SQR(dx) + SQR(dy) + SQR(dz);
 
+
 				flag = 0;
+				if (r_sqr <= SQR(swb))
+					flag2 = 1;
+
 				if (r_sqr <= SQR(swb)) {
 					if (j < atom->nlocal) flag = 1;
 					else if (tag[i] < tag[j]) flag = 1;
@@ -645,10 +653,24 @@ void FixQEqReax::compute_H()
 					}
 				}
 
+
+				/*if(i == 500)
+					if(flag2==1 && flag==0)
+						 printf("No pass %d,%d\n", tag[i], tag[j]);*/
+
+
 				if (flag) {
 					H.jlist[m_fill] = j;
 					H.val[m_fill] = calculate_H( sqrt(r_sqr), shld[type[i]][type[j]]);
+					if(i == 500)
+						printf("Hval %d,%d,%f,%f,%f\n",tag[i],tag[j],H.val[m_fill],sqrt(r_sqr),swb);
+					//printf("%d,%.3f\n",m_fill,H.val[m_fill]);
+
 					m_fill++;
+				} else
+				{
+					//if(i == 1)
+					//printf("No pass %d,%d\n", tag[i], tag[j]);
 				}
 			}
 			H.numnbrs[i] = m_fill - H.firstnbr[i];
@@ -662,6 +684,7 @@ void FixQEqReax::compute_H()
 		error->warning(FLERR,str);
 		error->all(FLERR,"Fix qeq/reax has insufficient QEq matrix size");
 	}
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -731,9 +754,11 @@ int FixQEqReax::CG( double *b, double *x)
 	printf("b NORM %f, sig new %f \n", b_norm, sig_new);
 
 
+
 	for (i = 1; i < imax && sqrt(sig_new) / b_norm > tolerance; ++i) {
 		comm->forward_comm_fix(this); //Dist_vector( d );
 		sparse_matvec( &H, d, q, 0);
+
 
 		comm->reverse_comm_fix(this); //Coll_vector( q );
 
@@ -741,11 +766,12 @@ int FixQEqReax::CG( double *b, double *x)
 		tmp = parallel_dot( d, q, nn);
 
 
-
 		alpha = sig_new / tmp;
+
 
 		vector_add( x, alpha, d, nn );
 		vector_add( r, -alpha, q, nn );
+
 
 		// pre-conditioning
 		for (jj = 0; jj < nn; ++jj) {
@@ -757,13 +783,14 @@ int FixQEqReax::CG( double *b, double *x)
 		sig_old = sig_new;
 		sig_new = parallel_dot( r, p, nn);
 
+
+
 		beta = sig_new / sig_old;
 
 
 		vector_sum( d, 1., p, beta, d, nn );
-
-
 	}
+
 
 	if (i >= imax && comm->me == 0) {
 		char str[128];
@@ -771,6 +798,7 @@ int FixQEqReax::CG( double *b, double *x)
 				"at " BIGINT_FORMAT " step",i,update->ntimestep);
 		error->warning(FLERR,str);
 	}
+
 
 
 	//printf("\n\n");
@@ -800,23 +828,39 @@ void FixQEqReax::sparse_matvec( sparse_matrix *A, double *x, double *b, int prin
 			b[i] = 0;
 	}
 
+
+
+
+
 	for (ii = 0; ii < nn; ++ii) {
 		i = ilist[ii];
 		if (atom->mask[i] & groupbit) {
 			for (itr_j=A->firstnbr[i]; itr_j<A->firstnbr[i]+A->numnbrs[i]; itr_j++) {
 				j = A->jlist[itr_j];
+
+				/*if(i == 500)
+					printf("Sparse mul %d,%f,%f,%d,%f\n", itr_j, A->val[itr_j],b[500],j,x[j]);
+
+				if(j == 500)
+					printf("Sparse mul %d,%f,%f,%d,%f\n", itr_j, A->val[itr_j],b[500],i,x[i]);
+				 */
+
 				b[i] += A->val[itr_j] * x[j];
 				b[j] += A->val[itr_j] * x[i];
 
-				if(print)
-					if(i == 0 || j == 0)
-						printf("%d,%f,%f,%f\n",j,b[0],A->val[itr_j],x[j]);
+
+
+				//if(i == 500 || j == 500)
+				//printf("%f\n",A->val[itr_j]);
 
 
 				//printf("%d,%d,%f,%f\n", i, j,b[i],b[j]);
 			}
 		}
 	}
+
+
+	//printf("\n\n");
 
 
 
@@ -867,14 +911,6 @@ void FixQEqReax::calculate_Q()
 	int world_rank;
 	MPI_Comm_rank(world, &world_rank);
 
-	printf("World rank %d\n", world_rank);
-
-	if(world_rank == 1)
-	{
-	for(int i = 0; i < 100; i++)
-		printf("Q vals %d,%d,%f\n",world_rank, i, atom->q[i]);
-
-	}
 
 
 	//Debug end
@@ -1119,15 +1155,23 @@ double FixQEqReax::parallel_dot( double *v1, double *v2, int n)
 
 	int ii;
 
+	//printf("\n\n\n");
+
 	my_dot = 0.0;
 	res = 0.0;
 	for (ii = 0; ii < n; ++ii) {
 		i = ilist[ii];
+		//printf("%d,%d\n",i,atom->mask[i] & groupbit);
 		if (atom->mask[i] & groupbit)
+		{
+			//printf("%f,%f,%f\n", my_dot,v1[i],v2[i]);
 			my_dot += v1[i] * v2[i];
+		}
 	}
 
 	MPI_Allreduce( &my_dot, &res, 1, MPI_DOUBLE, MPI_SUM, world);
+
+	//printf(" Res %f\n", res);
 
 	return res;
 }

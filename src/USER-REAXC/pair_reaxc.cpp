@@ -83,23 +83,23 @@ PairReaxC::PairReaxC(LAMMPS *lmp) : Pair(lmp)
 	snprintf(fix_id,24,"REAXC_%d",instance_me);
 
 	system = (reax_system *)
-    		memory->smalloc(sizeof(reax_system),"reax:system");
+    				memory->smalloc(sizeof(reax_system),"reax:system");
 	memset(system,0,sizeof(reax_system));
 	control = (control_params *)
-    		memory->smalloc(sizeof(control_params),"reax:control");
+    				memory->smalloc(sizeof(control_params),"reax:control");
 	memset(control,0,sizeof(control_params));
 	data = (simulation_data *)
-    		memory->smalloc(sizeof(simulation_data),"reax:data");
+    				memory->smalloc(sizeof(simulation_data),"reax:data");
 	workspace = (storage *)
-    		memory->smalloc(sizeof(storage),"reax:storage");
+    				memory->smalloc(sizeof(storage),"reax:storage");
 	lists = (reax_list *)
-    		memory->smalloc(LIST_N * sizeof(reax_list),"reax:lists");
+    				memory->smalloc(LIST_N * sizeof(reax_list),"reax:lists");
 	memset(lists,0,LIST_N * sizeof(reax_list));
 	out_control = (output_controls *)
-    		memory->smalloc(sizeof(output_controls),"reax:out_control");
+    				memory->smalloc(sizeof(output_controls),"reax:out_control");
 	memset(out_control,0,sizeof(output_controls));
 	mpi_data = (mpi_datatypes *)
-    		memory->smalloc(sizeof(mpi_datatypes),"reax:mpi");
+    				memory->smalloc(sizeof(mpi_datatypes),"reax:mpi");
 
 	control->me = system->my_rank = comm->me;
 
@@ -762,6 +762,8 @@ int PairReaxC::write_reax_lists()
 			cutoff_sqr = control->bond_cut*control->bond_cut;
 
 		for( itr_j = 0; itr_j < numneigh[i]; ++itr_j ){
+			if (i == 500 && i > j)
+			 printf("%d,%d\n", i, j);
 			j = jlist[itr_j];
 			j &= NEIGHMASK;
 			get_distance( x[j], x[i], &d_sqr, &dvec );
@@ -772,10 +774,14 @@ int PairReaxC::write_reax_lists()
 				++num_nbrs;
 			}
 		}
+
+
 		Set_End_Index( i, num_nbrs, far_nbrs );
 	}
 
 	free( dist );
+
+	exit(0);
 
 	return num_nbrs;
 }
@@ -787,36 +793,22 @@ void PairReaxC::read_reax_forces(int /*vflag*/)
 	int world_rank;
 	MPI_Comm_rank(world, &world_rank);
 
-<<<<<<< HEAD
-	printf("\n\n");
-=======
->>>>>>> update_reax_to_latest_lammps
 	for( int i = 0; i < system->N; ++i ) {
 		system->my_atoms[i].f[0] = workspace->f[i][0];
 		system->my_atoms[i].f[1] = workspace->f[i][1];
 		system->my_atoms[i].f[2] = workspace->f[i][2];
 
-<<<<<<< HEAD
 		if(i < 20)
-				printf("%f,%f,%f\n", system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
+			printf("%d,%f,%f,%f\n",system->my_atoms[i].orig_id, system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
 
 
-=======
-		if(world_rank == 1)
-		{
-			if(i < 20)
-				printf("%d,%f,%f,%f\n",system->my_atoms[i].orig_id, system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
-		}
->>>>>>> update_reax_to_latest_lammps
 		atom->f[i][0] += -workspace->f[i][0];
 		atom->f[i][1] += -workspace->f[i][1];
 		atom->f[i][2] += -workspace->f[i][2];
 
 	}
-
 	printf("\n\n");
-	//exit(0);
-
+	exit(0);
 }
 
 /* ---------------------------------------------------------------------- */

@@ -4,8 +4,8 @@
 units		real
 
 atom_style	charge
-read_data	data.rdx
-replicate       7 7 7 bbox
+read_data	data_old.rdx
+#replicate       7 7 7 bbox
 
 
 pair_style      reax/c/gpu control.reax_c.rdx
@@ -51,4 +51,4 @@ timestep	0.25
 #		axes yes 0.8 0.02 view 60 -30
 #dump_modify	3 pad 3
 
-run		100
+run		1

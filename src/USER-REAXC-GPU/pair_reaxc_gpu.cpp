@@ -122,15 +122,15 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 	snprintf(fix_id,24,"REAXC_%d",instance_me);
 
 	system = (reax_system *)
-    																																memory->smalloc(sizeof(reax_system),"reax:system");
+    																																						memory->smalloc(sizeof(reax_system),"reax:system");
 	memset(system,0,sizeof(reax_system));
 	control = (control_params *)
-    																																memory->smalloc(sizeof(control_params),"reax:control");
+    																																						memory->smalloc(sizeof(control_params),"reax:control");
 	memset(control,0,sizeof(control_params));
 	data = (simulation_data *)
-    																																memory->smalloc(sizeof(simulation_data),"reax:data");
+    																																						memory->smalloc(sizeof(simulation_data),"reax:data");
 	workspace = (storage *)
-    																																memory->smalloc(sizeof(storage),"reax:storage");
+    																																						memory->smalloc(sizeof(storage),"reax:storage");
 
 	workspace->d_workspace = (storage *)memory->smalloc(sizeof(storage),"reax:gpu_storage");
 
@@ -886,10 +886,7 @@ int PairReaxCGPU::update_and_write_reax_lists_to_device()
 					++num_nbrs;
 				}
 			}
-		}
 
-		for( itr_j = 0; itr_j < numneigh[i]; ++itr_j ) {
-			j = jlist[itr_j];
 			if ( i >  j)
 			{
 				j &= NEIGHMASK;
@@ -902,10 +899,9 @@ int PairReaxCGPU::update_and_write_reax_lists_to_device()
 					++num_nbrs;
 				}
 			}
+
+
 		}
-
-
-
 
 
 		Set_End_Index( i, num_nbrs, far_nbrs );
@@ -940,8 +936,8 @@ void PairReaxCGPU::read_reax_forces_from_device(int /*vflag*/)
 
 
 
-		//if(i < 20)
-		 //printf("%d,%f,%f,%f\n",system->my_atoms[i].orig_id, system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
+		if(i < 20)
+			printf("%d,%f,%f,%f\n",system->my_atoms[i].orig_id, system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
 
 
 		atom->f[i][0] += -workspace->f[i][0];
