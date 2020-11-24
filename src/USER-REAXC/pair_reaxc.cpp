@@ -762,8 +762,6 @@ int PairReaxC::write_reax_lists()
 			cutoff_sqr = control->bond_cut*control->bond_cut;
 
 		for( itr_j = 0; itr_j < numneigh[i]; ++itr_j ){
-			if (i == 500 && i > j)
-			 printf("%d,%d\n", i, j);
 			j = jlist[itr_j];
 			j &= NEIGHMASK;
 			get_distance( x[j], x[i], &d_sqr, &dvec );
@@ -781,7 +779,6 @@ int PairReaxC::write_reax_lists()
 
 	free( dist );
 
-	exit(0);
 
 	return num_nbrs;
 }

@@ -999,7 +999,6 @@ void FixQEqReax::cuda_calculate_Q()
 	pack_flag = 4;
 	comm->forward_comm_fix(this); //Dist_vector( atom->q );
 
-
 	//Debug start
 	int world_rank;
 	MPI_Comm_rank(world, &world_rank);

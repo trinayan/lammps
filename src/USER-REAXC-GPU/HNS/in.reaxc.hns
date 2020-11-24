@@ -11,11 +11,11 @@ units             real
 atom_style        charge
 atom_modify sort  100 0.0 # optional
 dimension         3
-boundary          f f f
+boundary          p p p
 box               tilt large
 
 read_data         data.hns-equil
-#replicate         $x $y $z bbox
+replicate         $x $y $z bbox
 
 
 pair_style        reax/c/gpu control.reax_c.rdx

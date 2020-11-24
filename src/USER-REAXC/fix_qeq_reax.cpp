@@ -637,8 +637,7 @@ void FixQEqReax::compute_H()
 
 
 				flag = 0;
-				if (r_sqr <= SQR(swb))
-					flag2 = 1;
+
 
 				if (r_sqr <= SQR(swb)) {
 					if (j < atom->nlocal) flag = 1;
@@ -684,6 +683,7 @@ void FixQEqReax::compute_H()
 		error->warning(FLERR,str);
 		error->all(FLERR,"Fix qeq/reax has insufficient QEq matrix size");
 	}
+
 
 }
 
@@ -907,7 +907,6 @@ void FixQEqReax::calculate_Q()
 	comm->forward_comm_fix(this); //Dist_vector( atom->q );
 
 	//Debug start
-
 	int world_rank;
 	MPI_Comm_rank(world, &world_rank);
 
