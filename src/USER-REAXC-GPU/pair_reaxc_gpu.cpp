@@ -122,15 +122,15 @@ PairReaxCGPU::PairReaxCGPU(LAMMPS *lmp) : Pair(lmp)
 	snprintf(fix_id,24,"REAXC_%d",instance_me);
 
 	system = (reax_system *)
-    																																						memory->smalloc(sizeof(reax_system),"reax:system");
+    																																										memory->smalloc(sizeof(reax_system),"reax:system");
 	memset(system,0,sizeof(reax_system));
 	control = (control_params *)
-    																																						memory->smalloc(sizeof(control_params),"reax:control");
+    																																										memory->smalloc(sizeof(control_params),"reax:control");
 	memset(control,0,sizeof(control_params));
 	data = (simulation_data *)
-    																																						memory->smalloc(sizeof(simulation_data),"reax:data");
+    																																										memory->smalloc(sizeof(simulation_data),"reax:data");
 	workspace = (storage *)
-    																																						memory->smalloc(sizeof(storage),"reax:storage");
+    																																										memory->smalloc(sizeof(storage),"reax:storage");
 
 	workspace->d_workspace = (storage *)memory->smalloc(sizeof(storage),"reax:gpu_storage");
 
@@ -466,7 +466,7 @@ void PairReaxCGPU::init_style( )
 	// built whenever re-neighboring occurs
 
 	int irequest = neighbor->request(this,instance_me);
-	neighbor->requests[irequest]->newton = 2;
+	//neighbor->requests[irequest]->newton = 2;
 	neighbor->requests[irequest]->ghost = 1;
 	neighbor->requests[irequest]->half = 0;
 	neighbor->requests[irequest]->full = 1;
@@ -868,50 +868,29 @@ int PairReaxCGPU::update_and_write_reax_lists_to_device()
 		Set_Start_Index( i, num_nbrs, far_nbrs );
 
 		if (i < inum)
+			//cutoff_sqr = MAX(control->bond_cut*control->bond_cut,control->hbond_cut*control->hbond_cut);
 			cutoff_sqr = control->nonb_cut*control->nonb_cut;
 		else
 			cutoff_sqr = control->bond_cut*control->bond_cut;
 
+
+
 		for( itr_j = 0; itr_j < numneigh[i]; ++itr_j ) {
 			j = jlist[itr_j];
-			if ( i <  j)
-			{
-				j &= NEIGHMASK;
+			j &= NEIGHMASK;
 
-				get_distance( x[j], x[i], &d_sqr, &dvec );
-
-				if (d_sqr <= (cutoff_sqr)) {
-					dist[j] = sqrt( d_sqr );
-					set_far_nbr( &far_list[num_nbrs], j, dist[j], dvec );
-					++num_nbrs;
-				}
+			get_distance( x[j], x[i], &d_sqr, &dvec );
+			if (d_sqr <= (cutoff_sqr)) {
+				dist[j] = sqrt( d_sqr );
+				set_far_nbr( &far_list[num_nbrs], j, dist[j], dvec );
+				++num_nbrs;
 			}
-
-			if ( i >  j)
-			{
-				j &= NEIGHMASK;
-
-				get_distance( x[i], x[j], &d_sqr, &dvec );
-
-				if (d_sqr <= (cutoff_sqr)) {
-					dist[j] = sqrt( d_sqr );
-					set_far_nbr( &far_list[num_nbrs], j, dist[j], dvec );
-					++num_nbrs;
-				}
-			}
-
-
 		}
-
-
 		Set_End_Index( i, num_nbrs, far_nbrs );
 	}
 
 	free( dist );
-
 	Cuda_Write_Reax_Lists(system,  gpu_lists, cpu_lists);
-
-
 	return num_nbrs;
 }
 

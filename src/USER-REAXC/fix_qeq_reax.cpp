@@ -60,7 +60,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-																																																																								  Fix(lmp, narg, arg), pertype_option(NULL)
+																																																																														  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (narg<8 || narg>11) error->all(FLERR,"Illegal fix qeq/reax command");
 
@@ -628,6 +628,7 @@ void FixQEqReax::compute_H()
 
 			for (jj = 0; jj < jnum; jj++) {
 				j = jlist[jj];
+
 				j &= NEIGHMASK;
 
 				dx = x[j][0] - x[i][0];
@@ -638,8 +639,10 @@ void FixQEqReax::compute_H()
 
 				flag = 0;
 
-
 				if (r_sqr <= SQR(swb)) {
+					//if ( i == 500)
+						//printf("%d,%d,%f\n", i, j,r_sqr,SQR(swb));
+
 					if (j < atom->nlocal) flag = 1;
 					else if (tag[i] < tag[j]) flag = 1;
 					else if (tag[i] == tag[j]) {
@@ -661,10 +664,7 @@ void FixQEqReax::compute_H()
 				if (flag) {
 					H.jlist[m_fill] = j;
 					H.val[m_fill] = calculate_H( sqrt(r_sqr), shld[type[i]][type[j]]);
-					if(i == 500)
-						printf("Hval %d,%d,%f,%f,%f\n",tag[i],tag[j],H.val[m_fill],sqrt(r_sqr),swb);
 					//printf("%d,%.3f\n",m_fill,H.val[m_fill]);
-
 					m_fill++;
 				} else
 				{
@@ -683,7 +683,6 @@ void FixQEqReax::compute_H()
 		error->warning(FLERR,str);
 		error->all(FLERR,"Fix qeq/reax has insufficient QEq matrix size");
 	}
-
 
 }
 
@@ -766,11 +765,15 @@ int FixQEqReax::CG( double *b, double *x)
 		tmp = parallel_dot( d, q, nn);
 
 
+
 		alpha = sig_new / tmp;
 
 
 		vector_add( x, alpha, d, nn );
 		vector_add( r, -alpha, q, nn );
+
+		//printf("%d,%.3f,%.3f,%.3f\n",i,q[500],r[500],d[500]);
+
 
 
 		// pre-conditioning
@@ -838,12 +841,14 @@ void FixQEqReax::sparse_matvec( sparse_matrix *A, double *x, double *b, int prin
 			for (itr_j=A->firstnbr[i]; itr_j<A->firstnbr[i]+A->numnbrs[i]; itr_j++) {
 				j = A->jlist[itr_j];
 
-				/*if(i == 500)
-					printf("Sparse mul %d,%f,%f,%d,%f\n", itr_j, A->val[itr_j],b[500],j,x[j]);
+				if(i == 500)
+					printf("%d,%f\n", j,x[j]);
+				//printf("%d,%f,%f,%f\n", j, A->val[itr_j],b[500],x[j]);
 
 				if(j == 500)
-					printf("Sparse mul %d,%f,%f,%d,%f\n", itr_j, A->val[itr_j],b[500],i,x[i]);
-				 */
+					printf("%d,%f\n", i,x[i]);
+				//printf("%d,%f,%f,%f\n", i, A->val[itr_j],b[500],x[i]);
+
 
 				b[i] += A->val[itr_j] * x[j];
 				b[j] += A->val[itr_j] * x[i];
@@ -909,6 +914,11 @@ void FixQEqReax::calculate_Q()
 	//Debug start
 	int world_rank;
 	MPI_Comm_rank(world, &world_rank);
+
+	for(int i = 0; i < nn; i++)
+		printf("%d,%f,%f\n",i,atom->q[i],q[i]);
+
+	exit(0);
 
 
 

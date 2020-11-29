@@ -60,6 +60,7 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms,
 	double dx, dy, dz;
 
 	int flag = 0;
+	int flag3 = 0;
 
 	i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -69,8 +70,6 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms,
 	}
 
 	cm_top = H.start[i];
-
-	//printf("I %d, CM top %d\n", i, cm_top);
 
 	atom_i = &my_atoms[i];
 	type_i = atom_i->type;
@@ -87,18 +86,13 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms,
 		type_j = atom_j->type;
 
 
-		dx = atom_j->x[0] - atom_i->x[0];
-		dy = atom_j->x[1] - atom_i->x[1];
-		dz = atom_j->x[2] - atom_i->x[2];
-
-		nbr_pj->d = rvec_Norm(nbr_pj->dvec);
-
 		flag = 0;
 
 
-
-		if ( nbr_pj->d  <= nonb_cut &&  j < n)
+		if ( nbr_pj->d  <= nonb_cut)
 		{
+			//if ( i == 500)
+				//printf("%d,%d,%f,%f\n", i, j, nbr_pj->d,nonb_cut);
 			r_ij =  nbr_pj->d;
 			H.entries[cm_top].j = j;
 			shld = pow( gamma[type_i] * gamma[type_j], -1.5);
@@ -106,7 +100,9 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms,
 					i, H.entries[cm_top].j, r_ij, shld);
 			//printf("%d,%.3f\n",cm_top,H.entries[cm_top].val);
 			++cm_top;
+
 		}
+
 	}
 	__syncthreads();
 
@@ -250,7 +246,6 @@ void  Cuda_Calculate_H_Matrix(reax_list **lists,  reax_system *system, fix_qeq_g
 	hipDeviceSynchronize();
 
 
-
 }
 
 void Cuda_Init_Taper(fix_qeq_gpu *qeq_gpu,double *Tap, int numTap)
@@ -319,53 +314,27 @@ CUDA_GLOBAL void k_estimate_cm_entries_storage(reax_atom *my_atoms,
 	end_i = Cuda_End_Index( i, &far_nbrs );
 
 
-	//printf("Control cut %d, %d, %d, %d, %d\n", control->nonb_cut, control->bond_cut, type_i,start_i,end_i);
-
-
-	local = TRUE;
 	cutoff = control->nonb_cut;
-	//TB: is the increment below correct
-	++num_cm_entries;
+
+    ++num_cm_entries;
 
 
 	for ( pj = start_i; pj < end_i; ++pj )
 	{
 		nbr_pj = &far_nbrs.select.far_nbr_list[pj];
-		j = nbr_pj->nbr;
-		atom_j = &my_atoms[j];
-
-		if ( nbr_pj->d <= control->nonb_cut )
+		if (nbr_pj->d <= control->nonb_cut)
 		{
-			type_j = my_atoms[j].type;
+			 ++num_cm_entries;
 
-			if ( local == TRUE )
-			{
-				if ( i < j && (j < n || atom_i->orig_id < atom_j->orig_id) )
-				{
-					++num_cm_entries;
-				}
-				else if ( i > j && (j < n || atom_j->orig_id > atom_i->orig_id) )
-				{
-					++num_cm_entries;
-				}
-			}
-			else
-			{
-				if ( i > j && j < n && atom_j->orig_id < atom_i->orig_id )
-				{
-					++num_cm_entries;
-				}
-			}
 		}
 	}
+
+    __syncthreads( );
 
 
 	cm_entries[i] = num_cm_entries;
 	max_cm_entries[i] = MAX( (int)(num_cm_entries * SAFE_ZONE), MIN_CM_ENTRIES );
 
-
-
-	//printf("Cm etnries index %d,  %d \n", i, cm_entries[i]);
 }
 
 void Cuda_Estimate_CMEntries_Storages( reax_system *system, control_params *control, reax_list **lists, fix_qeq_gpu *qeq_gpu,int n)
@@ -590,25 +559,15 @@ CUDA_GLOBAL void k_matvec_csr_fix( sparse_matrix H, real *vec, real *results,
 	{
 		col = H.entries [c].j;
 		val = H.entries[c].val;
-
-		/*if(i == 500)
-			printf("Sparse mul %d,%f,%f,%d,%f\n", c,val,results_row,col,vec[col]);*/
 		results_row += val * vec[col];
 
 
 	}
 
-
-
 	__syncthreads();
 
 
 	results[i] = results_row;
-
-	//if (i == 0 && print)
-	//printf("Results %f \n", results[i]);
-
-
 }
 
 CUDA_GLOBAL void k_init_q(reax_atom *my_atoms, double *q, double *x,double *eta, int nn, int NN)

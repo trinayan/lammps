@@ -241,7 +241,7 @@ CUDA_GLOBAL void Cuda_Torsion_Angles( reax_atom *my_atoms, global_parameters gp,
 			pj = pbond_jk->sym_index; // pj points to j on k's list
 
 			/* do the same check as above:
-               are there any 3-body interactions involving k&j 
+               are there any 3-body interactions involving k&j
                where k is the central atom */
 			if ( Cuda_Num_Entries(pj, thb_intrs) )
 			{
@@ -534,7 +534,7 @@ CUDA_GLOBAL void Cuda_Torsion_Angles( reax_atom *my_atoms, global_parameters gp,
                                    fprintf( out_control->etor, "%12.8f\n", dfn11 ); */
 								/* fprintf( out_control->etor,
                                    "%12.8f%12.8f%12.8f%12.8f%12.8f%12.8f%12.8f%12.8f\n",
-                                   CEtors2, CEtors3, CEtors4, CEtors5, CEtors6, 
+                                   CEtors2, CEtors3, CEtors4, CEtors5, CEtors6,
                                    CEtors7, CEtors8, CEtors9 ); */
 								/* fprintf( out_control->etor,
                                    "%12.8f%12.8f%12.8f%12.8f%12.8f%12.8f%12.8f%12.8f\n",

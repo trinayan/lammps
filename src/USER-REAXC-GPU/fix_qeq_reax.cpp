@@ -549,6 +549,7 @@ void FixQEqReax::pre_force(int /*vflag*/)
 	cuda_calculate_Q();
 
 
+
 	if (comm->me == 0) {
 		t_end = MPI_Wtime();
 		qeq_time = t_end - t_start;
@@ -756,6 +757,7 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 
 
 
+
 		alpha = sig_new / tmp;
 
 
@@ -765,14 +767,13 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 
 
 
-		/*Cuda_Copy_Vector_From_Device(r,qeq_gpu->r,nn);
+		Cuda_Copy_Vector_From_Device(r,qeq_gpu->r,nn);
 		Cuda_Copy_Vector_From_Device(p,qeq_gpu->p,nn);
 
 
 
 		//for(int i = 0; i < 20;i++)
-		printf("%d,%.3f,%.3f,%.3f\n",i,q[500],r[500],d[500]);
-		exit(0);*/
+		//printf("%d,%.3f,%.3f,%.3f\n",i,q[500],r[500],d[500]);
 
 
 
@@ -811,6 +812,7 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 				"at " BIGINT_FORMAT " step",i,update->ntimestep);
 		error->warning(FLERR,str);
 	}
+
 
 
 
@@ -1002,10 +1004,6 @@ void FixQEqReax::cuda_calculate_Q()
 	//Debug start
 	int world_rank;
 	MPI_Comm_rank(world, &world_rank);
-
-
-
-
 	//Debug end
 
 }
