@@ -2255,6 +2255,7 @@ int Cuda_Compute_Bonded_Forces( reax_system *system, control_params *control,
 		cuda_memset( spad, 0, 4 * sizeof(real) * system->n + sizeof(rvec) * system->n * 2,
 				"Cuda_Compute_Bonded_Forces::spad" );
 
+		printf("%d\n", control->block_size);
 		hipLaunchKernelGGL(Cuda_Torsion_Angles, dim3(control->blocks), dim3(control->block_size ), 0, 0,  system->d_my_atoms, system->reax_param.d_gp, system->reax_param.d_fbp,
 				(control_params *) control->d_control_params, *(lists[BONDS]),
 				*(lists[THREE_BODIES]), *(workspace->d_workspace), system->n,

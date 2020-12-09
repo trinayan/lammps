@@ -906,8 +906,6 @@ void PairReaxCGPU::read_reax_forces_from_device(int /*vflag*/)
 	MPI_Comm_rank(world, &world_rank);
 
 
-
-
 	for( int i = 0; i < system->N; ++i ) {
 		system->my_atoms[i].f[0] = workspace->f[i][0];
 		system->my_atoms[i].f[1] = workspace->f[i][1];
@@ -924,7 +922,7 @@ void PairReaxCGPU::read_reax_forces_from_device(int /*vflag*/)
 		atom->f[i][2] += -workspace->f[i][2];
 	}
 
-	//exit(0);
+	exit(0);
 
 
 }
