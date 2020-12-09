@@ -235,7 +235,7 @@ void  Cuda_Calculate_H_Matrix(reax_list **lists,  reax_system *system, fix_qeq_g
 	hipLaunchKernelGGL(k_init_distance, dim3(blocks), dim3(DEF_BLOCK_SIZE), 0, 0,  qeq_gpu->d_fix_my_atoms, *(lists[FAR_NBRS]), n );
 	hipDeviceSynchronize();
 
-	printf("nonb %f, %d\n",control->nonb_cut,n );
+	//printf("nonb %f, %d\n",control->nonb_cut,n );
 
 
 	//printf("Blocks %d , blocks size %d\n", blocks, DEF_BLOCK_SIZE);

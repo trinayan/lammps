@@ -4,7 +4,7 @@
 units		real
 
 atom_style	charge
-read_data	data.rdx
+read_data	data_old.rdx
 replicate       3 3 3 bbox
 
 

@@ -834,6 +834,7 @@ int PairReaxCGPU::estimate_reax_lists()
 int PairReaxCGPU::update_and_write_reax_lists_to_device()
 {
 
+
 	int itr_i, itr_j, i, j;
 	int num_nbrs;
 	int *ilist, *jlist, *numneigh, **firstneigh;
@@ -868,29 +869,54 @@ int PairReaxCGPU::update_and_write_reax_lists_to_device()
 		Set_Start_Index( i, num_nbrs, far_nbrs );
 
 		if (i < inum)
-			//cutoff_sqr = MAX(control->bond_cut*control->bond_cut,control->hbond_cut*control->hbond_cut);
 			cutoff_sqr = control->nonb_cut*control->nonb_cut;
 		else
 			cutoff_sqr = control->bond_cut*control->bond_cut;
 
+		for( itr_j = 0; itr_j < numneigh[i]; ++itr_j ) {
+			j = jlist[itr_j];
+			if ( i <  j)
+			{
+				j &= NEIGHMASK;
 
+				get_distance( x[j], x[i], &d_sqr, &dvec );
+
+				if (d_sqr <= (cutoff_sqr)) {
+					dist[j] = sqrt( d_sqr );
+					set_far_nbr( &far_list[num_nbrs], j, dist[j], dvec );
+					++num_nbrs;
+				}
+			}
+		}
 
 		for( itr_j = 0; itr_j < numneigh[i]; ++itr_j ) {
 			j = jlist[itr_j];
-			j &= NEIGHMASK;
+			if ( i >  j)
+			{
+				j &= NEIGHMASK;
 
-			get_distance( x[j], x[i], &d_sqr, &dvec );
-			if (d_sqr <= (cutoff_sqr)) {
-				dist[j] = sqrt( d_sqr );
-				set_far_nbr( &far_list[num_nbrs], j, dist[j], dvec );
-				++num_nbrs;
+				get_distance( x[i], x[j], &d_sqr, &dvec );
+
+				if (d_sqr <= (cutoff_sqr)) {
+					dist[j] = sqrt( d_sqr );
+					set_far_nbr( &far_list[num_nbrs], j, dist[j], dvec );
+					++num_nbrs;
+				}
 			}
 		}
+
+
+
+
+
 		Set_End_Index( i, num_nbrs, far_nbrs );
 	}
 
 	free( dist );
+
 	Cuda_Write_Reax_Lists(system,  gpu_lists, cpu_lists);
+
+
 	return num_nbrs;
 }
 
@@ -913,8 +939,8 @@ void PairReaxCGPU::read_reax_forces_from_device(int /*vflag*/)
 
 
 
-		if(i < 20)
-			printf("%d,%f,%f,%f\n",system->my_atoms[i].orig_id, system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
+		//if(i < 20)
+			//printf("%d,%f,%f,%f\n",system->my_atoms[i].orig_id, system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
 
 
 		atom->f[i][0] += -workspace->f[i][0];
@@ -922,7 +948,7 @@ void PairReaxCGPU::read_reax_forces_from_device(int /*vflag*/)
 		atom->f[i][2] += -workspace->f[i][2];
 	}
 
-	exit(0);
+	//exit(0);
 
 
 }

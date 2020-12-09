@@ -796,8 +796,8 @@ void PairReaxC::read_reax_forces(int /*vflag*/)
 		system->my_atoms[i].f[1] = workspace->f[i][1];
 		system->my_atoms[i].f[2] = workspace->f[i][2];
 
-		if(i < 20)
-			printf("%d,%f,%f,%f\n",system->my_atoms[i].orig_id, system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
+		//if(i < 20)
+			//printf("%d,%f,%f,%f\n",system->my_atoms[i].orig_id, system->my_atoms[i].f[0],system->my_atoms[i].f[1],system->my_atoms[i].f[2]);
 
 
 		atom->f[i][0] += -workspace->f[i][0];
@@ -805,8 +805,8 @@ void PairReaxC::read_reax_forces(int /*vflag*/)
 		atom->f[i][2] += -workspace->f[i][2];
 
 	}
-	printf("\n\n");
-	exit(0);
+	//printf("\n\n");
+	//exit(0);
 }
 
 /* ---------------------------------------------------------------------- */

@@ -738,7 +738,7 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 	Cuda_Copy_Vector_From_Device(d,qeq_gpu->d,nn);
 	sig_new = parallel_dot(r,d,nn);
 
-	printf("b NORM %f, sig new %f \n", b_norm, sig_new);
+	//printf("b NORM %f, sig new %f \n", b_norm, sig_new);
 
 
 	for (i = 1; i < imax && sqrt(sig_new) / b_norm > tolerance; ++i) {
