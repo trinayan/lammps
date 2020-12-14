@@ -46,6 +46,11 @@ namespace LAMMPS_NS {
 		virtual void init_storage();
 		void setup_pre_force(int);
 		virtual void pre_force(int);
+		virtual int updateReaxLists(class PairReaxCGPU *reaxc);
+		virtual void get_distance( rvec xj, rvec xi, double *d_sqr, rvec *dvec );
+		virtual void set_far_nbr( far_neighbor_data *fdest,int j, double d, rvec dvec);
+
+
 
 		void setup_pre_force_respa(int, int);
 		void pre_force_respa(int, int, int);

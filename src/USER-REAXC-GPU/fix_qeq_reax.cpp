@@ -38,7 +38,8 @@
 #include "error.h"
 #include "reaxc_defs.h"
 #include "reaxc_types.h"
-
+#include "reaxc_list.h"
+#include "reaxc_vector.h"
 
 extern "C" void  CudaAllocateStorageForFixQeq(int nmax, int dual_enabled, fix_qeq_gpu *qeq_gpu);
 extern "C" void  CudaInitStorageForFixQeq(fix_qeq_gpu *qeq_gpu,double *Hdia_inv, double *b_s,double *b_t,double *b_prc,double *b_prm,double *s,double *t, int NN);
@@ -64,7 +65,12 @@ extern "C" void  CudaFreeFixQeqParams(fix_qeq_gpu *qeq_gpu);
 extern "C" void  CudaFreeHMatrix(fix_qeq_gpu *qeq_gpu);
 extern "C" void  Cuda_Allocate_Hist_ST(fix_qeq_gpu *qeq_gpu,int nmax);
 extern "C" void  Cuda_Copy_Vector_To_Device(real *host_vector, real *device_vector, int nn);
+extern "C" void Cuda_Free_Memory(fix_qeq_gpu *qeq_gpu);
+extern "C" void Cuda_Write_Reax_Lists(reax_system *system, reax_list**, reax_list*);
 
+extern "C" void Cuda_Adjust_End_Index_Before_ReAllocation(int oldN, int systemN, reax_list **gpu_lists);
+extern "C"  void Cuda_ReAllocate( reax_system *system, control_params *control,
+		simulation_data *data, storage *workspace, reax_list **lists);
 
 
 using namespace LAMMPS_NS;
@@ -384,13 +390,15 @@ void FixQEqReax::init()
 	int irequest = neighbor->request(this,instance_me);
 	neighbor->requests[irequest]->pair = 0;
 	neighbor->requests[irequest]->fix = 1;
-	neighbor->requests[irequest]->newton = 2;
+	//neighbor->requests[irequest]->newton = 2;
 	neighbor->requests[irequest]->ghost = 1;
 	neighbor->requests[irequest]->half = 0;
 	neighbor->requests[irequest]->full = 1;
 
 	init_shielding();
 	init_taper();
+
+	printf("Initing \n");
 
 	if (strstr(update->integrate_style,"respa"))
 		nlevels_respa = ((Respa *) update->integrate)->nlevels;
@@ -574,6 +582,19 @@ void FixQEqReax::min_pre_force(int vflag)
 
 void FixQEqReax::init_matvec()
 {
+
+
+  int oldN = reaxc->system->N;
+  reaxc->system->N = list->inum + list->gnum;
+
+
+  //printf("old %d,%d\n", oldN,reaxc->system->N );
+  //Cuda_Adjust_End_Index_Before_ReAllocation(oldN, reaxc->system->N, reaxc->gpu_lists);
+  Cuda_ReAllocate(reaxc->system, reaxc->control,reaxc->data, reaxc->workspace, reaxc->gpu_lists);
+
+  //exit(0);
+
+  //
 	/* fill-in H matrix */
 	compute_H();
 
@@ -592,13 +613,8 @@ void FixQEqReax::init_matvec()
 	Cuda_Init_Matvec_Fix(nn, qeq_gpu,reaxc->system);
 
 
-
-
-
 	Cuda_Copy_Vector_From_Device(s,qeq_gpu->s,nn);
 	Cuda_Copy_Vector_From_Device(t,qeq_gpu->t,nn);
-
-
 
 
 	pack_flag = 2;
@@ -620,13 +636,119 @@ void FixQEqReax::intializeAtomsAndCopyToDevice()
 		qeq_gpu->fix_my_atoms[i].x[1] = atom->x[i][1];
 		qeq_gpu->fix_my_atoms[i].x[2] = atom->x[i][2];
 		qeq_gpu->fix_my_atoms[i].q = atom->q[i];
+
+		//if(i == 11430)
+			//printf("%f,%f,%f\n", atom->x[i][0],atom->x[i][0],atom->x[i][0]);
 	}
 	Cuda_Init_Fix_Atoms(reaxc->system, qeq_gpu);
-
-
-
-
 }
+
+
+void FixQEqReax::get_distance( rvec xj, rvec xi, double *d_sqr, rvec *dvec )
+{
+	(*dvec)[0] = xj[0] - xi[0];
+	(*dvec)[1] = xj[1] - xi[1];
+	(*dvec)[2] = xj[2] - xi[2];
+	*d_sqr = SQR((*dvec)[0]) + SQR((*dvec)[1]) + SQR((*dvec)[2]);
+}
+
+
+void FixQEqReax::set_far_nbr( far_neighbor_data *fdest,
+		int j, double d, rvec dvec )
+{
+	fdest->nbr = j;
+	fdest->d = d;
+	rvec_Copy( fdest->dvec, dvec );
+	ivec_MakeZero( fdest->rel_box );
+}
+
+
+
+int FixQEqReax::updateReaxLists(PairReaxCGPU *reaxc)
+{
+	//printf("Updating lists for fix \n");
+	int itr_i, itr_j, i, j;
+	int num_nbrs;
+	int *ilist, *jlist, *numneigh, **firstneigh;
+	double d_sqr, cutoff_sqr;
+	rvec dvec;
+	double *dist, **x;
+	reax_list *far_nbrs;
+	far_neighbor_data *far_list;
+
+	reaxc->system->N = list->inum + list->gnum;
+
+
+	x = atom->x;
+	ilist = list->ilist;
+	numneigh = list->numneigh;
+	firstneigh = list->firstneigh;
+
+	far_nbrs = (reaxc->cpu_lists +FAR_NBRS);
+	far_list = far_nbrs->select.far_nbr_list;
+
+
+	num_nbrs = 0;
+	int inum = list->inum;
+	dist = (double*) calloc( reaxc->system->N, sizeof(double) );
+
+	int numall = list->inum + list->gnum;
+
+
+	//printf("N %d, %d\n",reaxc->system->N,numall);
+
+	for( itr_i = 0; itr_i < numall; ++itr_i ){
+		i = ilist[itr_i];
+		jlist = firstneigh[i];
+
+		Set_Start_Index( i, num_nbrs, far_nbrs );
+
+		if (i < inum)
+			cutoff_sqr = reaxc->control->nonb_cut*reaxc->control->nonb_cut;
+		else
+			cutoff_sqr = reaxc->control->bond_cut*reaxc->control->bond_cut;
+
+		for( itr_j = 0; itr_j < numneigh[i]; ++itr_j ) {
+			j = jlist[itr_j];
+			if ( i <  j)
+			{
+				j &= NEIGHMASK;
+
+				get_distance( x[j], x[i], &d_sqr, &dvec );
+
+				if (d_sqr <= (cutoff_sqr)) {
+					dist[j] = sqrt( d_sqr );
+					set_far_nbr( &far_list[num_nbrs], j, dist[j], dvec );
+					++num_nbrs;
+				}
+			}
+		}
+
+		for( itr_j = 0; itr_j < numneigh[i]; ++itr_j ) {
+			j = jlist[itr_j];
+			if ( i >  j)
+			{
+				j &= NEIGHMASK;
+
+				get_distance( x[i], x[j], &d_sqr, &dvec );
+
+				if (d_sqr <= (cutoff_sqr)) {
+					dist[j] = sqrt( d_sqr );
+					set_far_nbr( &far_list[num_nbrs], j, dist[j], dvec );
+					++num_nbrs;
+				}
+			}
+		}
+		Set_End_Index( i, num_nbrs, far_nbrs );
+	}
+
+	//printf("freeing\n");
+	free( dist );
+
+	Cuda_Write_Reax_Lists(reaxc->system,  reaxc->gpu_lists, reaxc->cpu_lists);
+	//return num_nbrs;
+}
+
 
 /* ---------------------------------------------------------------------- */
 
@@ -654,13 +776,17 @@ void FixQEqReax::compute_H()
 
 
 
+
 	intializeAtomsAndCopyToDevice();
+	updateReaxLists(reaxc);
+	//printf("ESTIMATING\n");
 	Cuda_Estimate_CMEntries_Storages(reaxc->system, reaxc->control,reaxc->gpu_lists, qeq_gpu, inum);
 	//printf("Ttoal cap, total cm , n %d,%d,%d\n", reaxc->system->total_cap, reaxc->system->total_cm_entries,reaxc->system->N);
 	Cuda_Allocate_Matrix(&qeq_gpu->H, inum, reaxc->system->total_cm_entries);
 	Cuda_Init_Sparse_Matrix_Indices(reaxc->system, qeq_gpu, inum);
 	Cuda_Calculate_H_Matrix(reaxc->gpu_lists, reaxc->system,qeq_gpu,reaxc->control,inum,SMALL);
 
+	//printf("Finished H matrix \n");
 
 
 	//printf("System N %d, m %d \n", reaxc->system->N,n);
@@ -714,9 +840,28 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 
 
 	//Debug start
-	cuda_sparse_matvec(device_x, qeq_gpu->q, 0);
+	int print = 0;
+
+	if(update->ntimestep >= 15)
+	{
+		print = 1;
+	}
 
 
+
+	cuda_sparse_matvec(device_x, qeq_gpu->q, print);
+
+	if(update->ntimestep >= 15)
+	{
+		/*Cuda_Copy_Vector_From_Device(q,qeq_gpu->q,nn);
+
+
+		for(int i = 0; i < 20; i++)
+			printf("%f\n", q[i]);*/
+	}
+
+
+	//printf("\n\n");
 
 	Cuda_Vector_Sum_Fix(qeq_gpu->r , 1.0,  device_b, -1.0,
 			qeq_gpu->q, nn);
@@ -738,7 +883,7 @@ int FixQEqReax::Cuda_CG( double *device_b, double *device_x)
 	Cuda_Copy_Vector_From_Device(d,qeq_gpu->d,nn);
 	sig_new = parallel_dot(r,d,nn);
 
-	//printf("b NORM %f, sig new %f \n", b_norm, sig_new);
+	//printf("%d,b NORM %f, sig new %f \n", b_norm, sig_new, update->ntimestep);
 
 
 	for (i = 1; i < imax && sqrt(sig_new) / b_norm > tolerance; ++i) {
@@ -1005,6 +1150,8 @@ void FixQEqReax::cuda_calculate_Q()
 	int world_rank;
 	MPI_Comm_rank(world, &world_rank);
 	//Debug end
+
+	Cuda_Free_Memory(qeq_gpu);
 
 }
 

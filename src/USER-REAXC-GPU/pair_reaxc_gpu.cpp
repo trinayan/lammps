@@ -555,8 +555,9 @@ void PairReaxCGPU::setup( )
 	}
 	else
 	{
+		//printf("Realloc setup \n");
 		// fill in reax datastructures
-		//update_and_copy_reax_atoms_to_device();
+		update_and_copy_reax_atoms_to_device();
 
 		// reset the bond list info for new atoms
 		//printf("Initial setup done. far numbers gpu %d \n", gpu_lists[FAR_NBRS]->num_intrs);
@@ -624,6 +625,7 @@ void PairReaxCGPU::compute(int eflag, int vflag)
 
 
 	Cuda_Reset(system, control, data, workspace, gpu_lists);
+	//printf("fixxxing \n");
 	workspace->realloc.num_far = update_and_write_reax_lists_to_device();
 
 	// timing for filling in the reax lists
@@ -715,6 +717,8 @@ void PairReaxCGPU::compute(int eflag, int vflag)
 		printf("fix species not implemented for GPU  %d\n",fixspecies_flag);
 
 	}
+
+	//printf("Finished loop \n");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -949,6 +953,8 @@ void PairReaxCGPU::read_reax_forces_from_device(int /*vflag*/)
 	}
 
 	//exit(0);
+
+	//printf("Computation done\n");
 
 
 }

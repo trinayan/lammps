@@ -546,6 +546,8 @@ void Cuda_ReAllocate( reax_system *system, control_params *control,
 	}
 
 	if (Nflag) {
+		//printf("Relloc sys\n");
+
 		/* system */
 		ret = Cuda_Reallocate_System( system,workspace,  old_total_cap, system->total_cap, msg );
 		if (ret != SUCCESS) {
@@ -572,6 +574,7 @@ void Cuda_ReAllocate( reax_system *system, control_params *control,
 
 			newsize = static_cast<int>
 			(MAX( realloc->num_far*safezone, mincap*MIN_NBRS ));
+			//printf("Reneighbor %d\n",newsize );
 			Cuda_Reallocate_Neighbor_List( far_nbrs, system->total_cap, system->total_far_nbrs );
 			Cuda_Init_Neighbor_Indices( system, lists );
 
@@ -586,6 +589,9 @@ void Cuda_ReAllocate( reax_system *system, control_params *control,
 	/* hydrogen bonds list */
 	if ( control->hbond_cut > 0.0 && system->numH > 0 )
 	{
+
+		//printf("Relloc hbonds\n");
+
 
 		if ( Nflag == TRUE || realloc->hbonds == TRUE )
 		{
@@ -606,6 +612,8 @@ void Cuda_ReAllocate( reax_system *system, control_params *control,
 	/* bonds list */
 	if ( Nflag == TRUE || realloc->bonds == TRUE )
 	{
+		//printf("Relloc bonds\n");
+
 #if defined(DEBUG_FOCUS)
 		fprintf( stderr, "p%d: reallocating bonds: total_bonds=%d, space=%dMB\n",
 				system->my_rank, system->total_bonds,
@@ -623,6 +631,8 @@ void Cuda_ReAllocate( reax_system *system, control_params *control,
 	/* 3-body list */
 	if ( Nflag == TRUE || realloc->thbody == TRUE )
 	{
+		//printf("Relloc three body\n");
+
 #if defined(DEBUG_FOCUS)
 		fprintf( stderr, "p%d: reallocating thbody list: num_thbody=%d, space=%dMB\n",
 				system->my_rank, system->total_thbodies,

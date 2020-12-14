@@ -475,6 +475,7 @@ void PairReaxC::setup( )
 			error->all(FLERR,"Pair reax/c problem in far neighbor list");
 		(lists+FAR_NBRS)->error_ptr=error;
 
+		printf("Writing reax \n");
 		write_reax_lists();
 		Initialize( system, control, data, workspace, &lists, out_control,
 				mpi_data, world );
@@ -728,6 +729,8 @@ int PairReaxC::estimate_reax_lists()
 
 int PairReaxC::write_reax_lists()
 {
+
+	printf("Writing reax lists \n");
 	int itr_i, itr_j, i, j;
 	int num_nbrs;
 	int *ilist, *jlist, *numneigh, **firstneigh;
@@ -807,6 +810,9 @@ void PairReaxC::read_reax_forces(int /*vflag*/)
 	}
 	//printf("\n\n");
 	//exit(0);
+
+	printf("Computation done \n");
+	printf("\n\n");
 }
 
 /* ---------------------------------------------------------------------- */

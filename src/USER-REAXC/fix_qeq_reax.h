@@ -120,6 +120,7 @@ class FixQEqReax : public Fix {
   double calculate_H(double,double);
   virtual void calculate_Q();
 
+
   virtual int CG(double*,double*);
   //int GMRES(double*,double*);
   virtual void sparse_matvec(sparse_matrix*,double*,double*, int flag);

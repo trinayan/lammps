@@ -86,6 +86,11 @@ CUDA_GLOBAL void k_init_cm_full_fs( reax_atom *my_atoms,
 		type_j = atom_j->type;
 
 
+
+		//if(i == 0)
+			//	printf("%f\n", nbr_pj->d);
+
+
 		flag = 0;
 
 
@@ -151,6 +156,9 @@ CUDA_GLOBAL void k_init_distance( reax_atom *my_atoms, reax_list far_nbrs_list, 
 			nbr_pj->dvec[1] = atom_i->x[1] - atom_j->x[1];
 			nbr_pj->dvec[2] = atom_i->x[2] - atom_j->x[2];
 		}
+
+		//if(i == 0)
+			//printf("%d,%f,%f,%f\n",j,atom_j->x[0],atom_j->x[1],atom_j->x[2]);
 		nbr_pj->d = rvec_Norm(nbr_pj->dvec);
 	}
 }
@@ -224,6 +232,25 @@ void  Cuda_Init_Fix_Atoms(reax_system *system,fix_qeq_gpu *qeq_gpu)
 	copy_host_device(qeq_gpu->fix_my_atoms, qeq_gpu->d_fix_my_atoms, sizeof(reax_atom) * system->N,
 			hipMemcpyHostToDevice, "Sync_Atoms::system->my_atoms");
 }
+
+void Cuda_Free_Memory(fix_qeq_gpu *qeq_gpu)
+{
+	hipFree(qeq_gpu->d_fix_my_atoms);
+	hipFree(qeq_gpu->d_cm_entries);
+	hipFree(qeq_gpu->d_max_cm_entries);
+	hipFree(qeq_gpu->d_total_cm_entries);
+	hipFree(qeq_gpu->H.start);
+	hipFree(qeq_gpu->H.end);
+	hipFree(qeq_gpu->H.entries);
+
+	//printf("Freeing memory\n");
+}
+
+
+
+
+
+
 
 void  Cuda_Calculate_H_Matrix(reax_list **lists,  reax_system *system, fix_qeq_gpu *qeq_gpu,control_params *control, int n, int small)
 {
@@ -555,11 +582,17 @@ CUDA_GLOBAL void k_matvec_csr_fix( sparse_matrix H, real *vec, real *results,
 	results_row = results[i];
 
 
+	int iter = 0;
 	for ( c = H.start[i]; c < H.end[i]; c++ )
 	{
 		col = H.entries [c].j;
 		val = H.entries[c].val;
 		results_row += val * vec[col];
+
+		//if(print == 1 && i == 1 && iter <=3)
+			//printf("%f,%f,%f,%d,%d\n", vec[col],val,results_row,H.start[i],H.end[i]);
+
+		iter++;
 
 
 	}

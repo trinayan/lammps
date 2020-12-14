@@ -60,7 +60,7 @@ static const char cite_fix_qeq_reax[] =
 /* ---------------------------------------------------------------------- */
 
 FixQEqReax::FixQEqReax(LAMMPS *lmp, int narg, char **arg) :
-																																																  Fix(lmp, narg, arg), pertype_option(NULL)
+																																																		  Fix(lmp, narg, arg), pertype_option(NULL)
 {
 	if (narg<8 || narg>11) error->all(FLERR,"Illegal fix qeq/reax command");
 
@@ -629,6 +629,11 @@ void FixQEqReax::compute_H()
 				dx = x[j][0] - x[i][0];
 				dy = x[j][1] - x[i][1];
 				dz = x[j][2] - x[i][2];
+
+				//printf("%d\n", i);
+				//if(i == 0)
+					//printf("%d,%f,%f,%f\n",j, x[j][0],x[j][1], x[j][2]);
+
 				r_sqr = SQR(dx) + SQR(dy) + SQR(dz);
 
 				flag = 0;
@@ -698,10 +703,17 @@ int FixQEqReax::CG( double *b, double *x)
 
 
 
+	int print = 0;
+
+	if(update->ntimestep >= 15)
+	{
+		print = 1;
+	}
+
 	//for(int i = 0; i < 10; i++)
 	//	printf("Before Q %d,%f,%f,%f\n", i, q[i],b[i],x[i]);
 
-	sparse_matvec( &H, x, q, 0);
+	sparse_matvec( &H, x, q, print);
 
 
 	comm->reverse_comm_fix(this); //Coll_Vector( q );
@@ -787,6 +799,8 @@ void FixQEqReax::sparse_matvec( sparse_matrix *A, double *x, double *b, int prin
 	int ii;
 
 
+	//printf("Atom %f,%f,%f\n\n", atom->x[11430][0],atom->x[11430][1],atom->x[11430][2]);
+
 
 	for (ii = 0; ii < nn; ++ii) {
 		i = ilist[ii];
@@ -800,7 +814,10 @@ void FixQEqReax::sparse_matvec( sparse_matrix *A, double *x, double *b, int prin
 			b[i] = 0;
 	}
 
+
 	for (ii = 0; ii < nn; ++ii) {
+		int iter = 0;
+
 		i = ilist[ii];
 		if (atom->mask[i] & groupbit) {
 			for (itr_j=A->firstnbr[i]; itr_j<A->firstnbr[i]+A->numnbrs[i]; itr_j++) {
@@ -808,10 +825,20 @@ void FixQEqReax::sparse_matvec( sparse_matrix *A, double *x, double *b, int prin
 				b[i] += A->val[itr_j] * x[j];
 				b[j] += A->val[itr_j] * x[i];
 
-				if(print)
+				/*if(print)
+				{
+					iter++;
 					if(i == 0 || j == 0)
-						printf("%d,%f,%f,%f\n",j,b[0],A->val[itr_j],x[j]);
+					{
+						if (iter < 5)
+						{
+							printf("%d,%d\n",A->firstnbr[i],A->firstnbr[i]+A->numnbrs[i]);
+						}
+						//printf("%f,%f,%f,%d,%d\n", vec[col],val,results_row,H.start[i],H.end[i]);
 
+						//printf("%d,%f,%f,%f\n",j,b[0],A->val[itr_j],x[j]);
+					}
+				}*/
 
 				//printf("%d,%d,%f,%f\n", i, j,b[i],b[j]);
 			}
@@ -871,8 +898,8 @@ void FixQEqReax::calculate_Q()
 
 	if(world_rank == 1)
 	{
-	for(int i = 0; i < 100; i++)
-		printf("Q vals %d,%d,%f\n",world_rank, i, atom->q[i]);
+		for(int i = 0; i < 100; i++)
+			printf("Q vals %d,%d,%f\n",world_rank, i, atom->q[i]);
 
 	}
 
