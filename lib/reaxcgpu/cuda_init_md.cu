@@ -123,6 +123,7 @@ void Cuda_Init_Lists( reax_system *system, control_params *control,
 	Cuda_Estimate_Storages( system, control, lists,
 			TRUE, TRUE, TRUE, data->step );
 
+	exit(0);
 
 	if (control->hbond_cut > 0) {
 		Cuda_Make_List( system->total_cap, system->total_hbonds, TYP_HBOND, lists[HBONDS]);

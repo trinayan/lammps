@@ -159,8 +159,13 @@ CUDA_DEVICE real Calculate_Omega( rvec dvec_ij, real r_ij,
 	return omega;
 }
 
-
-CUDA_GLOBAL void Cuda_Torsion_Angles( reax_atom *my_atoms, global_parameters gp, 
+CUDA_GLOBAL
+#ifdef USE_1024
+__launch_bounds__(1024)
+#else
+__launch_bounds__(256)
+#endif
+void Cuda_Torsion_Angles( reax_atom *my_atoms, global_parameters gp, 
 		four_body_header *d_fbp, control_params *control, reax_list p_bonds,
 		reax_list p_thb_intrs, storage p_workspace, int n, int num_atom_types,
 		real *data_e_tor, real *data_e_con, rvec *data_ext_press )

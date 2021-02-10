@@ -7,13 +7,13 @@ SHELL = /bin/sh
 # specify flags and libraries needed for your compiler
 
 CC =		mpicxx
-CCFLAGS =	-g -O3
+CCFLAGS =	-g -O1
 SHFLAGS =	-fPIC
 DEPFLAGS =	-M
 
 HIP_PATH ?= $(wildcard /opt/rocm/hip)
 LINK =		$(HIP_PATH)/bin/hipcc
-LINKFLAGS =	-g -O3 $(shell mpicxx --showme:link)
+LINKFLAGS =	-g -O1 $(shell mpicxx --showme:link)
 LIB =
 SIZE =		size
 

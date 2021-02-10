@@ -1,0 +1,36 @@
+--------------------------------------------------------------------------
+WARNING: No preset parameters were found for the device that Open MPI
+detected:
+
+  Local host:            ts1-sjc2-02
+  Device name:           mlx5_0
+  Device vendor ID:      0x02c9
+  Device vendor part ID: 4123
+
+Default device parameters will be used, which may result in lower
+performance.  You can edit any of the files specified by the
+btl_openib_device_param_files MCA parameter to set values for your
+device.
+
+NOTE: You can turn off this warning by setting the MCA parameter
+      btl_openib_warn_no_device_params_found to 0.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+WARNING: There was an error initializing an OpenFabrics device.
+
+  Local host:   ts1-sjc2-02
+  Local device: mlx5_0
+--------------------------------------------------------------------------
+[ts1-sjc2-02:108358] *** Process received signal ***
+[ts1-sjc2-02:108358] Signal: Aborted (6)
+[ts1-sjc2-02:108358] Signal code:  (-6)
+[ts1-sjc2-02:108358] [ 0] /lib/x86_64-linux-gnu/libpthread.so.0(+0x12980)[0x7f416afc0980]
+[ts1-sjc2-02:108358] [ 1] /lib/x86_64-linux-gnu/libc.so.6(gsignal+0xc7)[0x7f4168ff7fb7]
+[ts1-sjc2-02:108358] [ 2] /lib/x86_64-linux-gnu/libc.so.6(abort+0x141)[0x7f4168ff9921]
+[ts1-sjc2-02:108358] [ 3] /opt/rocm-4.0.0/hip/lib/libamdhip64.so.4(+0x19e01b)[0x7f416991c01b]
+[ts1-sjc2-02:108358] [ 4] /opt/rocm-4.0.0/hip/lib/../../lib/libhsa-runtime64.so.1(+0x31c8f)[0x7f4168052c8f]
+[ts1-sjc2-02:108358] [ 5] /opt/rocm-4.0.0/hip/lib/../../lib/libhsa-runtime64.so.1(+0x689eb)[0x7f41680899eb]
+[ts1-sjc2-02:108358] [ 6] /opt/rocm-4.0.0/hip/lib/../../lib/libhsa-runtime64.so.1(+0x16367)[0x7f4168037367]
+[ts1-sjc2-02:108358] [ 7] /lib/x86_64-linux-gnu/libpthread.so.0(+0x76db)[0x7f416afb56db]
+[ts1-sjc2-02:108358] [ 8] /lib/x86_64-linux-gnu/libc.so.6(clone+0x3f)[0x7f41690da71f]
+[ts1-sjc2-02:108358] *** End of error message ***

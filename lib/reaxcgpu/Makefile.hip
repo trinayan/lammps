@@ -9,7 +9,7 @@ HIPCC = /opt/rocm/bin/hipcc
 
 CC = g++
 
-HIPCCFLAGS  =  -w -ggdb  -D_SINGLE_DOUBLE -DHAVE_CONFIG_H -DUSE_HIP_DEVICE_SORT  -O3  -fpermissive -D__HIP_PLATFORM_HCC__   -DHCC_ENABLE_ACCELERATOR_PRINTF  -pthread
+HIPCCFLAGS  =   -O1  -D__HIP_PLATFORM_HCC__    -pthread
 
 HIPCCINCS = -I/opt/rocm/include -I/opt/rocm/hcc/include -I$(MPI_PATH)/include/openmpi -I$(MPI_PATH)/include/openmpi/opal/mca/event/libevent2022/libevent -I$(MPI_PATH)/include/openmpi/opal/mca/event/libevent2022/libevent/include -I$(MPI_PATH)/include
 

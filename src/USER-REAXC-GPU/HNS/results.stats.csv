@@ -1,0 +1,5 @@
+"Name","Calls","TotalDurationNs","AverageNs","Percentage"
+"k_estimate_storages(reax_atom*, single_body_parameters*, two_body_parameters*, control_params*, reax_list, int, int, int, int, int*, int*, int*, int*, int*, int*) [clone .kd]",1,3797585,3797585,75.14878037100405
+"__amd_rocclr_fillBuffer.kd",83,1237277,14906,24.483943751382725
+"void rocprim::detail::block_reduce_kernel<true, rocprim::detail::default_reduce_config<0u, int>, int, int*, int*, int, hipcub::detail::convert_result_type_wrapper<int*, int*, hipcub::Sum> >(int*, unsigned long, int*, int, hipcub::detail::convert_result_type_wrapper<int*, int*, hipcub::Sum>) [clone .kd]",1,11200,11200,0.22163199511143142
+"k_reset_hindex.kd",1,7360,7360,0.1456438825017978
